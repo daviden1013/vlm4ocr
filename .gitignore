@@ -1,0 +1,8 @@
+
+# compiled files
+*.pyc
+
+# packages
+packages/vlm4ocr/develop
+packages/vlm4ocr/dist
+packages/vlm4ocr/tests
