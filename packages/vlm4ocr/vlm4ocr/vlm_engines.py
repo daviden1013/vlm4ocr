@@ -2,6 +2,8 @@ import abc
 import importlib
 from typing import List, Dict, Union, Generator
 import warnings
+from PIL import Image
+from vlm4ocr.utils import image_to_base64
 
 
 class VLMEngine:
@@ -151,7 +153,7 @@ class OllamaVLMEngine(VLMEngine):
         
         return response.get('message', {}).get('content', '')
     
-    def get_ocr_messages(self, system_prompt:str, user_prompt:str, image_path:str) -> List[Dict[str,str]]:
+    def get_ocr_messages(self, system_prompt:str, user_prompt:str, image:Image.Image) -> List[Dict[str,str]]:
         """
         This method inputs an image and returns the correesponding chat messages for the inference engine.
 
@@ -164,12 +166,13 @@ class OllamaVLMEngine(VLMEngine):
         image_path : str
             the image path for OCR.
         """
+        base64_str = image_to_base64(image)
         return [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
                 "content": user_prompt,
-                "images": [image_path]
+                "images": [base64_str]
             }
         ]
 
@@ -375,7 +378,7 @@ class OpenAIVLMEngine(VLMEngine):
 
         return response.choices[0].message.content
     
-    def get_ocr_messages(self, system_prompt:str, user_prompt:str, image_path:str, detail:str="high") -> List[Dict[str,str]]:
+    def get_ocr_messages(self, system_prompt:str, user_prompt:str, image:Image.Image, format:str='png', detail:str="high") -> List[Dict[str,str]]:
         """
         This method inputs an image and returns the correesponding chat messages for the inference engine.
 
@@ -385,11 +388,14 @@ class OpenAIVLMEngine(VLMEngine):
             the system prompt.
         user_prompt : str
             the user prompt.
-        image_path : str
-            the image path for OCR.
+        image : Image.Image
+            the image for OCR.
+        format : str, Optional
+            the image format. 
         detail : str, Optional
             the detail level of the image. Default is "high". 
         """
+        base64_str = image_to_base64(image)
         return [
             {"role": "system", "content": system_prompt},
             {
@@ -398,7 +404,7 @@ class OpenAIVLMEngine(VLMEngine):
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": image_path,
+                            "url": f"data:image/{format};base64,{base64_str}",
                             "detail": detail
                         },
                     },

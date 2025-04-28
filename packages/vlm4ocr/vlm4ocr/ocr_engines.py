@@ -2,7 +2,7 @@ import os
 from typing import List, Dict, Union, Generator, Iterable
 import importlib
 import asyncio
-from vlm4ocr.utils import get_images_from_pdf, get_image_from_file, image_to_base64, clean_markdown
+from vlm4ocr.utils import get_images_from_pdf, get_image_from_file, clean_markdown
 from vlm4ocr.vlm_engines import VLMEngine
 
 SUPPORTED_IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
@@ -91,8 +91,7 @@ class OCREngine:
             if not images:
                 raise ValueError(f"No images extracted from PDF: {file_path}")
             for i, image in enumerate(images):
-                base64_image = image_to_base64(image)
-                messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, base64_image)
+                messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
                 response_stream = self.vlm_engine.chat(
                     messages,
                     max_new_tokens=max_new_tokens,
@@ -109,8 +108,7 @@ class OCREngine:
         # Image
         else:
             image = get_image_from_file(file_path)
-            base64_image = image_to_base64(image)
-            messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, base64_image)
+            messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
             response_stream = self.vlm_engine.chat(
                     messages,
                     max_new_tokens=max_new_tokens,
@@ -208,8 +206,7 @@ class OCREngine:
                     raise ValueError(f"No images extracted from PDF: {file_path}")
                 pdf_results = []
                 for image in images:
-                    base64_image = image_to_base64(image)
-                    messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, base64_image)
+                    messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
                     response = self.vlm_engine.chat(
                         messages,
                         max_new_tokens=max_new_tokens,
@@ -224,8 +221,7 @@ class OCREngine:
             # Image
             else:
                 image = get_image_from_file(file_path)
-                base64_image = image_to_base64(image)
-                messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, base64_image)
+                messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
                 ocr_text = self.vlm_engine.chat(
                     messages,
                     max_new_tokens=max_new_tokens,
@@ -268,8 +264,7 @@ class OCREngine:
         semaphore = asyncio.Semaphore(concurrent_batch_size)
         async def semaphore_helper(page:List[Dict[str,str]], max_new_tokens:int, temperature:float, **kwrs):
             try:
-                base64 = image_to_base64(page["image"])
-                messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, base64)
+                messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, page["image"])
                 async with semaphore:
                     async_task = self.vlm_engine.chat_async(
                         messages,
