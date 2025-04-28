@@ -6,3 +6,5 @@
       name: 'OpenAI'
     - value: 'azure_openai'
       name: 'Azure OpenAI'
+    - value: 'ollama'
+      name: 'Ollama'

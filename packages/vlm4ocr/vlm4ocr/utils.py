@@ -29,15 +29,15 @@ def get_image_from_file(file_path: str) -> Image.Image:
             raise ValueError(f"Failed to load image file '{os.path.basename(file_path)}': {e}") from e
 
 
-def image_to_base64(image:Image.Image, format:str="png") -> List[str]:
+def image_to_base64(image:Image.Image, format:str="png") -> str:
     """ Converts an image to a base64 string. """
     try:
         buffered = io.BytesIO()
         image.save(buffered, format=format)
         img_bytes = buffered.getvalue()
         encoded_bytes = base64.b64encode(img_bytes)
-        encoded_string = encoded_bytes.decode('utf-8')
-        return f"data:image/{format};base64,{encoded_string}"
+        base64_encoded_string = encoded_bytes.decode('utf-8')
+        return base64_encoded_string
     except Exception as e:
         print(f"Error converting image to base64: {e}")
         raise ValueError(f"Failed to convert image to base64: {e}") from e

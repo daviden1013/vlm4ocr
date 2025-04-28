@@ -65,6 +65,17 @@
                 </div>
             </div>
 
+            <div id="ollama-options" class="conditional-options indented-option" style="display: none;">
+                <div class="form-group">
+                    <label for="ollama-host">Host:</label>
+                    <input type="url" id="ollama-host" name="ollama_host" placeholder="Default: http://localhost:11434" value="http://localhost:11434" class="api-input">
+                </div>
+                <div class="form-group">
+                    <label for="ollama-model">Model:</label>
+                    <input type="text" id="ollama-model" name="ollama_model" placeholder="Enter Ollama model name (e.g., llama3.2-vision)" class="api-input">
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="ocr-user-prompt">User Prompt (Optional Context):</label>
                 <textarea id="ocr-user-prompt" name="user_prompt" rows="3" placeholder="Provide context about the image/PDF (e.g., 'This is a doctor's note')"></textarea>

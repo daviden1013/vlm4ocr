@@ -274,25 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn("PDF.js library (pdfjsLib) not found on DOMContentLoaded. PDF preview will fail.");
     }
 
-
-    // --- Tab Switching Logic (REMOVED) ---
-    // Since there's only one tab now, this logic is no longer needed.
-    // The 'active' class is set directly on the OCR tab in index.html.
-    /*
-    const tabLinks = document.querySelectorAll('header nav ul li a');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabLinks.forEach(link => {
-        link.addEventListener('click', (event) => {
-            event.preventDefault();
-            const targetTabId = link.getAttribute('href');
-            // ... (rest of the old tab switching logic) ...
-        });
-    });
-    */
-    // --- End Tab Switching Logic ---
-
-
     // --- File Drag and Drop Logic (Unchanged) ---
     const dropZone = document.querySelector('.file-drop-zone');
     const fileInput = document.getElementById('input-file');
@@ -351,12 +332,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const openAICompatibleOptionsDiv = document.getElementById('openai-compatible-options');
     const openAIOptionsDiv = document.getElementById('openai-options');
     const azureOptionsDiv = document.getElementById('azure-openai-options');
+    const ollamaOptionsDiv = document.getElementById('ollama-options');
 
-    if (vlmApiSelect && openAICompatibleOptionsDiv && openAIOptionsDiv && azureOptionsDiv) {
+    if (vlmApiSelect && openAICompatibleOptionsDiv && openAIOptionsDiv && azureOptionsDiv && ollamaOptionsDiv) {
         vlmApiSelect.addEventListener('change', (event) => {
             const selectedApi = event.target.value;
             console.log("VLM API Selection Changed:", selectedApi);
-            [openAICompatibleOptionsDiv, openAIOptionsDiv, azureOptionsDiv].forEach(div => {
+            [openAICompatibleOptionsDiv, openAIOptionsDiv, azureOptionsDiv, ollamaOptionsDiv].forEach(div => {
                 div.classList.remove('visible');
                 div.style.display = 'none';
             });
@@ -369,6 +351,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (selectedApi === 'azure_openai') {
                 azureOptionsDiv.classList.add('visible');
                 azureOptionsDiv.style.display = 'block';
+            } else if (selectedApi === 'ollama') { 
+                ollamaOptionsDiv.classList.add('visible');
+                ollamaOptionsDiv.style.display = 'block';
             }
         });
          vlmApiSelect.dispatchEvent(new Event('change'));

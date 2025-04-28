@@ -1,16 +1,13 @@
-# services/web_app/app/app_services.py
 import os
 import traceback
 from werkzeug.utils import secure_filename
 from flask import Response, stream_with_context
-
-# Import app instance for config access, and cleanup utility
 from . import app, cleanup_file
 
-# Import the necessary classes from your vlm4ocr package
+
 try:
     from vlm4ocr.ocr_engines import OCREngine
-    from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine # Add others if needed
+    from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine
 except ImportError as e:
     print(f"Error importing from vlm4ocr in app_services.py: {e}")
     raise
@@ -54,6 +51,8 @@ def process_ocr_request(request):
         vlm_base_url = request.form.get('vlm_base_url', None)
         azure_endpoint = request.form.get('azure_endpoint', None)
         azure_api_version = request.form.get('azure_api_version', None)
+        ollama_host = request.form.get('ollama_host', 'http://localhost:11434')
+        ollama_model = request.form.get('ollama_model', None)
 
         print(f"Extracted form data: vlm_api={vlm_api}")
 
@@ -88,6 +87,15 @@ def process_ocr_request(request):
             if not vlm_api_key: raise ValueError("Azure API Key is required for Azure OpenAI mode.")
             print(f"Configuring AzureOpenAIVLMEngine: model={azure_deployment_name}, endpoint={azure_endpoint}, api_version={azure_api_version}")
             vlm_engine = AzureOpenAIVLMEngine(model=azure_deployment_name, api_key=vlm_api_key, azure_endpoint=azure_endpoint, api_version=azure_api_version)
+        elif vlm_api == "ollama": 
+            if not ollama_model: raise ValueError("Model name is required for Ollama mode.")
+            host_to_use = ollama_host if ollama_host else 'http://localhost:11434'
+            print(f"Configuring OllamaVLMEngine: model={ollama_model}, host={host_to_use}")
+            vlm_engine = OllamaVLMEngine(
+                model_name=ollama_model,
+                host=host_to_use
+            )
+        
         else:
             raise ValueError(f'Unsupported VLM API type selected: {vlm_api}')
         print("VLM Engine configured.")
