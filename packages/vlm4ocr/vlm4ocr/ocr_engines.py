@@ -1,10 +1,9 @@
 import os
 from typing import List, Dict, Union, Generator, Iterable
 import importlib
-from PIL import Image
 import asyncio
 from vlm4ocr.utils import get_images_from_pdf, get_image_from_file, image_to_base64, clean_markdown
-from packages.vlm4ocr.vlm4ocr.vlm_engines import VLMEngine
+from vlm4ocr.vlm_engines import VLMEngine
 
 SUPPORTED_IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
 
@@ -40,7 +39,7 @@ class OCREngine:
         if isinstance(system_prompt, str) and system_prompt:
             self.system_prompt = system_prompt
         else:
-            file_path = importlib.resources.files('vlm4ocr.asset.default_ptompt_templates').joinpath(f'ocr_{self.output_mode}_system_prompt.txt')
+            file_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath(f'ocr_{self.output_mode}_system_prompt.txt')
             with open(file_path, 'r', encoding='utf-8') as f:
                 self.system_prompt =  f.read()
 
@@ -48,7 +47,7 @@ class OCREngine:
         if isinstance(user_prompt, str) and user_prompt:
             self.user_prompt = user_prompt
         else:
-            file_path = importlib.resources.files('vlm4ocr.asset.default_ptompt_templates').joinpath('ocr_user_prompt.txt')
+            file_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath('ocr_user_prompt.txt')
             with open(file_path, 'r', encoding='utf-8') as f:
                 self.user_prompt =  f.read()
 

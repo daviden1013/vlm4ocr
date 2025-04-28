@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="tab-pane-grid">
+    <div class="controls-panel">
+        <form id="ocr-form">
+            <div class="form-group">
+                <div class="form-group file-drop-zone">
+                    <label for="input-file">Upload PDF or Image:</label>
+                    <input type="file" id="input-file" name="input_file" accept=".pdf,.png,.jpg,.jpeg,.bmp,.gif,.webp" required>
+                    <div class="drop-zone-text">Drag & drop PDF or Image here</div>
+                    </div>
+            </div>
+            <div class="form-group">
+                <label for="vlm-api-select">Choose VLM API:</label>
+                <select id="vlm-api-select" name="vlm_api" required>
+                    <option value="" disabled selected>-- select VLM API --</option>
+                    {% for api in vlm_api_options %}
+                        <option value="{{ api.value }}">{{ api.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="openai-compatible-options" class="conditional-options indented-option" style="display: none;">
+                <div class="form-group">
+                    <label for="openai-compatible-api-key">API Key:</label> <input type="password" id="openai-compatible-api-key" name="openai_compatible_api_key" placeholder="Enter API key for the compatible endpoint" class="api-input">
+                </div>
+                <div class="form-group">
+                    <label for="vlm-base-url">Base URL:</label>
+                    <input type="url" id="vlm-base-url" name="vlm_base_url" placeholder="e.g., http://localhost:8000/v1" class="api-input">
+                </div>
+                <div class="form-group">
+                    <label for="vlm-model">Model:</label>
+                    <input type="text" id="vlm-model" name="vlm_model" placeholder="e.g., Qwen/Qwen2.5-VL-7B-Instruct" class="api-input">
+                </div>
+            </div>
+
+            <div id="openai-options" class="conditional-options indented-option" style="display: none;">
+                 <div class="form-group">
+                    <label for="openai-api-key">OpenAI API Key:</label>
+                    <input type="password" id="openai-api-key" name="openai_api_key" placeholder="Enter your OpenAI API key" class="api-input">
+                </div>
+                <div class="form-group">
+                    <label for="openai-model">Model:</label>
+                    <input type="text" id="openai-model" name="openai_model" placeholder="e.g., gpt-4o" class="api-input">
+                </div>
+            </div>
+
+            <div id="azure-openai-options" class="conditional-options indented-option" style="display: none;">
+                <div class="form-group">
+                    <label for="azure-openai-api-key">Azure API Key:</label>
+                    <input type="password" id="azure-openai-api-key" name="azure_openai_api_key" placeholder="Enter your Azure API key" class="api-input">
+                </div>
+                <div class="form-group">
+                    <label for="azure-endpoint">Azure OpenAI Endpoint:</label>
+                    <input type="url" id="azure-endpoint" name="azure_endpoint" placeholder="e.g., https://YOUR_RESOURCE_NAME.openai.azure.com/" class="api-input">
+                </div>
+                 <div class="form-group">
+                    <label for="azure-api-version">Azure API Version:</label> <input type="text" id="azure-api-version" name="azure_api_version" placeholder="e.g., 2024-02-01" class="api-input">
+                 </div>
+                <div class="form-group">
+                    <label for="azure-deployment-name">Model / Deployment Name:</label>
+                    <input type="text" id="azure-deployment-name" name="azure_deployment_name" placeholder="Enter deployment name used in Azure" class="api-input">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="ocr-user-prompt">User Prompt (Optional Context):</label>
+                <textarea id="ocr-user-prompt" name="user_prompt" rows="3" placeholder="Provide context about the image/PDF (e.g., 'This is a doctor's note')"></textarea>
+            </div>
+            <button type="submit" id="run-ocr-button">Run OCR</button>
+        </form>
+    </div>
+    <div class="display-panel">
+        <div class="display-column">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                 <h3>Input Preview</h3>
+                 <span></span> </div>
+            <div id="input-preview-area" class="output-box">
+               <p id="preview-placeholder" style="color: #ccc;">Upload a file to see the preview</p>
+               <p id="preview-render-error" style="color: red; display: none;"></p>
+           </div>
+       </div>
+        <div class="display-column">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                <h3>Extracted Text</h3>
+                <div id="ocr-toggle-container" style="display: none; align-items: center;">
+                    <label class="switch" title="Toggle Markdown Preview">
+                        <input type="checkbox" id="ocr-render-toggle-checkbox" checked> <span class="slider round"></span>
+                    </label>
+                    <i class="fab fa-markdown" style="font-size: 1.5em; margin-left: 10px; color: #ccc;" title="Markdown Preview"></i>
+                </div>
+            </div>
+            <div id="ocr-output-wrapper">
+                <div id="output-header" class="output-header" style="display: none;">
+                     <div class="header-icons">
+                        <i id="copy-ocr-text" class="fas fa-copy action-icon" title="Copy Raw Text"></i>
+                    </div>
+                </div>
+                <div id="ocr-output-area" class="output-box">
+                    <p>Waiting for OCR results...</p>
+                </div>
+            </div>
+            <div id="ocr-loading-indicator" style="display: none;">Processing...</div>
+            <div id="ocr-error-message" style="display: none; color: red;"></div>
+         </div>
+    </div>
+</div> {% endblock %}

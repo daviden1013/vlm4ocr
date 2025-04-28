@@ -1,0 +1,8 @@
+---
+  vlm_api_options:
+    - value: 'openai_compatible'
+      name: 'OpenAI Compatible'
+    - value: 'openai'
+      name: 'OpenAI'
+    - value: 'azure_openai'
+      name: 'Azure OpenAI'

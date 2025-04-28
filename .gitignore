@@ -6,3 +6,7 @@
 packages/vlm4ocr/develop
 packages/vlm4ocr/dist
 packages/vlm4ocr/tests
+
+# web app
+services/web_app/tests
+services/web_app/uploads

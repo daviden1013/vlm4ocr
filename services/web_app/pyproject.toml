@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "web_app"
+version = "0.0.1"
+description = "Web App for vlm4ocr project."
+authors = ["Enshuo (David) Hsu"]
+license = "MIT"
+readme = "README.md"
+
+exclude = [
+    "tests/**",
+    "uploads/**"
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = ">=2.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
