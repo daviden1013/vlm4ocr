@@ -21,7 +21,7 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 ## Overview
 `vlm4ocr` provides a simple way to perform OCR using the power of modern Vision Language Models (VLMs). A drag-and-drop **web application** is included for easy access. The **Python package** supports concurrent batch processing for large amount of documents.
 
-[![Video Preview Alt Text](/doc_asset/readme_img/vlm4ocr%20demo%20thumbnail.PNG)](/doc_asset/readme_img/vlm4ocr%20demo.mp4)
+https://github.com/user-attachments/assets/b196453c-fd2c-491a-ba1e-0a77cf7f5941
 
 ## Prerequisites
 - Python 3.x
