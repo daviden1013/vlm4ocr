@@ -148,5 +148,3 @@ def process_ocr_request(request):
              print(f"Calling cleanup_file due to unexpected setup error for {temp_file_path}")
              cleanup_file(temp_file_path, "setup general error cleanup")
         raise Exception(f"Failed during OCR setup: {setup_err}")
-
-# --- End of app_services.py ---
