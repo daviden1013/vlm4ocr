@@ -113,8 +113,7 @@ def process_ocr_request(request):
             output_mode=output_format,
             # --- END MODIFIED ---
             system_prompt=None, # OCREngine will pick default based on output_mode
-            user_prompt=user_prompt,
-            page_delimiter="\n\n---\n\n" # This delimiter is for internal joining if needed, JS handles display
+            user_prompt=user_prompt
         )
         print("OCREngine initialized.")
 
