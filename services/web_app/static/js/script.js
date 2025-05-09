@@ -3,15 +3,15 @@
 // Global variables
 let previewErrorMsgElement = null;
 let previewArea = null;
-let previewPlaceholder = null;
-let ocrRawText = ''; // Stores the final concatenated raw content of all pages
-let isPreviewMode = true; // Default to preview (rendered) mode
-let pageContentsArray = []; // Array to store raw content of each page
+let ocrRawText = '';
+let isPreviewMode = true;
+let pageContentsArray = [];
 let lastReceivedDelimiter = "\n\n---\n\n";
-let currentOutputFormat = 'markdown'; // Default, will be updated from dropdown
-let pageCounter = 0; // Keep pageCounter global for simplicity here
+let currentOutputFormat = 'markdown';
+let pageCounter = 0;
+let currentPreviewUrl = null;
+let pageContentHosts = {}; // To store persistent content hosts for live streaming
 
-// Allowed file types for preview and upload
 const ALLOWED_MIME_TYPES = [
     'application/pdf', 'image/png', 'image/jpeg', 'image/gif',
     'image/bmp', 'image/webp', 'image/tiff'
@@ -21,12 +21,10 @@ const ALLOWED_EXTENSIONS = [
     '.webp', '.tif', '.tiff'
 ];
 
-// --- Preview Rendering Functions (renderPdfPreview, renderImagePreview, renderConvertedTiffPreview) ---
 async function renderPdfPreview(file, displayArea) {
-    // console.log("Starting renderPdfPreview...");
     const { pdfjsLib } = globalThis;
     if (!pdfjsLib) {
-        console.error("PDF.js library not found!");
+        console.error("RenderPdfPreview: PDF.js library (pdfjsLib) not found!"); // Keep critical errors
         throw new Error('PDF viewer library failed to load.');
     }
     const fileReader = new FileReader();
@@ -47,24 +45,23 @@ async function renderPdfPreview(file, displayArea) {
                         const scale = desiredWidth / viewportDefault.width;
                         const viewport = page.getViewport({ scale: scale });
                         const canvas = document.createElement('canvas');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
+                        canvas.height = viewport.height; canvas.width = viewport.width;
                         canvas.style.cssText = 'display: block; margin: 5px auto 10px auto; max-width: 100%; border: 1px solid #ccc;';
                         displayArea.appendChild(canvas);
                         const context = canvas.getContext('2d');
                         await page.render({ canvasContext: context, viewport: viewport }).promise;
                     } catch (pageError) {
-                        console.error(`Error processing PDF page ${pageNum}:`, pageError);
-                        const pageErrorDiv = document.createElement('div');
-                        pageErrorDiv.style.cssText = 'color: red; border: 1px dashed red; padding: 10px; margin: 5px auto 10px auto; max-width: 95%; text-align:center;';
-                        pageErrorDiv.textContent = `Error rendering PDF page ${pageNum}: ${pageError.message || pageError}`;
-                        displayArea.appendChild(pageErrorDiv);
+                        console.error(`RenderPdfPreview: Error PDF page ${pageNum}:`, pageError); // Keep critical errors
+                        const pErrDiv = document.createElement('div');
+                        pErrDiv.style.cssText = 'color:red;border:1px dashed red;padding:10px;margin:5px auto 10px auto;max-width:95%;text-align:center;';
+                        pErrDiv.textContent = `Error rendering PDF page ${pageNum}: ${pageError.message || String(pageError)}`;
+                        displayArea.appendChild(pErrDiv);
                     }
                 }
                 resolve();
             } catch (reason) {
-                console.error('Error loading or rendering PDF:', reason);
-                reject(new Error(`Error processing PDF: ${reason.message || reason}`));
+                console.error('RenderPdfPreview: Error loading/rendering PDF doc:', reason); // Keep critical errors
+                reject(new Error(`Error processing PDF: ${reason.message || String(reason)}`));
             }
         };
         fileReader.onerror = () => reject(new Error(`Error reading file: ${fileReader.error}`));
@@ -73,322 +70,284 @@ async function renderPdfPreview(file, displayArea) {
 }
 
 function renderImagePreview(file, displayArea) {
-    // console.log("Starting renderImagePreview for non-TIFF file:", file.name);
     return new Promise((resolve, reject) => {
-       if (window.currentPreviewUrl) URL.revokeObjectURL(window.currentPreviewUrl);
+       if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl);
         const img = document.createElement('img');
-        img.style.cssText = 'max-width: 100%; max-height: 100%; display: block; margin: auto;';
-        window.currentPreviewUrl = URL.createObjectURL(file);
-        img.src = window.currentPreviewUrl;
+        img.style.cssText = 'max-width:100%;max-height:100%;display:block;margin:auto;';
+        currentPreviewUrl = URL.createObjectURL(file);
+        img.src = currentPreviewUrl;
         img.onload = () => { displayArea.appendChild(img); resolve(); };
         img.onerror = (err) => {
-            URL.revokeObjectURL(window.currentPreviewUrl); window.currentPreviewUrl = null;
-            console.error('Error loading image preview for:', file.name, 'Error:', err);
+            URL.revokeObjectURL(currentPreviewUrl); currentPreviewUrl = null;
             reject(new Error(`Failed to load image preview for ${file.name}.`));
         };
     });
 }
 
 async function renderConvertedTiffPreview(file, displayArea) {
-    // console.log("Starting renderConvertedTiffPreview for all pages of:", file.name);
-    if (window.currentPreviewUrl) { URL.revokeObjectURL(window.currentPreviewUrl); window.currentPreviewUrl = null; }
-    const formData = new FormData();
-    formData.append('tiff_file', file);
+    if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl);
+    const formData = new FormData(); formData.append('tiff_file', file);
     try {
         const response = await fetch('/api/preview_tiff', { method: 'POST', body: formData });
         if (!response.ok) {
-            const errorResult = await response.json().catch(() => ({ error: `HTTP error ${response.status}` }));
-            throw new Error(errorResult.error || `Failed to convert TIFF: ${response.statusText}`);
+            const eRes = await response.json().catch(() => ({error:`HTTP error ${response.status}`}));
+            throw new Error(eRes.error || `Failed to convert TIFF: ${response.statusText}`);
         }
         const result = await response.json();
         if (result.status === 'success' && result.pages_data && result.pages_data.length > 0) {
-            const desiredWidth = displayArea.clientWidth * 0.95;
-            result.pages_data.forEach((base64PageData, index) => {
+            const dWidth = displayArea.clientWidth * 0.95;
+            result.pages_data.forEach((base64Data) => {
                 const img = document.createElement('img');
-                img.style.cssText = `max-width: ${desiredWidth}px; display: block; margin: 5px auto 10px auto; border: 1px solid #ccc;`;
-                img.src = `data:image/${result.format};base64,${base64PageData}`;
-                // img.onload = () => console.log(`Converted TIFF page ${index + 1} preview loaded: ${file.name}`);
-                img.onerror = () => {
-                    console.error(`Error loading converted TIFF page ${index + 1} for ${file.name}`);
-                    const pageErrorDiv = document.createElement('div');
-                    pageErrorDiv.style.cssText = 'color: red; border: 1px dashed red; padding: 10px; margin: 5px auto 10px auto; text-align:center; max-width: 95%;';
-                    pageErrorDiv.textContent = `Error loading preview for page ${index + 1}`;
-                    displayArea.appendChild(pageErrorDiv);
-                };
+                img.style.cssText = `max-width:${dWidth}px;display:block;margin:5px auto 10px auto;border:1px solid #ccc;`;
+                img.src = `data:image/${result.format};base64,${base64Data}`;
+                img.onerror = () => console.error(`Error loading converted TIFF page image for ${file.name}`); // Keep critical errors
                 displayArea.appendChild(img);
             });
             return Promise.resolve();
-        } else if (result.pages_data && result.pages_data.length === 0) {
-             throw new Error('TIFF conversion returned no pages.');
-        } else {
-            throw new Error(result.error || 'TIFF conversion failed on server or returned unexpected data.');
-        }
-    } catch (error) {
-        console.error('Error during multi-page TIFF preview conversion/display:', error);
-        throw new Error(`Preview failed for ${file.name}: ${error.message}`);
-    }
+        } else if (result.pages_data && result.pages_data.length === 0) throw new Error('TIFF conversion returned no pages.');
+        else throw new Error(result.error || 'TIFF conversion failed on server.');
+    } catch (error) { throw new Error(`Preview failed for ${file.name}: ${error.message}`); }
 }
 
 async function displayPreview(file) {
     previewArea = document.getElementById('input-preview-area');
-    previewPlaceholder = document.getElementById('preview-placeholder');
+    if (!previewArea) { console.error("displayPreview: previewArea not found!"); return; } // Keep critical error
     previewArea.innerHTML = '';
-
     if (!document.getElementById('preview-render-error-dynamic')) {
         previewErrorMsgElement = document.createElement('p');
         previewErrorMsgElement.id = 'preview-render-error-dynamic';
         previewErrorMsgElement.className = 'ocr-status-message ocr-status-error';
         previewErrorMsgElement.style.display = 'none';
         previewArea.appendChild(previewErrorMsgElement);
-    } else {
-        previewErrorMsgElement = document.getElementById('preview-render-error-dynamic');
-    }
+    } else previewErrorMsgElement = document.getElementById('preview-render-error-dynamic');
     previewErrorMsgElement.style.display = 'none';
 
     if (!file) {
-        previewArea.innerHTML = '<p id="preview-placeholder" class="ocr-status-message" style="color: #ccc;">Upload a file to see the preview</p>';
+        previewArea.innerHTML = '<p id="preview-placeholder" class="ocr-status-message" style="color:#ccc;">Upload file for preview</p>';
         return;
     }
-
-    const loadingPlaceholder = document.createElement('p');
-    loadingPlaceholder.id = 'preview-loading-placeholder';
-    loadingPlaceholder.className = 'ocr-status-message ocr-status-processing';
-    loadingPlaceholder.textContent = 'Loading preview...';
-    previewArea.appendChild(loadingPlaceholder);
+    const loadingP = document.createElement('p');
+    loadingP.id = 'preview-loading-placeholder'; loadingP.className = 'ocr-status-message ocr-status-processing';
+    loadingP.textContent = 'Loading preview...'; previewArea.appendChild(loadingP);
 
     if (!isFileTypeAllowed(file)) {
         previewArea.innerHTML = '';
-        previewErrorMsgElement.textContent = `Cannot preview: Unsupported file type (${file.type || file.name.split('.').pop()}). Please use PDF, TIFF, or a supported image format.`;
-        previewErrorMsgElement.style.display = 'block';
-        return;
+        previewErrorMsgElement.textContent = `Unsupported file type (${file.type || file.name.split('.').pop()}).`;
+        previewErrorMsgElement.style.display = 'block'; return;
     }
-
     try {
-        const fileExtension = file.name.split('.').pop().toLowerCase();
-        previewArea.innerHTML = '';
-
-        if (file.type === 'application/pdf' || fileExtension === 'pdf') {
-            await renderPdfPreview(file, previewArea);
-        } else if (file.type === 'image/tiff' || fileExtension === 'tif' || fileExtension === 'tiff') {
-            await renderConvertedTiffPreview(file, previewArea);
-        } else {
-            await renderImagePreview(file, previewArea);
-        }
+        const ext = file.name.split('.').pop().toLowerCase(); previewArea.innerHTML = '';
+        if (file.type==='application/pdf' || ext==='pdf') await renderPdfPreview(file, previewArea);
+        else if (file.type==='image/tiff' || ext==='tif' || ext==='tiff') await renderConvertedTiffPreview(file, previewArea);
+        else await renderImagePreview(file, previewArea);
     } catch (error) {
         previewArea.innerHTML = '';
-        previewErrorMsgElement.textContent = error.message;
+        previewErrorMsgElement.textContent = error.message || "Unknown preview error.";
         previewErrorMsgElement.style.display = 'block';
     }
 }
 
-// Helper to escape HTML for pre display
 function escapeHtml(unsafe) {
-    return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+    if (typeof unsafe !== 'string') return String(unsafe);
+    return unsafe.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }
 
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Cache DOM elements
     previewArea = document.getElementById('input-preview-area');
-    previewPlaceholder = document.getElementById('preview-placeholder');
     const ocrOutputArea = document.getElementById('ocr-output-area');
     const ocrForm = document.getElementById('ocr-form');
     const runOcrButton = document.getElementById('run-ocr-button');
-    const ocrToggleContainer = document.getElementById('ocr-toggle-container');
     const previewToggleCheckbox = document.getElementById('ocr-render-toggle-checkbox');
-    const outputHeader = document.getElementById('output-header');
-    const copyOcrButton = document.getElementById('copy-ocr-text');
     const outputFormatSelect = document.getElementById('output-format-select');
     const previewIcon = document.getElementById('preview-icon');
     const dropZone = document.querySelector('.file-drop-zone');
     const fileInput = document.getElementById('input-file');
     const dropZoneText = dropZone ? dropZone.querySelector('.drop-zone-text') : null;
     const vlmApiSelect = document.getElementById('vlm-api-select');
-    const openAICompatibleOptionsDiv = document.getElementById('openai-compatible-options');
-    const openAIOptionsDiv = document.getElementById('openai-options');
-    const azureOptionsDiv = document.getElementById('azure-openai-options');
-    const ollamaOptionsDiv = document.getElementById('ollama-options');
+    const ocrToggleContainer = document.getElementById('ocr-toggle-container');
+    const outputHeader = document.getElementById('output-header');
+    const copyOcrButton = document.getElementById('copy-ocr-text');
 
+    const conditionalOptionsDivs = {
+        'openai_compatible': document.getElementById('openai-compatible-options'),
+        'openai': document.getElementById('openai-options'),
+        'azure_openai': document.getElementById('azure-openai-options'),
+        'ollama': document.getElementById('ollama-options')
+    };
 
-    const { pdfjsLib } = globalThis;
-    if (pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
+    if (typeof pdfjsLib === 'undefined') {
+        console.error("DOMContentLoaded: PDF.js (pdfjsLib) not loaded. PDF previews will fail."); // Keep critical error
     } else {
-        console.warn("PDF.js library (pdfjsLib) not found on DOMContentLoaded. PDF preview will fail.");
+        try {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
+        } catch (e) {
+            console.error("DOMContentLoaded: Error configuring PDF.js worker:", e); // Keep critical error
+        }
+    }
+    if (typeof marked === 'undefined') {
+        console.warn("DOMContentLoaded: Marked.js not loaded. Markdown preview will fallback to plain text."); // Keep important warning
     }
 
     if (dropZone && fileInput && dropZoneText) {
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over')));
-        ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over')));
-
-        dropZone.addEventListener('drop', (event) => {
-            let file = null;
-            if (event.dataTransfer.files.length > 0) {
-                const droppedFile = event.dataTransfer.files[0];
-                if (isFileTypeAllowed(droppedFile)) {
-                    fileInput.files = event.dataTransfer.files; file = droppedFile;
-                    dropZoneText.textContent = `File selected: ${file.name}`;
+        ['dragenter','dragover','dragleave','drop'].forEach(evName=>dropZone.addEventListener(evName,(e)=>{e.preventDefault();e.stopPropagation();},false));
+        ['dragenter','dragover'].forEach(evName=>dropZone.addEventListener(evName,()=>dropZone.classList.add('drag-over')));
+        ['dragleave','drop'].forEach(evName=>dropZone.addEventListener(evName,()=>dropZone.classList.remove('drag-over')));
+        dropZone.addEventListener('drop',(event)=>{
+            let f=null;
+            if(event.dataTransfer.files.length>0){
+                const dF=event.dataTransfer.files[0];
+                if(isFileTypeAllowed(dF)){
+                    fileInput.files=event.dataTransfer.files;f=dF;
+                    dropZoneText.textContent=`Selected: ${f.name}`;
                 } else {
-                    dropZoneText.textContent = 'Please drop a supported file (PDF, TIFF, PNG, JPG, etc.).';
-                    fileInput.value = '';
+                    dropZoneText.textContent='Unsupported type.';fileInput.value='';
                 }
             } else {
-                dropZoneText.textContent = 'Drag & drop PDF, TIFF, or Image here'; fileInput.value = '';
+                dropZoneText.textContent='Drag & drop file';fileInput.value='';
             }
-            displayPreview(file);
+            displayPreview(f);
         });
-        fileInput.addEventListener('change', () => {
-            let file = null;
-            if (fileInput.files.length > 0) {
-                file = fileInput.files[0];
-                dropZoneText.textContent = `File selected: ${file.name}`;
+        fileInput.addEventListener('change',()=>{
+            let f=null;
+            if(fileInput.files.length>0){
+                f=fileInput.files[0];
+                dropZoneText.textContent=`Selected: ${f.name}`;
             } else {
-                dropZoneText.textContent = 'Drag & drop PDF, TIFF, or Image here';
+                dropZoneText.textContent='Drag & drop file';
             }
-            displayPreview(file);
+            displayPreview(f);
         });
     }
 
     if (vlmApiSelect) {
-        vlmApiSelect.addEventListener('change', (event) => {
-            const selectedApi = event.target.value;
-            [openAICompatibleOptionsDiv, openAIOptionsDiv, azureOptionsDiv, ollamaOptionsDiv].forEach(div => {
-                if (div) div.style.display = 'none';
-            });
-            if (selectedApi === 'openai_compatible' && openAICompatibleOptionsDiv) openAICompatibleOptionsDiv.style.display = 'block';
-            else if (selectedApi === 'openai' && openAIOptionsDiv) openAIOptionsDiv.style.display = 'block';
-            else if (selectedApi === 'azure_openai' && azureOptionsDiv) azureOptionsDiv.style.display = 'block';
-            else if (selectedApi === 'ollama' && ollamaOptionsDiv) ollamaOptionsDiv.style.display = 'block';
+        vlmApiSelect.addEventListener('change',(event)=>{
+            const selApi=event.target.value;
+            Object.values(conditionalOptionsDivs).forEach(div=>{if(div)div.style.display='none';});
+            if(conditionalOptionsDivs[selApi])conditionalOptionsDivs[selApi].style.display='block';
         });
-        if (vlmApiSelect.value === "") { // Ensure initial state is also handled if no option is pre-selected
-             [openAICompatibleOptionsDiv, openAIOptionsDiv, azureOptionsDiv, ollamaOptionsDiv].forEach(div => {
-                if (div) div.style.display = 'none';
-            });
-        } else {
-            vlmApiSelect.dispatchEvent(new Event('change'));
-        }
+        vlmApiSelect.dispatchEvent(new Event('change'));
     }
 
     function updatePreviewIcon(format) {
-        if (!previewIcon) return;
-        let iconClass = 'fa-markdown'; let iconTitle = 'Markdown Preview'; let iconLibPrefix = 'fab';
-        if (format === 'html') { iconClass = 'fa-code'; iconTitle = 'HTML Preview'; iconLibPrefix = 'fas'; }
-        else if (format === 'text') { iconClass = 'fa-file-alt'; iconTitle = 'Text Preview'; iconLibPrefix = 'fas'; }
-        previewIcon.className = `${iconLibPrefix} ${iconClass}`; previewIcon.title = iconTitle;
+        if(!previewIcon)return;
+        let iC='fa-markdown',iT='Markdown Preview',iL='fab';
+        if(format==='html'){iC='fa-code';iT='HTML Preview';iL='fas';}
+        else if(format==='text'){iC='fa-file-alt';iT='Text Preview';iL='fas';}
+        previewIcon.className=`${iL} ${iC}`;previewIcon.title=iT;
     }
 
     if (outputFormatSelect) {
-        outputFormatSelect.addEventListener('change', (event) => {
-            currentOutputFormat = event.target.value.toLowerCase();
+        outputFormatSelect.addEventListener('change',(event)=>{
+            currentOutputFormat=event.target.value.toLowerCase();
             updatePreviewIcon(currentOutputFormat);
-            if (pageContentsArray.length > 0 && isPreviewMode) { renderFinalOutput(); }
+            if(ocrRawText.trim() && isPreviewMode) renderFinalOutput();
         });
-        currentOutputFormat = outputFormatSelect.value.toLowerCase(); // Initialize
+        currentOutputFormat=outputFormatSelect.value.toLowerCase();
         updatePreviewIcon(currentOutputFormat);
     }
 
-    function setOcrStatusMessage(message, type = 'info') {
-        if (!ocrOutputArea) return;
-        let className = 'ocr-status-message';
-        if (type === 'error') className += ' ocr-status-error';
-        else if (type === 'processing') className += ' ocr-status-processing';
-        ocrOutputArea.innerHTML = `<p class="${className}">${escapeHtml(message).replace(/\n/g, '<br>')}</p>`;
+    function setOcrStatusMessage(message,type='info') {
+        if(!ocrOutputArea)return;
+        let cN='ocr-status-message';
+        if(type==='error')cN+=' ocr-status-error';
+        else if(type==='processing')cN+=' ocr-status-processing';
+        ocrOutputArea.innerHTML=`<p class="${cN}">${escapeHtml(message).replace(/\n/g,'<br>')}</p>`;
     }
 
-    if (ocrOutputArea && (!ocrOutputArea.innerHTML.trim() || ocrOutputArea.innerHTML.includes('id="preview-placeholder"'))) {
-        setOcrStatusMessage('OCR results will appear here once a file is processed.', 'info');
+    if (ocrOutputArea && (!ocrOutputArea.innerHTML.trim() || ocrOutputArea.querySelector('#preview-placeholder'))) {
+        setOcrStatusMessage('OCR results appear here.','info');
     }
 
     function getCurrentPageDivForLiveStream() {
-        const pageDivWrapperId = `ocr-live-page-wrapper-${pageCounter}`;
-        const shadowHostId = `ocr-live-page-shadowhost-${pageCounter}`;
-        let pageDivWrapper = document.getElementById(pageDivWrapperId);
-        let shadowHost;
+        if (pageContentHosts[pageCounter]) {
+            return pageContentHosts[pageCounter];
+        }
 
+        const pageDivWrapperId = `ocr-live-page-wrapper-${pageCounter}`;
+        let pageDivWrapper = document.getElementById(pageDivWrapperId);
         if (!pageDivWrapper) {
             pageDivWrapper = document.createElement('div');
             pageDivWrapper.id = pageDivWrapperId;
             pageDivWrapper.className = 'ocr-page-content-live-wrapper';
-
-            shadowHost = document.createElement('div');
-            shadowHost.id = shadowHostId;
-            shadowHost.className = 'ocr-page-content-shadow-host';
-
-            pageDivWrapper.appendChild(shadowHost);
             ocrOutputArea.appendChild(pageDivWrapper);
-        } else {
-            shadowHost = document.getElementById(shadowHostId);
-            if (!shadowHost) {
-                console.error(`CRITICAL: Shadow host ${shadowHostId} missing. Recreating.`);
-                shadowHost = document.createElement('div');
-                shadowHost.id = shadowHostId;
-                shadowHost.className = 'ocr-page-content-shadow-host';
-                pageDivWrapper.innerHTML = ''; // Clear wrapper before adding new host
-                pageDivWrapper.appendChild(shadowHost);
-            }
         }
 
-        if (currentOutputFormat === 'html' && shadowHost && !shadowHost.shadowRoot) {
-            try {
-                const shadow = shadowHost.attachShadow({ mode: 'open' });
-                const style = document.createElement('style');
-                style.textContent = `
-                    :host { display: block; background-color: #f8f9fa; padding: 10px; font-family: sans-serif; color: #212529; }
-                    body { margin: 0; background-color: inherit; color: inherit; } /* For VLM generated body tags */
-                    a { color: #0056b3; } a:hover { color: #003d80; }
-                `;
-                shadow.appendChild(style);
-            } catch (e) {
-                console.error(`Failed to attach Shadow DOM for page ${pageCounter}:`, e, shadowHost);
-                shadowHost.dataset.shadowDomFailed = "true";
+        let newContentHost;
+        const commonMarginBottom = "10px";
+
+        if (isPreviewMode) {
+            if (currentOutputFormat === 'markdown') {
+                newContentHost = document.createElement('div');
+                newContentHost.className = 'ocr-markdown-content';
+                newContentHost.style.padding = "10px"; newContentHost.style.backgroundColor = "#f8f9fa";
+                newContentHost.style.border = "1px solid #dee2e6"; newContentHost.style.borderRadius = "3px";
+                newContentHost.style.marginBottom = commonMarginBottom;
+                pageDivWrapper.appendChild(newContentHost);
+            } else if (currentOutputFormat === 'text') {
+                newContentHost = document.createElement('pre');
+                newContentHost.className = 'ocr-plaintext-content';
+                newContentHost.style.marginBottom = commonMarginBottom;
+                pageDivWrapper.appendChild(newContentHost);
+            } else if (currentOutputFormat === 'html') {
+                const shadowHostId = `ocr-live-page-shadowhost-${pageCounter}`;
+                const shadowHost = document.createElement('div');
+                shadowHost.id = shadowHostId; shadowHost.className = 'ocr-page-content-shadow-host';
+                shadowHost.style.marginBottom = commonMarginBottom;
+                try {
+                    const shadow = shadowHost.attachShadow({ mode: 'open' });
+                    const style = document.createElement('style');
+                    style.textContent = `:host{display:block;background-color:#f8f9fa;padding:10px;font-family:sans-serif;color:#212529}body{margin:0;background-color:inherit;color:inherit}a{color:#0056b3}a:hover{color:#003d80}hr.page-delimiter-hr{border:0;height:1px;background-color:#ced4da;margin:25px 5px;}`;
+                    shadow.appendChild(style); newContentHost = shadow;
+                } catch (e) {
+                    console.error(`Error creating shadow DOM for HTML, using fallback <pre> for page ${pageCounter}.`, e); // Keep error
+                    const preFall = document.createElement('pre'); preFall.style.cssText='max-height:200px;overflow-y:auto;border:1px solid #ccc;padding:5px;';
+                    shadowHost.appendChild(preFall); newContentHost=preFall;
+                }
+                pageDivWrapper.appendChild(shadowHost);
+            } else {
+                newContentHost = pageDivWrapper;
             }
+        } else { // Raw text mode
+            newContentHost = document.createElement('pre');
+            newContentHost.className = 'ocr-rawtext-content';
+            newContentHost.style.marginBottom = commonMarginBottom;
+            pageDivWrapper.appendChild(newContentHost);
         }
-        return shadowHost;
+        pageContentHosts[pageCounter] = newContentHost;
+        return newContentHost;
     }
+
 
     if (ocrForm && ocrOutputArea && runOcrButton) {
         ocrForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-
-            pageCounter = 0; // Reset page counter for new submission
+            pageCounter = 0;
             ocrRawText = '';
             pageContentsArray = [];
-            let currentPageRawOutput = ''; // Local to this submission
+            pageContentHosts = {}; // Reset persistent hosts
+            let currentPageRawOutput = '';
 
-            // Update currentOutputFormat based on form for this run
             const formData = new FormData(ocrForm);
             currentOutputFormat = formData.get('output_format').toLowerCase();
             updatePreviewIcon(currentOutputFormat);
+            isPreviewMode = previewToggleCheckbox ? previewToggleCheckbox.checked : true;
 
-            ocrOutputArea.innerHTML = ''; // Clear previous results/status
+            ocrOutputArea.innerHTML = '';
             setOcrStatusMessage('Processing, please wait...', 'processing');
-            runOcrButton.disabled = true;
-            if (ocrToggleContainer) ocrToggleContainer.style.display = 'none';
-            if (outputHeader) outputHeader.style.display = 'none';
-            if (previewToggleCheckbox) previewToggleCheckbox.checked = true; // Default to preview
-            isPreviewMode = true;
 
-            getCurrentPageDivForLiveStream(); // Prepare area for page 0 live stream
+            runOcrButton.disabled = true;
+            if(ocrToggleContainer) ocrToggleContainer.style.display = 'none';
+            if(outputHeader) outputHeader.style.display = 'none';
+
+            let streamStarted = false;
 
             try {
                 const response = await fetch('/api/run_ocr', { method: 'POST', body: formData });
                 if (!response.ok) {
-                    let errorMsg = `HTTP error! Status: ${response.status}`;
-                    try { const errorResult = await response.json(); errorMsg = errorResult.error || errorMsg; }
-                    catch (jsonError) { errorMsg = `${errorMsg} - ${response.statusText || 'Server error'}`; }
-                    throw new Error(errorMsg);
+                    let eMsg = `HTTP error ${response.status}`;
+                    try{ const eRes = await response.json(); eMsg = eRes.error || eMsg;} catch(_){}
+                    throw new Error(eMsg);
                 }
-
-                // Clear "Processing..." message once stream is confirmed
-                // ocrOutputArea.innerHTML = ''; // Already done above, live divs will be added.
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -398,213 +357,167 @@ document.addEventListener('DOMContentLoaded', () => {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) {
-                            if (buffer.trim()) {
-                                try {
-                                    const streamItem = JSON.parse(buffer);
-                                    handleStreamItem(streamItem); 
-                                } catch (e) { console.error("Error parsing final buffered JSON:", e, "Buffer:", buffer); }
+                            if(buffer.trim()){
+                                try{const item=JSON.parse(buffer); handleStreamItem(item);}
+                                catch(e){ console.error("Final buffer parse error",e,buffer); } // Keep critical error
                             }
-                            buffer = "";
+                            buffer="";
 
                             if (currentPageRawOutput.trim()) {
-                                pageContentsArray.push(currentPageRawOutput);
+                                let cleaned = currentPageRawOutput;
+                                if (currentOutputFormat === 'markdown') cleaned = cleaned.replace(/^```markdown\s*?\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+                                else cleaned = cleaned.trim();
+                                pageContentsArray.push(cleaned);
                             }
-                            // currentPageRawOutput = ''; // Already reset after pushing or in delimiter
-
                             ocrRawText = pageContentsArray.join(lastReceivedDelimiter);
-                            
-                            isPreviewMode = true; 
-                            if(previewToggleCheckbox) previewToggleCheckbox.checked = true;
-                            renderFinalOutput(); 
-
+                            isPreviewMode = previewToggleCheckbox ? previewToggleCheckbox.checked : true;
+                            renderFinalOutput();
                             if(ocrToggleContainer) ocrToggleContainer.style.display = 'flex';
                             if(outputHeader) outputHeader.style.display = 'flex';
-                            break; 
+                            break;
                         }
 
-                        buffer += decoder.decode(value, { stream: true });
+                        buffer += decoder.decode(value, {stream:true});
                         let lines = buffer.split('\n');
-                        
-                        for (let i = 0; i < lines.length - 1; i++) {
-                            let line = lines[i].trim();
-                            if (line) { 
-                                try {
-                                    const streamItem = JSON.parse(line);
-                                    handleStreamItem(streamItem);
-                                } catch (e) { console.error("Error parsing JSON line:", e, "Line:", line); }
+                        for(let i=0; i<lines.length-1; i++){
+                            let line=lines[i].trim();
+                            if(line){
+                                if (!streamStarted) {
+                                    ocrOutputArea.innerHTML = '';
+                                    streamStarted = true;
+                                }
+                                try{ const item=JSON.parse(line); handleStreamItem(item); }
+                                catch(e){ console.error("Line parse error",e,"Line content:",line); } // Keep critical error
                             }
                         }
-                        buffer = lines[lines.length - 1]; 
-                        if(ocrOutputArea) ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
+                        buffer = lines[lines.length-1];
+                        // requestAnimationFrame(() => {
+                        //    if(ocrOutputArea.scrollHeight > ocrOutputArea.clientHeight) ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
+                        // });
                     }
                 }
 
                 function handleStreamItem(item) {
                     const liveContentHost = getCurrentPageDivForLiveStream();
+                    if (!liveContentHost) { console.error("handleStreamItem: liveContentHost is null!"); return; } // Keep critical error
 
-                    if (item.type === "ocr_chunk" && item.data) {
+                    if (item.type === "ocr_chunk" && typeof item.data === 'string') {
                         currentPageRawOutput += item.data;
-                        let displayData = currentPageRawOutput;
-
                         if (isPreviewMode) {
                             if (currentOutputFormat === 'markdown') {
-                                let tempDisplayData = displayData.replace(/^```markdown\s*?\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+                                let markdownToParseLive = currentPageRawOutput.replace(/```markdown/gi, '').replace(/```/g, '');
                                 try {
-                                    if (typeof marked !== 'undefined') liveContentHost.innerHTML = marked.parse(tempDisplayData);
-                                    else liveContentHost.textContent = tempDisplayData;
-                                } catch(e) { liveContentHost.textContent = tempDisplayData; }
+                                    if (typeof marked !== 'undefined' && marked.parse) liveContentHost.innerHTML = marked.parse(markdownToParseLive);
+                                    else { liveContentHost.textContent = markdownToParseLive; }
+                                } catch (e) { console.error(`Live MD parse error for page ${pageCounter}:`, e); liveContentHost.textContent = markdownToParseLive; } // Keep critical error
                             } else if (currentOutputFormat === 'html') {
-                                if (liveContentHost.shadowRoot && liveContentHost.dataset.shadowDomFailed !== "true") {
-                                    liveContentHost.shadowRoot.innerHTML = displayData;
-                                } else {
-                                    liveContentHost.innerHTML = `<p class='ocr-status-message ocr-status-error' style='text-align:left; font-size:0.8em; padding:5px;'>Live HTML preview using Shadow DOM failed. Displaying raw HTML:</p><pre style='max-height:200px; overflow-y:auto; border:1px solid #ccc; padding:5px;'>${escapeHtml(displayData)}</pre>`;
-                                }
+                                if (liveContentHost.nodeName === 'PRE') liveContentHost.textContent = currentPageRawOutput;
+                                else if (liveContentHost.nodeType === Node.DOCUMENT_FRAGMENT_NODE) { // ShadowRoot
+                                    const style = liveContentHost.querySelector('style'); liveContentHost.innerHTML = ''; if(style)liveContentHost.appendChild(style.cloneNode(true));
+                                    const cDiv = document.createElement('div'); cDiv.innerHTML = currentPageRawOutput; while(cDiv.firstChild)liveContentHost.appendChild(cDiv.firstChild);
+                                } else liveContentHost.textContent = currentPageRawOutput;
                             } else { // Plain text
-                                liveContentHost.textContent = displayData;
+                                liveContentHost.textContent = currentPageRawOutput;
                             }
-                        } else { 
-                           liveContentHost.textContent = displayData;
+                        } else { // Raw text mode
+                            liveContentHost.textContent = currentPageRawOutput;
                         }
                     } else if (item.type === "page_delimiter" && item.data) {
-                        pageContentsArray.push(currentPageRawOutput);
+                        let cleanedContent = currentPageRawOutput;
+                        if (currentOutputFormat === 'markdown') cleanedContent = cleanedContent.replace(/^```markdown\s*?\n?/i,'').replace(/\n?```\s*$/i,'').trim();
+                        else cleanedContent = cleanedContent.trim();
+                        pageContentsArray.push(cleanedContent);
                         lastReceivedDelimiter = item.data;
-                        currentPageRawOutput = ''; // Reset for the next page
 
-                        const delimiterElement = document.createElement('hr');
-                        delimiterElement.className = 'page-delimiter-hr';
-                        ocrOutputArea.appendChild(delimiterElement);
-                        
-                        pageCounter++; 
-                        getCurrentPageDivForLiveStream(); // Prepare for next page's live stream
-                        
-                    } else if (item.type === "error" && item.data) {
-                        console.error("Error from stream:", item.data);
-                        let targetErrorDiv = liveContentHost;
-                        if (currentOutputFormat === 'html' && liveContentHost.shadowRoot) {
-                            targetErrorDiv = liveContentHost.shadowRoot;
+                        const currentWrapper = document.getElementById(`ocr-live-page-wrapper-${pageCounter}`);
+                        if(currentWrapper) {
+                            const hr = document.createElement('hr'); hr.className='page-delimiter-hr';
+                            currentWrapper.insertAdjacentElement('afterend', hr);
                         }
-                        targetErrorDiv.innerHTML = `<p class="ocr-status-error">Stream Error: ${escapeHtml(item.data)}</p>`;
-                        
-                        // Finalize what we have
-                        if(currentPageRawOutput.trim()) pageContentsArray.push(currentPageRawOutput);
-                        ocrRawText = pageContentsArray.join(lastReceivedDelimiter);
-                        currentPageRawOutput = ''; // Clear for future
-                        // Potentially stop further processing or display final output here.
-                        renderFinalOutput(); // Show what has been processed so far
-                        if(ocrToggleContainer) ocrToggleContainer.style.display = 'flex';
-                        if(outputHeader) outputHeader.style.display = 'flex';
-                        // No 'break' here, stream completion will handle it or reader will be done.
+                        pageCounter++;
+                        currentPageRawOutput = '';
+                    } else if (item.type === "error" && item.data) {
+                        console.error("Stream error reported:", item.data); // Keep critical error
+                        const eP = document.createElement('p'); eP.className="ocr-status-error";eP.innerHTML=`Stream Error: ${escapeHtml(item.data)}`;
+                        if(liveContentHost?.appendChild) liveContentHost.appendChild(eP); else ocrOutputArea.appendChild(eP);
+                    }
+                     // Auto-scroll ocrOutputArea to keep current content in view
+                    if (ocrOutputArea.scrollHeight > ocrOutputArea.clientHeight) {
+                        ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
                     }
                 }
                 await processNdjsonStream();
-            } catch (error) { 
+            } catch (error) {
                 setOcrStatusMessage(`Error: ${error.message}`, 'error');
-                ocrRawText = ''; pageContentsArray = [];
+                ocrRawText = ''; pageContentsArray = []; pageContentHosts = {};
                 if(ocrToggleContainer) ocrToggleContainer.style.display = 'none';
                 if(outputHeader) outputHeader.style.display = 'none';
-                isPreviewMode = false; if(previewToggleCheckbox) previewToggleCheckbox.checked = false;
+                if(previewToggleCheckbox) { previewToggleCheckbox.checked = false; isPreviewMode = false; }
             } finally {
                 runOcrButton.disabled = false;
             }
         });
 
+
         function renderFinalOutput() {
-            if (!ocrOutputArea) return;
-            ocrOutputArea.innerHTML = ''; // Clear ALL previous content
+            if (!ocrOutputArea) { console.error("renderFinalOutput: ocrOutputArea not found!"); return; } // Keep critical error
+            ocrOutputArea.innerHTML = '';
+
+            if (pageContentsArray.length === 0 && ocrRawText.trim()) {
+                pageContentsArray = [ocrRawText];
+            } else if (pageContentsArray.length === 0 && !ocrRawText.trim()){
+                setOcrStatusMessage('No content to display.', 'info'); return;
+            }
 
             if (isPreviewMode) {
-                if (pageContentsArray.length === 0 && ocrRawText.trim()) {
-                     console.warn("renderFinalOutput: pageContentsArray empty, rendering ocrRawText directly.");
-                     const pre = document.createElement('pre');
-                     pre.textContent = ocrRawText;
-                     ocrOutputArea.appendChild(pre);
-                     return;
-                }
-
-                pageContentsArray.forEach((pageContent, index) => {
-                    let contentToRender = pageContent;
-                    // The wrapper for each page's content (Markdown div, HTML iframe, or Text pre)
-                    let pageElementWrapper = document.createElement('div');
-                    pageElementWrapper.className = 'ocr-page-content-rendered-wrapper'; // Use this for common styling if needed
-
-                    if (currentOutputFormat === 'markdown') {
+                if (currentOutputFormat === 'markdown') {
+                    pageContentsArray.forEach((pageContent, index) => {
                         let mdHost = document.createElement('div');
-                        mdHost.className = 'ocr-markdown-content'; // Specific class for markdown content
-                        let cleanedPageMarkdown = contentToRender.replace(/^```markdown\s*?\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+                        mdHost.className = 'ocr-markdown-content ocr-page-content-rendered-wrapper';
                         try {
-                            if (typeof marked !== 'undefined') mdHost.innerHTML = marked.parse(cleanedPageMarkdown);
-                            else throw new Error("Marked.js not loaded");
-                        } catch (e) {
-                            console.error("Markdown parsing error for page:", e);
-                            mdHost.textContent = cleanedPageMarkdown; 
+                            if (typeof marked !== 'undefined' && marked.parse) mdHost.innerHTML = marked.parse(pageContent);
+                            else mdHost.textContent = pageContent;
                         }
-                        pageElementWrapper.appendChild(mdHost);
-                    } else if (currentOutputFormat === 'html') {
-                        pageElementWrapper.className = 'ocr-page-content-rendered-wrapper html-wrapper'; // Add specific class
-
-                        const iframe = document.createElement('iframe');
-                        iframe.style.width = '100%';
-                        iframe.style.border = 'none';
-                        // No explicit height here, hoping content + injected style will work.
-
-                        iframe.setAttribute('sandbox', 'allow-scripts');
-                        // The scrolling attribute is deprecated but doesn't hurt.
-                        // Setting to "no" attempts to prevent the iframe from showing its own scrollbars,
-                        // relying on the outer container to scroll.
-                        iframe.setAttribute('scrolling', 'no');
-
-
-                        // Inject a simple style to help the iframe's content expand.
-                        // This assumes the VLM content will be within a <body> tag.
-                        const iframeBaseStyle = `
-                            <style>
-                                html, body {
-                                    margin: 0;
-                                    padding: 0;
-                                    height: auto; /* Let content determine height */
-                                    overflow-y: hidden; /* Try to prevent iframe's own vertical scrollbar */
-                                }
-                                /* You might add a default font matching the main page if needed */
-                                body { font-family: sans-serif; color: #212529; background-color: #ffffff; padding:10px; }
-                            </style>
-                        `;
-                        iframe.srcdoc = iframeBaseStyle + contentToRender;
-
+                        catch (e) { console.error(`Error parsing markdown for page ${index}:`, e); mdHost.textContent = pageContent; } // Keep critical error
+                        ocrOutputArea.appendChild(mdHost);
+                        if (index < pageContentsArray.length - 1) {
+                            const hr = document.createElement('hr'); hr.className = 'page-delimiter-hr'; ocrOutputArea.appendChild(hr);
+                        }
+                    });
+                } else if (currentOutputFormat === 'html') {
+                    if (pageContentsArray.length > 0) {
+                        const combinedHtml = pageContentsArray.join(`<hr class='page-delimiter-hr page-delimiter-html-view'>`);
+                        let wrapper = document.createElement('div'); wrapper.className = 'ocr-page-content-rendered-wrapper html-wrapper single-html-container';
+                        const iframe = document.createElement('iframe'); iframe.style.width = '100%'; iframe.style.border = 'none';
+                        const baseStyle = `<style>html,body{margin:0;padding:0;height:100%;overflow:auto;}body{font-family:sans-serif;color:#212529;background-color:#fff;padding:10px;}hr.page-delimiter-html-view{border:0;height:1px;background-color:#ced4da;margin:25px 5px;}</style>`;
+                        iframe.srcdoc = baseStyle + combinedHtml;
                         iframe.onerror = () => {
-                            console.error("Error loading content into iframe for page " + index);
-                            pageElementWrapper.innerHTML = `<p class='ocr-status-error'>Error loading HTML preview for this page.</p><pre>${escapeHtml(contentToRender)}</pre>`;
+                            console.error("Error loading iframe srcdoc."); // Keep critical error
+                            wrapper.innerHTML = `<p class='ocr-status-error'>Error loading HTML content into preview.</p><pre>${escapeHtml(combinedHtml)}</pre>`;
                         };
-
-                        // The onload height adjustment is generally problematic for sandboxed srcdoc.
-                        // We are relying on the content and the injected style above.
-                        // If it still doesn't work, a large min-height on the iframe via CSS is a fallback.
-
-                        pageElementWrapper.appendChild(iframe);
-                    } else { // Plain text
+                        wrapper.appendChild(iframe); ocrOutputArea.appendChild(wrapper);
+                    } else {
+                        setOcrStatusMessage('No HTML content to display.', 'info');
+                    }
+                } else { // Plain text
+                    pageContentsArray.forEach((pageContent, index) => {
                         const pre = document.createElement('pre');
-                        pre.className = 'ocr-plaintext-content'; // Specific class for plaintext
-                        pre.textContent = contentToRender;
-                        pageElementWrapper.appendChild(pre);
-                    }
-                    ocrOutputArea.appendChild(pageElementWrapper);
-
-                    if (index < pageContentsArray.length - 1) {
-                        const delimiterElement = document.createElement('hr');
-                        delimiterElement.className = 'page-delimiter-hr';
-                        ocrOutputArea.appendChild(delimiterElement);
-                    }
-                });
-
+                        pre.className = 'ocr-plaintext-content ocr-page-content-rendered-wrapper';
+                        pre.textContent = pageContent;
+                        ocrOutputArea.appendChild(pre);
+                        if (index < pageContentsArray.length - 1) {
+                            const hr = document.createElement('hr'); hr.className = 'page-delimiter-hr'; ocrOutputArea.appendChild(hr);
+                        }
+                    });
+                }
             } else { // Raw text mode
-                const pre = document.createElement('pre');
-                pre.className = 'ocr-rawtext-content';
-                pre.textContent = ocrRawText; 
+                const pre = document.createElement('pre'); pre.className = 'ocr-rawtext-content';
+                pre.textContent = ocrRawText;
                 ocrOutputArea.appendChild(pre);
             }
-            // Scroll the main ocrOutputArea if needed, not individual page wrappers.
-            if(ocrOutputArea) ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
+            if(ocrOutputArea.scrollHeight > ocrOutputArea.clientHeight) ocrOutputArea.scrollTop = 0;
         }
-        
+
         if (previewToggleCheckbox) {
             previewToggleCheckbox.addEventListener('change', () => {
                 isPreviewMode = previewToggleCheckbox.checked;
@@ -614,26 +527,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (copyOcrButton) {
             copyOcrButton.addEventListener('click', () => {
-                const textToCopy = ocrRawText.trim(); 
-                 if (!textToCopy) return;
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    copyOcrButton.classList.add('copied'); copyOcrButton.title = 'Copied!';
-                    setTimeout(() => { copyOcrButton.classList.remove('copied'); copyOcrButton.title = 'Copy Raw Text'; }, 1500);
-                }).catch(err => {
-                    console.error("Copy failed:", err);
-                    copyOcrButton.title = 'Copy failed!'; setTimeout(() => { copyOcrButton.title = 'Copy Raw Text'; }, 1500);
-                });
+                const textToCopy = ocrRawText.trim();
+                if (!textToCopy) {
+                    copyOcrButton.title = 'Nothing to copy!';
+                    setTimeout(() => { copyOcrButton.title = 'Copy Raw Text'; }, 1500);
+                    return;
+                }
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => {
+                        copyOcrButton.classList.add('copied'); copyOcrButton.title = 'Copied!';
+                        setTimeout(() => { copyOcrButton.classList.remove('copied'); copyOcrButton.title = 'Copy Raw Text'; }, 1500);
+                    })
+                    .catch(err => {
+                        console.error("Copy failed:", err); // Keep critical error
+                        copyOcrButton.title = 'Copy failed!';
+                        setTimeout(() => { copyOcrButton.title = 'Copy Raw Text'; }, 1500);
+                    });
             });
         }
+    } else {
+        console.error("DOMContentLoaded: Essential OCR form elements not found. OCR functionality will be disabled."); // Keep critical error
     }
-});
+}); // End of DOMContentLoaded
 
 function isFileTypeAllowed(file) {
     if (!file) return false;
     if (ALLOWED_MIME_TYPES.includes(file.type)) return true;
     const extension = '.' + file.name.split('.').pop().toLowerCase();
-    if (ALLOWED_EXTENSIONS.includes(extension)) {
-        return true;
-    }
+    if (ALLOWED_EXTENSIONS.includes(extension)) return true;
     return false;
 }

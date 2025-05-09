@@ -257,6 +257,7 @@ button[type="submit"]:hover {
     flex-grow: 1;
     overflow-y: auto; /* THIS is the primary scrollbar for the output content */
     min-height: 0; /* For flex scroll */
+    height: 76vh;
     background-color: #f8f9fa; /* Very LIGHT gray background for the text content area itself */
 }
 
@@ -476,6 +477,43 @@ hr.page-delimiter-hr {
        If the VLM generates <html><body style="height: 50px;">...</body></html>, the iframe will be short.
        Ideally, VLM generates HTML where body/html tags naturally expand.
     */
+}
+
+.ocr-page-content-rendered-wrapper.html-wrapper {
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+    display: block; /* Change from flex to block */
+    width: 100%; /* Ensure it takes full width */
+    /* height: auto;  Remove or set to auto */
+}
+
+.ocr-page-content-rendered-wrapper.html-wrapper iframe {
+    display: block;
+    width: 100%;
+    border: none;
+    height: 100%; /* Or a specific height */
+    min-height: 300px; /* Or an appropriate min-height */
+}
+
+.ocr-page-content-rendered-wrapper.html-wrapper.single-html-container {
+    /* display: block; by default for div is fine */
+    width: 100%;
+    height: 100%; /* Make it fill the ocr-output-area's height */
+    /* OR, if the iframe itself will manage its height properly with JS (see below)
+       you might not need a specific height here, and could even let it be height: auto;
+       However, for the iframe to take 100% height of this, this container needs a defined height.
+       Since ocr-output-area has a defined height, making this 100% of that could work.
+    */
+    display: flex; /* Use flex to make the iframe child fill the height */
+    flex-direction: column;
+}
+
+.ocr-page-content-rendered-wrapper.html-wrapper.single-html-container iframe {
+    display: block;
+    width: 100%;
+    border: none;
+    flex-grow: 1; /* Allow iframe to take all available vertical space in the flex container */
+    min-height: 0; /* Important for flex children to shrink properly if needed, though here we want expansion */
 }
 
 /* --- Output Area Header (Kept Dark) --- */
