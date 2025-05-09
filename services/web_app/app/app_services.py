@@ -1,4 +1,8 @@
 import os
+import json
+from PIL import Image
+import io
+import base64
 import traceback
 from werkzeug.utils import secure_filename
 from flask import Response, stream_with_context
@@ -112,27 +116,31 @@ def process_ocr_request(request):
         print("OCREngine initialized.")
 
         # 6. Define the Streaming Generator (remains the same)
-        def generate_ocr_stream(ocr_eng, file_to_process):
-            print(f"generate_ocr_stream called for: {file_to_process}")
+        def generate_ocr_stream(ocr_eng, file_to_process_path): # Renamed arg for clarity
+            print(f"generate_ocr_stream called for: {file_to_process_path}")
             try:
-                print(f"Starting OCREngine.stream_ocr for: {file_to_process}")
-                yield from ocr_eng.stream_ocr(file_path=file_to_process)
-                print(f"Finished OCREngine.stream_ocr for: {file_to_process}")
-            except ValueError as val_err:
+                print(f"Starting OCREngine.stream_ocr for: {file_to_process_path}")
+                for item_dict in ocr_eng.stream_ocr(file_path=file_to_process_path):
+                    # item_dict is now {"type": "...", "data": "..."}
+                    yield json.dumps(item_dict) + '\n' # Convert dict to JSON string and add newline
+                print(f"Finished OCREngine.stream_ocr for: {file_to_process_path}")
+            except ValueError as val_err: # Catch errors from OCREngine (e.g., file not found, unsupported type)
                 print(f"--- Value Error during OCR stream: {val_err} ---")
                 traceback.print_exc()
-                yield f"\n\n[STREAMING ERROR] {val_err}\n\n"
+                error_obj = {"type": "error", "data": f"Streaming Error: {str(val_err)}"}
+                yield json.dumps(error_obj) + '\n'
             except Exception as stream_err:
                 print(f"--- Error Traceback during OCR stream generation ---")
                 traceback.print_exc()
-                yield f"\n\n[STREAMING ERROR] Failed to process: {stream_err}\n\n"
+                error_obj = {"type": "error", "data": f"Streaming Failed: An unexpected error occurred during processing: {str(stream_err)}"}
+                yield json.dumps(error_obj) + '\n'
             finally:
-                print(f"Calling cleanup_file from generate_ocr_stream finally block for {file_to_process}")
-                cleanup_file(file_to_process, "post-stream cleanup")
+                print(f"Calling cleanup_file from generate_ocr_stream finally block for {file_to_process_path}")
+                cleanup_file(file_to_process_path, "post-stream cleanup")
 
         # 7. Return Streaming Response (remains the same)
         print("Setup complete. Returning streaming response object.")
-        return Response(stream_with_context(generate_ocr_stream(ocr_engine, temp_file_path)), mimetype='text/plain; charset=utf-8')
+        return Response(stream_with_context(generate_ocr_stream(ocr_engine, temp_file_path)), mimetype='application/x-ndjson')
 
     # Error handling remains the same
     except (ValueError, FileNotFoundError) as setup_val_err:
@@ -148,3 +156,64 @@ def process_ocr_request(request):
              print(f"Calling cleanup_file due to unexpected setup error for {temp_file_path}")
              cleanup_file(temp_file_path, "setup general error cleanup")
         raise Exception(f"Failed during OCR setup: {setup_err}")
+
+def process_tiff_preview_request(request):
+    """
+    Handles a TIFF preview request.
+    - Validates input file.
+    - Saves the TIFF temporarily.
+    - Converts ALL pages of the TIFF to PNGs.
+    - Returns a list of PNGs as base64 encoded strings.
+    - Ensures cleanup of the temporary file.
+    """
+    print("Entering app_services.process_tiff_preview_request for all pages")
+    temp_file_path = None
+    try:
+        if 'tiff_file' not in request.files:
+            raise ValueError("No tiff_file part in request")
+        file = request.files['tiff_file']
+        if not file or file.filename == '':
+            raise ValueError("No selected TIFF file")
+
+        if not (file.filename.lower().endswith('.tif') or file.filename.lower().endswith('.tiff')):
+            raise ValueError("Invalid file type. Expected a TIFF file.")
+
+        filename = secure_filename(file.filename)
+        # Add a unique prefix or use a subdirectory for preview files to avoid potential clashes
+        temp_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"preview_tiff_{filename}")
+        print(f"Saving temporary TIFF for preview to: {temp_file_path}")
+        file.save(temp_file_path)
+        print("Temporary TIFF saved.")
+
+        base64_png_pages = []
+        with Image.open(temp_file_path) as img:
+            print(f"TIFF file opened. Number of frames: {img.n_frames}")
+            for i in range(img.n_frames):
+                img.seek(i) # Go to the i-th frame/page
+                
+                # Convert to RGB if it's not, to ensure broader PNG compatibility
+                page_image = img
+                if page_image.mode != 'RGB':
+                    page_image = page_image.convert('RGB')
+                
+                buffered = io.BytesIO()
+                page_image.save(buffered, format="PNG")
+                png_bytes = buffered.getvalue()
+                base64_png_string = base64.b64encode(png_bytes).decode('utf-8')
+                base64_png_pages.append(base64_png_string)
+                print(f"Converted page {i+1}/{img.n_frames} of TIFF to base64 PNG string.")
+        
+        if not base64_png_pages:
+            raise ValueError("No pages could be extracted or converted from the TIFF file.")
+
+        print(f"All {len(base64_png_pages)} TIFF pages converted to base64 PNG strings.")
+        return {'status': 'success', 'pages_data': base64_png_pages, 'format': 'png'}
+
+    except Exception as e:
+        print(f"--- Error in process_tiff_preview_request: {e} ---")
+        traceback.print_exc()
+        raise ValueError(f"Failed to process TIFF for preview: {str(e)}")
+    finally:
+        if temp_file_path:
+            print(f"Calling cleanup_file from process_tiff_preview_request finally block for {temp_file_path}")
+            cleanup_file(temp_file_path, "tiff preview cleanup")

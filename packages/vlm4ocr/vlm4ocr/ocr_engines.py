@@ -2,10 +2,11 @@ import os
 from typing import List, Dict, Union, Generator, Iterable
 import importlib
 import asyncio
-from vlm4ocr.utils import get_images_from_pdf, get_image_from_file, clean_markdown
+from vlm4ocr.utils import get_images_from_pdf, get_images_from_tiff, get_image_from_file, clean_markdown
 from vlm4ocr.vlm_engines import VLMEngine
 
-SUPPORTED_IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
+SUPPORTED_IMAGE_EXTS = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
+
 
 class OCREngine:
     def __init__(self, vlm_engine:VLMEngine, output_mode:str="markdown", system_prompt:str=None, user_prompt:str=None, page_delimiter:str="\n\n---\n\n"):
@@ -61,16 +62,17 @@ class OCREngine:
     def stream_ocr(self, file_path: str, max_new_tokens:int=4096, temperature:float=0.0, **kwrs) -> Generator[str, None, None]:
         """
         This method inputs a file path (image or PDF) and stream OCR results in real-time. This is useful for frontend applications.
+        Yields dictionaries with 'type' ('ocr_chunk' or 'page_delimiter') and 'data'.
 
         Parameters:
         -----------
         file_path : str
-            The path to the image or PDF file. Must be one of '.pdf', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp'
+            The path to the image or PDF file. Must be one of '.pdf', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp'
         max_new_tokens : int, Optional
             The maximum number of tokens to generate.
         temperature : float, Optional
             The temperature to use for sampling.
-        
+
         Returns:
         --------
         Generator[str, None, None]
@@ -82,14 +84,14 @@ class OCREngine:
         
         # Check file extension
         file_ext = os.path.splitext(file_path)[1].lower()
-        if file_ext not in SUPPORTED_IMAGE_EXTS and file_ext != '.pdf':
-            raise ValueError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS + ['.pdf']}")
+        if file_ext not in SUPPORTED_IMAGE_EXTS:
+            raise ValueError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
 
-        # PDF
-        if file_ext == '.pdf':
-            images = get_images_from_pdf(file_path)
+        # PDF or TIFF
+        if file_ext in ['.pdf', '.tif', '.tiff']:
+            images = get_images_from_pdf(file_path) if file_ext == '.pdf' else get_images_from_tiff(file_path)
             if not images:
-                raise ValueError(f"No images extracted from PDF: {file_path}")
+                raise ValueError(f"No images extracted from file: {file_path}")
             for i, image in enumerate(images):
                 messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
                 response_stream = self.vlm_engine.chat(
@@ -100,10 +102,10 @@ class OCREngine:
                     **kwrs
                 )
                 for chunk in response_stream:
-                    yield chunk
+                    yield {"type": "ocr_chunk", "data": chunk}
 
                 if i < len(images) - 1:
-                    yield self.page_delimiter
+                    yield {"type": "page_delimiter", "data": self.page_delimiter}
 
         # Image
         else:
@@ -117,18 +119,18 @@ class OCREngine:
                     **kwrs
                 )
             for chunk in response_stream:
-                yield chunk
+                yield {"type": "ocr_chunk", "data": chunk}
             
 
     def run_ocr(self, file_paths: Union[str, Iterable[str]], max_new_tokens:int=4096, temperature:float=0.0, 
                 verbose:bool=False, concurrent:bool=False, concurrent_batch_size:int=32, **kwrs) -> Union[str, Generator[str, None, None]]:
         """
-        This method takes a list of file paths (image or PDF) and perform OCR using the VLM inference engine.
+        This method takes a list of file paths (image, PDF, TIFF) and perform OCR using the VLM inference engine.
 
         Parameters:
         -----------
         file_paths : Union[str, Iterable[str]]
-            A file path or a list of file paths to process. Must be one of '.pdf', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp'
+            A file path or a list of file paths to process. Must be one of '.pdf', '.tif', '.tiff, '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp'
         max_new_tokens : int, Optional
             The maximum number of tokens to generate. 
         temperature : float, Optional
@@ -152,9 +154,8 @@ class OCREngine:
             if not isinstance(file_path, str):
                 raise TypeError("file_paths must be a string or an iterable of strings")
             file_ext = os.path.splitext(file_path)[1].lower()
-            if file_ext not in SUPPORTED_IMAGE_EXTS and file_ext != '.pdf':
-                raise ValueError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS + ['.pdf']}")
-
+            if file_ext not in SUPPORTED_IMAGE_EXTS:
+                raise ValueError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
 
         # Concurrent processing
         if concurrent:
@@ -178,12 +179,12 @@ class OCREngine:
     def _run_ocr(self, file_paths: Union[str, Iterable[str]], max_new_tokens:int=4096, 
                  temperature:float=0.0, verbose:bool=False, **kwrs) -> Iterable[str]:
         """
-        This method inputs a file path or a list of file paths (image or PDF) and performs OCR using the VLM inference engine.
+        This method inputs a file path or a list of file paths (image, PDF, TIFF) and performs OCR using the VLM inference engine.
 
         Parameters:
         -----------
         file_paths : Union[str, Iterable[str]]
-            A file path or a list of file paths to process. Must be one of '.pdf', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp'
+            A file path or a list of file paths to process. Must be one of '.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp'
         max_new_tokens : int, Optional
             The maximum number of tokens to generate.
         temperature : float, Optional
@@ -199,12 +200,12 @@ class OCREngine:
         ocr_results = []
         for file_path in file_paths:
             file_ext = os.path.splitext(file_path)[1].lower()
-            # PDF
-            if file_ext == '.pdf':
-                images = get_images_from_pdf(file_path)
+            # PDF or TIFF
+            if file_ext in ['.pdf', '.tif', '.tiff']:
+                images = get_images_from_pdf(file_path) if file_ext == '.pdf' else get_images_from_tiff(file_path)
                 if not images:
-                    raise ValueError(f"No images extracted from PDF: {file_path}")
-                pdf_results = []
+                    raise ValueError(f"No images extracted from file: {file_path}")
+                results = []
                 for image in images:
                     messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
                     response = self.vlm_engine.chat(
@@ -215,9 +216,9 @@ class OCREngine:
                         stream=False,
                         **kwrs
                     )
-                    pdf_results.append(response)
+                    results.append(response)
 
-                ocr_text = self.page_delimiter.join(pdf_results)
+                ocr_text = self.page_delimiter.join(results)
             # Image
             else:
                 image = get_image_from_file(file_path)
@@ -248,13 +249,13 @@ class OCREngine:
         flat_page_list = []
         for file_path in file_paths:
             file_ext = os.path.splitext(file_path)[1].lower()
-            # PDF
-            if file_ext == '.pdf':
-                images = get_images_from_pdf(file_path)
+            # PDF or TIFF
+            if file_ext in ['.pdf', '.tif', '.tiff']:
+                images = get_images_from_pdf(file_path) if file_ext == '.pdf' else get_images_from_tiff(file_path)
                 if not images:
-                    flat_page_list.append({'file_path': file_path, 'file_type': "PDF", "image": image, "page_num": 0, "total_page_count": 0})
+                    flat_page_list.append({'file_path': file_path, 'file_type': "PDF/TIFF", "image": image, "page_num": 0, "total_page_count": 0})
                 for page_num, image in enumerate(images):
-                    flat_page_list.append({'file_path': file_path, 'file_type': "PDF", "image": image, "page_num": page_num, "total_page_count": len(images)})
+                    flat_page_list.append({'file_path': file_path, 'file_type': "PDF/TIFF", "image": image, "page_num": page_num, "total_page_count": len(images)})
             # Image
             else:
                 image = get_image_from_file(file_path)
@@ -291,16 +292,16 @@ class OCREngine:
 
         # Restructure the results
         ocr_results = []
-        pdf_page_text_buffer = ""
+        page_text_buffer = ""
         for page, ocr_text in zip(flat_page_list, responses):
-            # PDF
-            if page['file_type'] == "PDF":                
-                pdf_page_text_buffer += ocr_text + self.page_delimiter
+            # PDF or TIFF
+            if page['file_type'] == "PDF/TIFF":                
+                page_text_buffer += ocr_text + self.page_delimiter
                 if page['page_num'] == page['total_page_count'] - 1:
                     if self.output_mode == "markdown":
-                        pdf_page_text_buffer = clean_markdown(pdf_page_text_buffer)
-                    ocr_results.append(pdf_page_text_buffer)
-                    pdf_page_text_buffer = ""
+                        page_text_buffer = clean_markdown(page_text_buffer)
+                    ocr_results.append(page_text_buffer)
+                    page_text_buffer = ""
             # Image
             if page['file_type'] == "image":
                 if self.output_mode == "markdown":

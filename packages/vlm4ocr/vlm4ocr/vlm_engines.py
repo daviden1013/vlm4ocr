@@ -1,5 +1,5 @@
 import abc
-import importlib
+import importlib.util
 from typing import List, Dict, Union, Generator
 import warnings
 from PIL import Image

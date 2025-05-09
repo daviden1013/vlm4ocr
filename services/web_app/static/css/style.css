@@ -6,7 +6,7 @@
 }
 
 body {
-    font-family: sans-serif;
+    font-family: sans-serif; /* Default font for the application */
     background-color: #1a1a1a; /* Dark background */
     color: #e0e0e0; /* Light text */
     line-height: 1.6;
@@ -17,7 +17,7 @@ body {
 
 main {
     flex-grow: 1; /* Allows main content to fill available space */
-    padding: 20px; /* Original padding */
+    padding: 20px;
 }
 
 /* Header styles */
@@ -27,27 +27,25 @@ header {
     border-bottom: 1px solid #444;
 }
 
-/* Footer styles */
-footer {
-    background-color: #2a2a2a;
-    padding: 15px 20px;
-    text-align: center;
-    margin-top: 20px; /* Original margin */
-    font-size: 0.9em;
-    color: #aaa;
-}
-
-
-h1, h2, h3 {
-    color: #ffffff;
-    margin-bottom: 10px;
-}
-
 header h1 {
     margin-bottom: 0;
     text-align: left;
 }
 
+/* Footer styles */
+footer {
+    background-color: #2a2a2a;
+    padding: 15px 20px;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: #aaa;
+}
+
+h1, h2, h3 {
+    color: #ffffff;
+    margin-bottom: 10px;
+}
 
 a {
     color: #4da6ff;
@@ -58,51 +56,30 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Tab Navigation styles removed */
-/*
-header nav ul { ... }
-header nav li a { ... }
-header nav li a.active { ... }
-*/
-
-/* Tab Content Visibility styles removed */
-/*
-.tab-content { ... }
-.tab-content.active { ... }
-*/
-
 /* Main Layout Grid (Controls | Display) */
 .tab-pane-grid {
     display: grid;
     grid-template-columns: 350px 1fr; /* Fixed width controls, flexible display area */
     gap: 20px; /* Space between columns */
-    /* margin-top: 20px; */ /* Original removal of margin-top */
-    /* padding-top: 20px; */ /* This was also removed */
 }
 
 .controls-panel {
     background-color: #252525;
     padding: 20px;
-    /* Add padding-bottom to make space for the absolute button */
-    padding-bottom: 60px; /* CHANGED - Adjust as needed */
+    padding-bottom: 70px; /* Ensure enough space for the absolute positioned button */
     border-radius: 5px;
     border: 1px solid #333;
     min-height: 100px;
-    /* Add position relative */
-    position: relative; /* ADDED - Establishes positioning context */
-    overflow-y: auto;
+    position: relative; /* For positioning context of the submit button */
+    overflow-y: auto; /* Scroll if content exceeds height */
 }
 
 .display-panel {
-    background-color: #252525; /* Dark background for panels */
+    background-color: #252525;
     padding: 20px;
     border-radius: 5px;
     border: 1px solid #333;
-}
-
-/* Inner Display Panel Layout */
-.display-panel {
-    display: grid;
+    display: grid; /* Changed from 'flex' to 'grid' for two-column layout */
     gap: 15px; /* Space between inner columns */
 }
 
@@ -135,6 +112,7 @@ header nav li a.active { ... }
     color: #e0e0e0;
     border-radius: 3px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-family: inherit; /* Ensure form elements inherit body font */
 }
 
 .form-group textarea {
@@ -155,7 +133,7 @@ header nav li a.active { ... }
 /* Button Styling */
 button[type="submit"] {
     background-color: #4da6ff;
-    color: #1a1a1a;
+    color: #1a1a1a; /* Dark text on light button */
     padding: 10px 20px;
     border: none;
     border-radius: 3px;
@@ -163,32 +141,13 @@ button[type="submit"] {
     font-size: 1em;
     font-weight: bold;
     transition: background-color 0.2s ease;
-    /* Add absolute positioning */
-    position: absolute; /* ADDED */
-    bottom: 20px;      /* ADDED - Distance from bottom */
-    right: 20px;       /* ADDED - Distance from right */
-    /* Remove any default margins if needed */
-    /* margin: 0; */
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
 }
 
 button[type="submit"]:hover {
     background-color: #77c6ff;
-}
-
-/* Wrapper for output */
-#ocr-output-wrapper {
-    display: flex;
-    flex-direction: column;
-    height: 76vh;              /* RESTORED fixed height */
-    border: 1px solid #444;
-    border-radius: 3px;
-    background-color: #1e1e1e;
-    overflow: hidden;
-}
-
-/* Output Box Styling */
-.output-box {
-    /* General styles if needed */
 }
 
 /* Drag and Drop Specific Styles */
@@ -196,7 +155,7 @@ button[type="submit"]:hover {
     border: 2px dashed #555;
     padding: 20px;
     text-align: center;
-    position: relative;
+    position: relative; /* For absolute positioning of input */
     transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
@@ -209,8 +168,8 @@ button[type="submit"]:hover {
 
 .file-drop-zone .drop-zone-text {
     color: #888;
-    margin-top: 10px;
-    pointer-events: none;
+    margin-top: 10px; /* Adjust as needed if label is present */
+    pointer-events: none; /* Text shouldn't interfere with drop */
 }
 
 .file-drop-zone.drag-over {
@@ -220,72 +179,134 @@ button[type="submit"]:hover {
 
 /* Conditional options styling */
 .conditional-options {
-    display: none;
+    display: none; /* Hidden by default */
     margin-top: 10px;
 }
 
-.conditional-options.visible {
-    display: block;
-}
+/* .conditional-options.visible - JS will handle display: block; */
 
 .indented-option {
     margin-left: 15px;
     padding-left: 15px;
     border-left: 2px solid #444;
-    margin-bottom: 15px;
+    margin-bottom: 15px; /* Spacing for indented groups */
 }
 
-/* Preview Area Styles */
-#input-preview-area {
-    display: block !important;
+/* Output Box Styling (Preview and OCR) */
+.output-box {
     width: 100%;
-    height: 76vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background-color: #525659;
+    height: 76vh; /* Fixed height for consistency */
+    overflow-y: auto; /* Enable vertical scroll */
+    overflow-x: hidden; /* Generally hide horizontal scroll unless content demands it (e.g. <pre>) */
+    background-color: #1e1e1e; /* Dark background for output areas */
     border: 1px solid #444;
     border-radius: 3px;
-    padding: 10px;
-    box-sizing: border-box;
-    align-items: initial;
-    justify-content: initial;
+    padding: 10px; /* Default padding, can be overridden by specific output area if needed */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
-#input-preview-area canvas {
-    display: block !important;
-    margin: 0 auto 10px auto;
-    max-width: 98%;
-    height: auto !important;
-    border: 1px solid #ccc;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+#input-preview-area.output-box {
+    background-color: #2c2c2c; /* Slightly different background for preview if desired */
+    padding: 10px; /* Padding for content inside */
+    /* align-items & justify-content are for flex/grid parents, not typically for the box itself unless it's a flex/grid container */
 }
 
+#input-preview-area canvas,
 #input-preview-area img {
-    display: block;
-    margin: auto;
-    max-width: 100%;
-    max-height: 100%;
+    display: block !important; /* Ensure block display for centering */
+    margin: 5px auto 10px auto; /* Centering and spacing */
+    max-width: 98%; /* Prevent sticking to edges, allow for border/padding */
+    height: auto !important; /* Maintain aspect ratio */
+    border: 1px solid #555; /* Subtle border for images/canvases */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-radius: 3px; /* Slight rounding for previewed images */
+}
+
+
+/* --- Styles for OCR Output and its status messages --- */
+#ocr-output-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 76vh; /* Matches .output-box height */
+    border: 1px solid #444; /* Duplicates .output-box border, consider if needed or style only one */
     border-radius: 3px;
-}
-
-#preview-placeholder {
-    color: #ccc;
-    text-align: center;
-    padding: 20px;
-    font-style: italic;
-}
-
-/* --- Styles for Markdown Preview in OCR Output --- */
-#ocr-output-area.output-box {
-    padding: 20px;
     background-color: #1e1e1e;
-    white-space: pre-wrap;
-    color: #d4d4d4;
-    flex-grow: 1; /* Keep flex-grow from wrapper styles */
-    overflow-y: auto;
-    min-height: 0;
+    overflow: hidden; /* Important for child with flex-grow and overflow-y */
 }
 
+#ocr-output-area.output-box {
+    padding: 20px; /* More padding for text content */
+    color: #d4d4d4;
+    font-family: inherit; /* Inherit from body (sans-serif) by default */
+    
+    white-space: pre-wrap;     /* Crucial for preserving formatting and wrapping text */
+    word-wrap: break-word;     /* Ensures long words break to prevent overflow */
+    overflow-wrap: break-word; /* Modern equivalent of word-wrap */
+    
+    flex-grow: 1;
+    overflow-y: auto;
+    min-height: 0; /* For flex scroll */
+}
+
+/* Markdown generated content styling */
+#ocr-output-area p,
+#ocr-output-area li,
+#ocr-output-area blockquote,
+#ocr-output-area h1,
+#ocr-output-area h2,
+#ocr-output-area h3,
+#ocr-output-area h4,
+#ocr-output-area h5,
+#ocr-output-area h6 {
+    white-space: pre-wrap; /* Or 'normal' if you don't want to preserve all whitespace from markdown source */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    color: #d4d4d4; /* Ensure consistent text color */
+}
+#ocr-output-area h1, #ocr-output-area h2, #ocr-output-area h3, #ocr-output-area h4, #ocr-output-area h5, #ocr-output-area h6 {
+    color: #ffffff; /* Brighter color for headers */
+    margin-top: 0.8em;
+    margin-bottom: 0.4em;
+}
+#ocr-output-area a {
+    color: #6bbaff; /* Lighter blue for links in dark mode */
+}
+#ocr-output-area a:hover {
+    color: #8bcfff;
+}
+#ocr-output-area ul, #ocr-output-area ol {
+    margin-left: 20px; /* Indent lists */
+    padding-left: 20px;
+}
+#ocr-output-area blockquote {
+    border-left: 3px solid #555;
+    padding-left: 15px;
+    margin-left: 0;
+    color: #bbb;
+}
+#ocr-output-area pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    background-color: #2b2b2b;
+    padding: 15px; /* Increased padding */
+    border-radius: 4px; /* Slightly more rounding */
+    border: 1px solid #4a4a4a; /* Softer border */
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.9em; /* Slightly smaller for dense code */
+    overflow-x: auto; /* Horizontal scroll for code */
+    color: #c9d1d9; /* Light text for code */
+}
+#ocr-output-area code { /* Inline code */
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    background-color: #333; /* Darker than pre for distinction */
+    padding: 0.2em 0.5em; /* Adjusted padding */
+    border-radius: 3px;
+    font-size: 0.85em; /* Match pre or slightly smaller */
+    color: #e0e0e0;
+}
+
+/* Table styling from original */
 #ocr-output-area table {
     width: 100%;
     border-collapse: collapse;
@@ -294,28 +315,59 @@ button[type="submit"]:hover {
     color: #e0e0e0;
     background-color: #2a2a2a;
 }
-
 #ocr-output-area th,
 #ocr-output-area td {
     border: 1px solid #555;
     padding: 8px 12px;
     text-align: left;
 }
-
 #ocr-output-area th {
     background-color: #333;
     font-weight: bold;
     color: #ffffff;
 }
-
 #ocr-output-area tr:nth-child(even) {
     background-color: #303030;
 }
-
 #ocr-output-area tr:hover {
     background-color: #404040;
 }
-/* --- End Markdown Preview Styles --- */
+.ocr-page-content {
+    /* margin-bottom: 10px; */ /* Optional: if you want space below each page's content before the HR */
+}
+
+hr.page-delimiter-hr {
+    border: 0;
+    height: 1px;
+    background-color: #444;
+    margin: 20px 5px; /* Some horizontal margin too */
+}
+/* Status Messages (used in both preview and OCR output areas) */
+.ocr-status-message { /* Base class */
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    color: #aaa; /* General status color */
+    margin: 0; /* Remove default paragraph margin if these are p tags */
+    /* Inherits white-space: pre-wrap and font-family */
+}
+.ocr-status-processing { /* Specific for processing messages */
+    /* inherits from .ocr-status-message */
+    color: #88c0d0; /* A soft blue for processing, for example */
+    font-weight: bold;
+}
+.ocr-status-error { /* Specific for error messages */
+    font-style: normal; /* Override italic */
+    color: #e06c75;   /* A clear but not too harsh red for errors */
+    font-weight: bold;
+    /* white-space: pre-wrap is inherited - good for multi-line errors */
+}
+/* Apply to the placeholder in input-preview-area if needed */
+#input-preview-area #preview-placeholder { /* Specific ID for initial placeholder */
+    color: #888; /* Subtler color for the initial placeholder */
+    /* Other styles from .ocr-status-message will apply if class is also used */
+}
+
 
 /* --- Toggle Switch Styles --- */
 .switch {
@@ -324,82 +376,58 @@ button[type="submit"]:hover {
     width: 50px;
     height: 24px;
 }
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
+.switch input { opacity: 0; width: 0; height: 0; }
 .slider {
     position: absolute;
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background-color: #555;
     transition: .4s;
 }
-
 .slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px;
     background-color: white;
     transition: .4s;
 }
-
-input:checked + .slider {
-    background-color: #4da6ff;
+input:checked + .slider { background-color: #4da6ff; }
+input:focus + .slider { box-shadow: 0 0 1px #4da6ff; }
+input:checked + .slider:before { transform: translateX(26px); }
+.slider.round { border-radius: 24px; }
+.slider.round:before { border-radius: 50%; }
+#ocr-toggle-container {
+    display: flex; /* To align items if needed */
+    align-items: center;
 }
-
-input:focus + .slider {
-    box-shadow: 0 0 1px #4da6ff;
-}
-
-input:checked + .slider:before {
-    transform: translateX(26px);
-}
-
-.slider.round {
-    border-radius: 24px;
-}
-
-.slider.round:before {
-    border-radius: 50%;
-}
-
 #ocr-toggle-container i {
-    vertical-align: middle;
+    vertical-align: middle; /* Better alignment for icon with switch */
+    margin-left: 8px; /* Space between switch and icon */
 }
-/* --- End Toggle Switch Styles --- */
 
 /* --- Output Area Header Styles --- */
 #output-header {
     padding: 5px 15px;
     background-color: #2a2a2a;
     flex-shrink: 0;
-     display: flex;
-     justify-content: flex-end;
-     align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-bottom: 1px solid #444; /* Add a separator line */
 }
-
 .header-icons .action-icon {
     color: #ccc;
     font-size: 1.1em;
     cursor: pointer;
     transition: color 0.2s ease;
+    padding: 5px; /* Make icon easier to click */
 }
+.header-icons .action-icon:hover { color: #4da6ff; }
+.header-icons .action-icon.copied { color: #28a745; }
 
-.header-icons .action-icon:hover {
-    color: #4da6ff;
-}
-
-.header-icons .action-icon.copied {
-    color: #28a745;
-}
-/* --- End Output Area Header Styles --- */
+/* Remove old indicator styles if the elements are removed from HTML */
+/*
+#ocr-loading-indicator { ... }
+#ocr-error-message { ... }
+*/
