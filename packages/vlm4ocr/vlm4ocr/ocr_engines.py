@@ -18,7 +18,7 @@ class OCREngine:
         inference_engine : InferenceEngine
             The inference engine to use for OCR.
         output_mode : str, Optional
-            The output format. Can be 'markdown' or 'text'.
+            The output format. Must be 'markdown', 'HTML', or 'text'.
         system_prompt : str, Optional
             Custom system prompt. We recommend use a default system prompt by leaving this blank. 
         user_prompt : str, Optional
@@ -32,8 +32,8 @@ class OCREngine:
         self.vlm_engine = vlm_engine
 
         # Check output mode
-        if output_mode not in ["markdown", "text"]:
-            raise ValueError("output_mode must be 'markdown' or 'text'")
+        if output_mode not in ["markdown", "HTML", "text"]:
+            raise ValueError("output_mode must be 'markdown', 'HTML', or 'text'")
         self.output_mode = output_mode
 
         # System prompt
@@ -48,7 +48,7 @@ class OCREngine:
         if isinstance(user_prompt, str) and user_prompt:
             self.user_prompt = user_prompt
         else:
-            file_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath('ocr_user_prompt.txt')
+            file_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath(f'ocr_{self.output_mode}_user_prompt.txt')
             with open(file_path, 'r', encoding='utf-8') as f:
                 self.user_prompt =  f.read()
 
