@@ -1,4 +1,6 @@
-/* Basic Reset & Dark Theme */
+/* services/web_app/static/css/style.css */
+
+/* Basic Reset & Overall Dark Theme */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -6,9 +8,9 @@
 }
 
 body {
-    font-family: sans-serif; /* Default font for the application */
-    background-color: #1a1a1a; /* Dark background */
-    color: #e0e0e0; /* Light text */
+    font-family: sans-serif;
+    background-color: #1a1a1a; /* Dark background for the page */
+    color: #e0e0e0; /* Light text for elements outside the light-themed output area */
     line-height: 1.6;
     display: flex;
     flex-direction: column;
@@ -16,11 +18,11 @@ body {
 }
 
 main {
-    flex-grow: 1; /* Allows main content to fill available space */
+    flex-grow: 1;
     padding: 20px;
 }
 
-/* Header styles */
+/* Header styles (Dark Theme) */
 header {
     background-color: #2a2a2a;
     padding: 15px 20px;
@@ -30,9 +32,10 @@ header {
 header h1 {
     margin-bottom: 0;
     text-align: left;
+    color: #ffffff; /* White text for header H1 */
 }
 
-/* Footer styles */
+/* Footer styles (Dark Theme) */
 footer {
     background-color: #2a2a2a;
     padding: 15px 20px;
@@ -42,12 +45,20 @@ footer {
     color: #aaa;
 }
 
-h1, h2, h3 {
+/* General heading colors for dark theme parts of the app */
+/* These apply to H1 in header, and H3s above input/output areas */
+h1, .display-column > div > h3 { /* More specific selector for column titles */
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+/* Fallback for other h2, h3 if they appear in dark sections */
+h2, h3:not(.display-column > div > h3) {
     color: #ffffff;
     margin-bottom: 10px;
 }
 
-a {
+
+a { /* Default link color for dark theme parts */
     color: #4da6ff;
     text-decoration: none;
 }
@@ -63,7 +74,7 @@ a:hover {
     gap: 20px; /* Space between columns */
 }
 
-.controls-panel {
+.controls-panel { /* Dark Theme for controls */
     background-color: #252525;
     padding: 20px;
     padding-bottom: 70px; /* Ensure enough space for the absolute positioned button */
@@ -74,11 +85,10 @@ a:hover {
     overflow-y: auto; /* Scroll if content exceeds height */
 }
 
-.display-panel {
-    background-color: #252525;
-    padding: 20px;
-    border-radius: 5px;
-    border: 1px solid #333;
+.display-panel { /* This is the container for input-preview and ocr-output-wrapper */
+    background-color: transparent;
+    padding: 0;
+    border: none;
     display: grid; /* Changed from 'flex' to 'grid' for two-column layout */
     gap: 15px; /* Space between inner columns */
 }
@@ -87,7 +97,7 @@ a:hover {
    grid-template-columns: 1fr 1fr; /* Make the children side-by-side */
 }
 
-/* Form Styling */
+/* Form Styling (Dark Theme for controls panel) */
 .form-group {
     margin-bottom: 15px;
 }
@@ -96,7 +106,7 @@ a:hover {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
-    color: #ccc;
+    color: #ccc; /* Light label text */
 }
 
 .form-group input[type="file"],
@@ -107,12 +117,12 @@ a:hover {
 .form-group textarea {
     width: 100%;
     padding: 10px;
-    background-color: #333;
+    background-color: #333; /* Dark input background */
     border: 1px solid #555;
-    color: #e0e0e0;
+    color: #e0e0e0; /* Light input text */
     border-radius: 3px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    font-family: inherit; /* Ensure form elements inherit body font */
+    font-family: inherit;
 }
 
 .form-group textarea {
@@ -130,7 +140,7 @@ a:hover {
     box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.3);
 }
 
-/* Button Styling */
+/* Button Styling (Dark Theme context) */
 button[type="submit"] {
     background-color: #4da6ff;
     color: #1a1a1a; /* Dark text on light button */
@@ -150,7 +160,7 @@ button[type="submit"]:hover {
     background-color: #77c6ff;
 }
 
-/* Drag and Drop Specific Styles */
+/* Drag and Drop Specific Styles (Dark Theme context) */
 .file-drop-zone {
     border: 2px dashed #555;
     padding: 20px;
@@ -167,7 +177,7 @@ button[type="submit"]:hover {
 }
 
 .file-drop-zone .drop-zone-text {
-    color: #888;
+    color: #888; /* Muted text for drop zone */
     margin-top: 10px; /* Adjust as needed if label is present */
     pointer-events: none; /* Text shouldn't interfere with drop */
 }
@@ -177,13 +187,11 @@ button[type="submit"]:hover {
     background-color: rgba(77, 166, 255, 0.1);
 }
 
-/* Conditional options styling */
+/* Conditional options styling (Dark Theme context) */
 .conditional-options {
     display: none; /* Hidden by default */
     margin-top: 10px;
 }
-
-/* .conditional-options.visible - JS will handle display: block; */
 
 .indented-option {
     margin-left: 15px;
@@ -192,242 +200,344 @@ button[type="submit"]:hover {
     margin-bottom: 15px; /* Spacing for indented groups */
 }
 
-/* Output Box Styling (Preview and OCR) */
-.output-box {
+/* Input Preview Area (Dark Theme) */
+/* H3 for "Input Preview" is styled by .display-column > div > h3 */
+#input-preview-area.output-box { /* This remains dark themed */
     width: 100%;
     height: 76vh; /* Fixed height for consistency */
     overflow-y: auto; /* Enable vertical scroll */
-    overflow-x: hidden; /* Generally hide horizontal scroll unless content demands it (e.g. <pre>) */
-    background-color: #1e1e1e; /* Dark background for output areas */
+    overflow-x: hidden;
+    background-color: #2c2c2c; /* Dark background for input preview */
     border: 1px solid #444;
     border-radius: 3px;
-    padding: 10px; /* Default padding, can be overridden by specific output area if needed */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
-}
-
-#input-preview-area.output-box {
-    background-color: #2c2c2c; /* Slightly different background for preview if desired */
-    padding: 10px; /* Padding for content inside */
-    /* align-items & justify-content are for flex/grid parents, not typically for the box itself unless it's a flex/grid container */
+    padding: 10px;
+    box-sizing: border-box;
 }
 
 #input-preview-area canvas,
 #input-preview-area img {
-    display: block !important; /* Ensure block display for centering */
-    margin: 5px auto 10px auto; /* Centering and spacing */
-    max-width: 98%; /* Prevent sticking to edges, allow for border/padding */
-    height: auto !important; /* Maintain aspect ratio */
-    border: 1px solid #555; /* Subtle border for images/canvases */
+    display: block !important;
+    margin: 5px auto 10px auto;
+    max-width: 98%;
+    height: auto !important;
+    border: 1px solid #555;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    border-radius: 3px; /* Slight rounding for previewed images */
+    border-radius: 3px;
+}
+#input-preview-area #preview-placeholder,
+#input-preview-area .ocr-status-message { /* Status messages in dark input preview */
+    color: #888;
+}
+#input-preview-area .ocr-status-error {
+    color: #e06c75; /* Error color for dark input preview */
+    /* Add other error styling if needed for input preview */
 }
 
 
-/* --- Styles for OCR Output and its status messages --- */
-#ocr-output-wrapper {
+/* --- Styles for OCR Output Wrapper and Area (LIGHT THEME) --- */
+#ocr-output-wrapper { /* This wrapper will get a light background */
     display: flex;
     flex-direction: column;
-    height: 76vh; /* Matches .output-box height */
-    border: 1px solid #444; /* Duplicates .output-box border, consider if needed or style only one */
+    height: 76vh;
+    border: 1px solid #ced4da; /* Lighter border for light theme */
     border-radius: 3px;
-    background-color: #1e1e1e;
+    background-color: #ffffff; /* LIGHT background for the entire OCR output block */
     overflow: hidden; /* Important for child with flex-grow and overflow-y */
 }
 
-#ocr-output-area.output-box {
-    padding: 20px; /* More padding for text content */
-    color: #d4d4d4;
-    font-family: inherit; /* Inherit from body (sans-serif) by default */
-    
-    white-space: pre-wrap;     /* Crucial for preserving formatting and wrapping text */
+/* H3 for "Extracted Text" is styled by .display-column > div > h3 */
+
+#ocr-output-area.output-box { /* This is the scrollable content area */
+    padding: 20px;
+    color: #212529; /* Default DARK text color for content on light background */
+    font-family: inherit; /* Default sans-serif */
+    /* white-space: pre-wrap; /* REMOVED - apply to specific elements like pre */
     word-wrap: break-word;     /* Ensures long words break to prevent overflow */
     overflow-wrap: break-word; /* Modern equivalent of word-wrap */
-    
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: auto; /* THIS is the primary scrollbar for the output content */
     min-height: 0; /* For flex scroll */
+    background-color: #f8f9fa; /* Very LIGHT gray background for the text content area itself */
 }
 
-/* Markdown generated content styling */
-#ocr-output-area p,
-#ocr-output-area li,
-#ocr-output-area blockquote,
-#ocr-output-area h1,
-#ocr-output-area h2,
-#ocr-output-area h3,
-#ocr-output-area h4,
-#ocr-output-area h5,
-#ocr-output-area h6 {
-    white-space: pre-wrap; /* Or 'normal' if you don't want to preserve all whitespace from markdown source */
+/* Markdown generated content styling for LIGHT THEME (rendered by marked.js) */
+/* These apply to elements *within* the .ocr-markdown-content div */
+.ocr-markdown-content p,
+.ocr-markdown-content li {
+    white-space: normal; /* Normal text wrapping for markdown */
     word-wrap: break-word;
     overflow-wrap: break-word;
-    color: #d4d4d4; /* Ensure consistent text color */
+    color: #212529; /* Dark text */
+    margin-bottom: 0.8rem; /* Spacing for paragraphs and list items */
 }
-#ocr-output-area h1, #ocr-output-area h2, #ocr-output-area h3, #ocr-output-area h4, #ocr-output-area h5, #ocr-output-area h6 {
-    color: #ffffff; /* Brighter color for headers */
-    margin-top: 0.8em;
-    margin-bottom: 0.4em;
+
+.ocr-markdown-content h1,
+.ocr-markdown-content h2,
+.ocr-markdown-content h3,
+.ocr-markdown-content h4,
+.ocr-markdown-content h5,
+.ocr-markdown-content h6 {
+    color: #101213; /* Very dark (near black) for headers on light background */
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+    line-height: 1.2;
 }
-#ocr-output-area a {
-    color: #6bbaff; /* Lighter blue for links in dark mode */
+
+.ocr-markdown-content a {
+    color: #0056b3; /* Standard blue link color for light backgrounds */
+    text-decoration: none;
 }
-#ocr-output-area a:hover {
-    color: #8bcfff;
+.ocr-markdown-content a:hover {
+    color: #003d80;
+    text-decoration: underline;
 }
-#ocr-output-area ul, #ocr-output-area ol {
+
+.ocr-markdown-content ul, 
+.ocr-markdown-content ol {
     margin-left: 20px; /* Indent lists */
     padding-left: 20px;
-}
-#ocr-output-area blockquote {
-    border-left: 3px solid #555;
-    padding-left: 15px;
-    margin-left: 0;
-    color: #bbb;
-}
-#ocr-output-area pre {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    background-color: #2b2b2b;
-    padding: 15px; /* Increased padding */
-    border-radius: 4px; /* Slightly more rounding */
-    border: 1px solid #4a4a4a; /* Softer border */
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-    font-size: 0.9em; /* Slightly smaller for dense code */
-    overflow-x: auto; /* Horizontal scroll for code */
-    color: #c9d1d9; /* Light text for code */
-}
-#ocr-output-area code { /* Inline code */
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-    background-color: #333; /* Darker than pre for distinction */
-    padding: 0.2em 0.5em; /* Adjusted padding */
-    border-radius: 3px;
-    font-size: 0.85em; /* Match pre or slightly smaller */
-    color: #e0e0e0;
+    color: #212529; /* Ensure list item text is dark */
+    margin-bottom: 1rem;
 }
 
-/* Table styling from original */
-#ocr-output-area table {
+.ocr-markdown-content blockquote {
+    border-left: 4px solid #adb5bd; /* Muted border for blockquote */
+    padding: 10px 15px;
+    margin: 0 0 1rem 0; /* No left margin on blockquote itself */
+    color: #495057; /* Muted dark gray for blockquote text */
+    background-color: #e9ecef; /* Slight background for blockquote */
+}
+.ocr-markdown-content blockquote p { /* Paragraphs inside blockquote */
+    margin-bottom: 0;
+    color: #495057; /* Match blockquote text color */
+}
+
+/* Styling for <pre> elements from Markdown (marked.js) inside .ocr-markdown-content */
+.ocr-markdown-content pre {
+    color: #212529;
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.875em;
+    overflow-x: auto; /* Horizontal scroll for code blocks */
+    white-space: pre;  /* Preserve whitespace strictly in code blocks */
+    word-wrap: normal; /* Prevent wrapping for code blocks, use scroll */
+    margin-bottom: 1rem;
+}
+.ocr-markdown-content pre code { /* Code inside pre from markdown */
+    background-color: transparent; /* Code background is handled by pre */
+    color: inherit; /* Inherit pre color */
+    padding: 0;
+    font-size: inherit;
+    white-space: inherit; /* Inherit pre's white-space handling */
+}
+
+/* Inline <code> styling (e.g., from Markdown `text`) inside .ocr-markdown-content */
+.ocr-markdown-content code:not(pre > code) { /* Target inline code, not code within <pre> */
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    background-color: #e0e0e0; /* Light gray background for inline code */
+    color: #b00020; /* Example: reddish color for inline code text */
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.875em;
+    word-break: break-word; /* Allow breaking long inline code snippets */
+}
+
+/* Table styling for LIGHT THEME (from Markdown) inside .ocr-markdown-content */
+.ocr-markdown-content table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1em;
     margin-bottom: 1em;
-    color: #e0e0e0;
-    background-color: #2a2a2a;
+    color: #212529; /* Dark text for table content */
+    background-color: #ffffff; /* White background for table */
+    border: 1px solid #dee2e6; /* Add border around the table itself */
 }
-#ocr-output-area th,
-#ocr-output-area td {
-    border: 1px solid #555;
-    padding: 8px 12px;
+.ocr-markdown-content th,
+.ocr-markdown-content td {
+    border: 1px solid #dee2e6; /* Light gray border for table cells */
+    padding: 0.75rem; /* Bootstrap-like padding */
     text-align: left;
+    vertical-align: top;
 }
-#ocr-output-area th {
-    background-color: #333;
+.ocr-markdown-content th {
+    background-color: #f8f9fa; /* Very light gray for table headers */
     font-weight: bold;
-    color: #ffffff;
+    color: #212529; /* Dark text for table headers */
+    border-bottom-width: 2px; /* Heavier border below header cells */
 }
-#ocr-output-area tr:nth-child(even) {
-    background-color: #303030;
+.ocr-markdown-content tr:nth-child(even) { /* Applies to <tbody> rows */
+    background-color: #f8f9fa; /* Zebra striping for table rows */
 }
-#ocr-output-area tr:hover {
-    background-color: #404040;
-}
-.ocr-page-content {
-    /* margin-bottom: 10px; */ /* Optional: if you want space below each page's content before the HR */
+.ocr-markdown-content tbody tr:hover { /* More specific hover */
+    background-color: #e9ecef; /* Hover effect for table rows */
 }
 
+
+/* <pre> tag styling for PLAIN TEXT output or RAW text preview */
+#ocr-output-area pre.ocr-plaintext-content,
+#ocr-output-area pre.ocr-rawtext-content {
+    color: #212529;
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.875em;
+    overflow-x: auto; /* Allow horizontal scroll for long lines */
+    white-space: pre-wrap; /* Wrap text, but preserve spaces and line breaks */
+    word-wrap: break-word; /* Break long words if they would overflow */
+    margin-bottom: 1rem; /* Consistent margin */
+}
+
+
+/* Page delimiter line for LIGHT THEME */
 hr.page-delimiter-hr {
     border: 0;
     height: 1px;
-    background-color: #444;
-    margin: 20px 5px; /* Some horizontal margin too */
+    background-color: #ced4da; /* Lighter delimiter on light background */
+    margin: 25px 5px; /* Some vertical and horizontal margin */
 }
-/* Status Messages (used in both preview and OCR output areas) */
-.ocr-status-message { /* Base class */
+
+
+/* Status Messages styling for LIGHT THEME (inside ocr-output-area) */
+#ocr-output-area .ocr-status-message { /* Base class, used by JS */
     text-align: center;
     padding: 20px;
     font-style: italic;
-    color: #aaa; /* General status color */
-    margin: 0; /* Remove default paragraph margin if these are p tags */
-    /* Inherits white-space: pre-wrap and font-family */
+    color: #6c757d; /* Muted text color for general status messages */
+    margin: 0; /* Remove default paragraph margin */
+    background-color: #f8f9fa; /* Ensure it matches area bg */
+    white-space: normal; /* Status messages should wrap normally */
 }
-.ocr-status-processing { /* Specific for processing messages */
-    /* inherits from .ocr-status-message */
-    color: #88c0d0; /* A soft blue for processing, for example */
+#ocr-output-area .ocr-status-processing {
+    color: #0056b3; /* Darker blue for processing on light bg */
     font-weight: bold;
+    background-color: #e7f3ff; /* Light blue background */
+    border: 1px solid #b8d8f8;
+    padding: 10px;
+    border-radius: 3px;
 }
-.ocr-status-error { /* Specific for error messages */
-    font-style: normal; /* Override italic */
-    color: #e06c75;   /* A clear but not too harsh red for errors */
+#ocr-output-area .ocr-status-error { /* Errors in the OCR output area */
+    font-style: normal;
+    color: #721c24;   /* Dark red for errors on light bg */
     font-weight: bold;
-    /* white-space: pre-wrap is inherited - good for multi-line errors */
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 3px;
+    white-space: pre-wrap; /* Allow pre-wrap for potentially long error messages */
+    text-align: left; /* Align error text left for readability */
 }
-/* Apply to the placeholder in input-preview-area if needed */
-#input-preview-area #preview-placeholder { /* Specific ID for initial placeholder */
-    color: #888; /* Subtler color for the initial placeholder */
-    /* Other styles from .ocr-status-message will apply if class is also used */
-}
-
-
-/* --- Toggle Switch Styles --- */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-}
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #555;
-    transition: .4s;
-}
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 18px; width: 18px;
-    left: 3px; bottom: 3px;
-    background-color: white;
-    transition: .4s;
-}
-input:checked + .slider { background-color: #4da6ff; }
-input:focus + .slider { box-shadow: 0 0 1px #4da6ff; }
-input:checked + .slider:before { transform: translateX(26px); }
-.slider.round { border-radius: 24px; }
-.slider.round:before { border-radius: 50%; }
-#ocr-toggle-container {
-    display: flex; /* To align items if needed */
-    align-items: center;
-}
-#ocr-toggle-container i {
-    vertical-align: middle; /* Better alignment for icon with switch */
-    margin-left: 8px; /* Space between switch and icon */
+/* Fallback error display for HTML iframe/shadow DOM issues */
+#ocr-output-area .ocr-status-error pre {
+    background-color: #f8d7da; /* Match error background */
+    color: #721c24; /* Match error text color */
+    border-color: #f5c6cb;
+    white-space: pre-wrap;
 }
 
-/* --- Output Area Header Styles --- */
+
+/* Shadow DOM Host styling (Live HTML Preview) */
+.ocr-page-content-live-wrapper {
+    margin-bottom: 10px; /* Space between live page previews */
+    /* This wrapper itself should not scroll */
+}
+.ocr-page-content-shadow-host {
+    border: 1px dashed #adb5bd; /* Light dashed border for the host during live preview */
+    padding: 0; /* Padding is handled by injected style inside shadow DOM */
+    min-height: 50px; /* Give it some initial height */
+    background-color: #f8f9fa; /* Match output area's light background */
+    /* This host should expand with its shadow content. No overflow: auto here. */
+}
+
+/* Wrappers for final rendered page content (Markdown, iframe, Plaintext) */
+.ocr-page-content-rendered-wrapper {
+    margin-bottom: 10px; /* Space between rendered pages */
+    background-color: #f8f9fa; /* Match output area background, or can be transparent */
+    /* This wrapper should expand to its child's height. */
+    /* No fixed height or overflow that would clip the child or make this wrapper scroll. */
+    /* Adding display: flex might help if the child (iframe) needs to grow. */
+    display: flex; /* NEW */
+    flex-direction: column; /* NEW */
+}
+
+.ocr-page-content-rendered-wrapper iframe {
+    display: block;
+    width: 100%;
+    border: none;
+    /* flex-grow: 1; /* NEW: Allow iframe to take available space in flex container */
+    /* Let's try removing explicit height/min-height again, but ensure VLM output helps.
+       If this doesn't work, a large min-height is the fallback. */
+    /* min-height: 70vh; /* Fallback: A large minimum height */
+    /* The key is that the content *inside* the iframe must push its height.
+       If the VLM generates <html><body style="height: 50px;">...</body></html>, the iframe will be short.
+       Ideally, VLM generates HTML where body/html tags naturally expand.
+    */
+}
+
+/* --- Output Area Header (Kept Dark) --- */
 #output-header {
     padding: 5px 15px;
-    background-color: #2a2a2a;
-    flex-shrink: 0;
+    background-color: #2a2a2a; /* Dark background for this header */
+    flex-shrink: 0; /* Prevent shrinking */
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    border-bottom: 1px solid #444; /* Add a separator line */
+    border-bottom: 1px solid #444; /* Separator from the light output area below */
 }
 .header-icons .action-icon {
-    color: #ccc;
+    color: #ccc; /* Light icons on dark background */
     font-size: 1.1em;
     cursor: pointer;
     transition: color 0.2s ease;
     padding: 5px; /* Make icon easier to click */
 }
 .header-icons .action-icon:hover { color: #4da6ff; }
-.header-icons .action-icon.copied { color: #28a745; }
+.header-icons .action-icon.copied { color: #28a745; /* Green when copied */ }
 
-/* Remove old indicator styles if the elements are removed from HTML */
-/*
-#ocr-loading-indicator { ... }
-#ocr-error-message { ... }
-*/
+
+/* --- Toggle Switch (Kept Dark Themed) --- */
+#ocr-toggle-container { /* Container for switch and icon */
+    display: flex;
+    align-items: center;
+    /* Assumed to be in a dark-themed part of the header, alongside #output-header tools */
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px; /* Width of the switch */
+    height: 24px; /* Height of the switch */
+}
+.switch input { opacity: 0; width: 0; height: 0; } /* Hide the actual checkbox */
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #555; /* Background of the switch track (off state) */
+    transition: .4s;
+}
+.slider:before { /* The sliding knob */
+    position: absolute;
+    content: "";
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px; /* Positioning of the knob */
+    background-color: white;
+    transition: .4s;
+}
+input:checked + .slider { background-color: #4da6ff; } /* Track color when on */
+input:focus + .slider { box-shadow: 0 0 1px #4da6ff; } /* Focus outline */
+input:checked + .slider:before { transform: translateX(26px); } /* Knob movement */
+
+.slider.round { border-radius: 24px; } /* Rounded track */
+.slider.round:before { border-radius: 50%; } /* Rounded knob */
+
+#ocr-toggle-container i { /* Preview icon (Markdown, Code, File) */
+    font-size: 1.5em;
+    margin-left: 10px; /* Space from switch */
+    color: #ccc; /* Light icon color (assuming dark background context) */
+    vertical-align: middle; /* Align with switch */
+}

@@ -12,6 +12,16 @@
                     <div class="drop-zone-text">Drag & drop PDF, TIFF, or Image here</div>
                     </div>
             </div>
+            {# NEW Output Format Dropdown #}
+            <div class="form-group">
+                <label for="output-format-select">Output Format:</label>
+                <select id="output-format-select" name="output_format" required>
+                    <option value="text">Plain text</option>
+                    <option value="markdown" selected>Markdown</option>
+                    <option value="HTML">HTML</option>
+                </select>
+            </div>
+
             <div class="form-group">
                 <label for="vlm-api-select">Choose VLM API:</label>
                 <select id="vlm-api-select" name="vlm_api" required>
@@ -19,7 +29,7 @@
                     {% for api in vlm_api_options %}
                         <option value="{{ api.value }}">{{ api.name }}</option>
                     {% endfor %}
-                </select>
+                </select>            
             </div>
 
             <div id="openai-compatible-options" class="conditional-options indented-option" style="display: none;">
@@ -100,7 +110,8 @@
                     <label class="switch" title="Toggle Markdown Preview">
                         <input type="checkbox" id="ocr-render-toggle-checkbox" checked> <span class="slider round"></span>
                     </label>
-                    <i class="fab fa-markdown" style="font-size: 1.5em; margin-left: 10px; color: #ccc;" title="Markdown Preview"></i>
+                    {# The icon will be updated in a later step if needed, for now, it remains a Markdown icon #}
+                    <i class="fab fa-markdown" id="preview-icon" style="font-size: 1.5em; margin-left: 10px; color: #ccc;" title="Markdown Preview"></i>
                 </div>
             </div>
             <div id="ocr-output-wrapper">

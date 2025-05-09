@@ -1,14 +1,15 @@
-// --- services/web_app/static/js/script.js (Complete) ---
+// --- services/web_app/static/js/script.js ---
 
 // Global variables
 let previewErrorMsgElement = null;
 let previewArea = null;
 let previewPlaceholder = null;
-let ocrRawText = ''; // This will store the *concatenated raw content of all pages* after cleaning
-let isOcrPreviewMode = true; // Default to Markdown preview
-let accumulatedOcrTextForAllPages = ''; // Accumulates raw text from all pages for the final ocrRawText variable
-let pageContentsArray = []; 
-let lastReceivedDelimiter = "\n\n---\n\n"; // Default, will be updated by the stream
+let ocrRawText = ''; // Stores the final concatenated raw content of all pages
+let isPreviewMode = true; // Default to preview (rendered) mode
+let pageContentsArray = []; // Array to store raw content of each page
+let lastReceivedDelimiter = "\n\n---\n\n";
+let currentOutputFormat = 'markdown'; // Default, will be updated from dropdown
+let pageCounter = 0; // Keep pageCounter global for simplicity here
 
 // Allowed file types for preview and upload
 const ALLOWED_MIME_TYPES = [
@@ -21,13 +22,8 @@ const ALLOWED_EXTENSIONS = [
 ];
 
 // --- Preview Rendering Functions (renderPdfPreview, renderImagePreview, renderConvertedTiffPreview) ---
-// These functions remain the same as in our last complete JS version for TIFF multi-page preview.
-// For brevity, I'll assume they are correctly defined here.
-// Make sure they are present in your actual file.
-
 async function renderPdfPreview(file, displayArea) {
-    // ... (implementation from previous step) ...
-    console.log("Starting renderPdfPreview...");
+    // console.log("Starting renderPdfPreview...");
     const { pdfjsLib } = globalThis;
     if (!pdfjsLib) {
         console.error("PDF.js library not found!");
@@ -77,10 +73,9 @@ async function renderPdfPreview(file, displayArea) {
 }
 
 function renderImagePreview(file, displayArea) {
-    // ... (implementation from previous step) ...
-    console.log("Starting renderImagePreview for non-TIFF file:", file.name);
+    // console.log("Starting renderImagePreview for non-TIFF file:", file.name);
     return new Promise((resolve, reject) => {
-       if (window.currentPreviewUrl) URL.revokeObjectURL(window.currentPreviewUrl); // Use window scope for currentPreviewUrl if it's global
+       if (window.currentPreviewUrl) URL.revokeObjectURL(window.currentPreviewUrl);
         const img = document.createElement('img');
         img.style.cssText = 'max-width: 100%; max-height: 100%; display: block; margin: auto;';
         window.currentPreviewUrl = URL.createObjectURL(file);
@@ -95,8 +90,7 @@ function renderImagePreview(file, displayArea) {
 }
 
 async function renderConvertedTiffPreview(file, displayArea) {
-    // ... (implementation from previous step for multi-page TIFF preview) ...
-    console.log("Starting renderConvertedTiffPreview for all pages of:", file.name);
+    // console.log("Starting renderConvertedTiffPreview for all pages of:", file.name);
     if (window.currentPreviewUrl) { URL.revokeObjectURL(window.currentPreviewUrl); window.currentPreviewUrl = null; }
     const formData = new FormData();
     formData.append('tiff_file', file);
@@ -113,7 +107,7 @@ async function renderConvertedTiffPreview(file, displayArea) {
                 const img = document.createElement('img');
                 img.style.cssText = `max-width: ${desiredWidth}px; display: block; margin: 5px auto 10px auto; border: 1px solid #ccc;`;
                 img.src = `data:image/${result.format};base64,${base64PageData}`;
-                img.onload = () => console.log(`Converted TIFF page ${index + 1} preview loaded: ${file.name}`);
+                // img.onload = () => console.log(`Converted TIFF page ${index + 1} preview loaded: ${file.name}`);
                 img.onerror = () => {
                     console.error(`Error loading converted TIFF page ${index + 1} for ${file.name}`);
                     const pageErrorDiv = document.createElement('div');
@@ -135,24 +129,21 @@ async function renderConvertedTiffPreview(file, displayArea) {
     }
 }
 
-
 async function displayPreview(file) {
-    // ... (implementation from previous step) ...
     previewArea = document.getElementById('input-preview-area');
-    previewPlaceholder = document.getElementById('preview-placeholder'); 
-
-    previewArea.innerHTML = ''; 
+    previewPlaceholder = document.getElementById('preview-placeholder');
+    previewArea.innerHTML = '';
 
     if (!document.getElementById('preview-render-error-dynamic')) {
         previewErrorMsgElement = document.createElement('p');
         previewErrorMsgElement.id = 'preview-render-error-dynamic';
         previewErrorMsgElement.className = 'ocr-status-message ocr-status-error';
         previewErrorMsgElement.style.display = 'none';
-        previewArea.appendChild(previewErrorMsgElement); 
+        previewArea.appendChild(previewErrorMsgElement);
     } else {
         previewErrorMsgElement = document.getElementById('preview-render-error-dynamic');
     }
-     previewErrorMsgElement.style.display = 'none';
+    previewErrorMsgElement.style.display = 'none';
 
     if (!file) {
         previewArea.innerHTML = '<p id="preview-placeholder" class="ocr-status-message" style="color: #ccc;">Upload a file to see the preview</p>';
@@ -160,56 +151,76 @@ async function displayPreview(file) {
     }
 
     const loadingPlaceholder = document.createElement('p');
-    loadingPlaceholder.id = 'preview-loading-placeholder'; 
+    loadingPlaceholder.id = 'preview-loading-placeholder';
     loadingPlaceholder.className = 'ocr-status-message ocr-status-processing';
     loadingPlaceholder.textContent = 'Loading preview...';
     previewArea.appendChild(loadingPlaceholder);
 
-    console.log(`File selected for preview: ${file.name}, Type: ${file.type}`);
-
     if (!isFileTypeAllowed(file)) {
-        previewArea.innerHTML = ''; 
+        previewArea.innerHTML = '';
         previewErrorMsgElement.textContent = `Cannot preview: Unsupported file type (${file.type || file.name.split('.').pop()}). Please use PDF, TIFF, or a supported image format.`;
         previewErrorMsgElement.style.display = 'block';
         return;
     }
 
     try {
-         const fileExtension = file.name.split('.').pop().toLowerCase();
-         previewArea.innerHTML = ''; 
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        previewArea.innerHTML = '';
 
-         if (file.type === 'application/pdf' || fileExtension === 'pdf') {
+        if (file.type === 'application/pdf' || fileExtension === 'pdf') {
             await renderPdfPreview(file, previewArea);
         } else if (file.type === 'image/tiff' || fileExtension === 'tif' || fileExtension === 'tiff') {
             await renderConvertedTiffPreview(file, previewArea);
         } else {
             await renderImagePreview(file, previewArea);
         }
-         console.log("Preview displayed successfully.");
     } catch (error) {
-        console.error('Error displaying preview in displayPreview catch block:', error.message);
-        previewArea.innerHTML = ''; 
-        previewErrorMsgElement.textContent = error.message; 
+        previewArea.innerHTML = '';
+        previewErrorMsgElement.textContent = error.message;
         previewErrorMsgElement.style.display = 'block';
-        console.log("Preview failed.");
     }
+}
+
+// Helper to escape HTML for pre display
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Cache DOM elements
     previewArea = document.getElementById('input-preview-area');
     previewPlaceholder = document.getElementById('preview-placeholder');
-
-    const { pdfjsLib } = globalThis;
-    if (pdfjsLib) {
-         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
-    } else {
-        console.warn("PDF.js library (pdfjsLib) not found on DOMContentLoaded. PDF preview will fail.");
-    }
-
+    const ocrOutputArea = document.getElementById('ocr-output-area');
+    const ocrForm = document.getElementById('ocr-form');
+    const runOcrButton = document.getElementById('run-ocr-button');
+    const ocrToggleContainer = document.getElementById('ocr-toggle-container');
+    const previewToggleCheckbox = document.getElementById('ocr-render-toggle-checkbox');
+    const outputHeader = document.getElementById('output-header');
+    const copyOcrButton = document.getElementById('copy-ocr-text');
+    const outputFormatSelect = document.getElementById('output-format-select');
+    const previewIcon = document.getElementById('preview-icon');
     const dropZone = document.querySelector('.file-drop-zone');
     const fileInput = document.getElementById('input-file');
     const dropZoneText = dropZone ? dropZone.querySelector('.drop-zone-text') : null;
+    const vlmApiSelect = document.getElementById('vlm-api-select');
+    const openAICompatibleOptionsDiv = document.getElementById('openai-compatible-options');
+    const openAIOptionsDiv = document.getElementById('openai-options');
+    const azureOptionsDiv = document.getElementById('azure-openai-options');
+    const ollamaOptionsDiv = document.getElementById('ollama-options');
+
+
+    const { pdfjsLib } = globalThis;
+    if (pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
+    } else {
+        console.warn("PDF.js library (pdfjsLib) not found on DOMContentLoaded. PDF preview will fail.");
+    }
 
     if (dropZone && fileInput && dropZoneText) {
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -221,94 +232,151 @@ document.addEventListener('DOMContentLoaded', () => {
         dropZone.addEventListener('drop', (event) => {
             let file = null;
             if (event.dataTransfer.files.length > 0) {
-                 const droppedFile = event.dataTransfer.files[0];
-                 if (isFileTypeAllowed(droppedFile)) {
-                      fileInput.files = event.dataTransfer.files; file = droppedFile;
-                      dropZoneText.textContent = `File selected: ${file.name}`;
-                 } else {
-                     dropZoneText.textContent = 'Please drop a supported file (PDF, TIFF, PNG, JPG, etc.).';
-                     fileInput.value = '';
-                 }
+                const droppedFile = event.dataTransfer.files[0];
+                if (isFileTypeAllowed(droppedFile)) {
+                    fileInput.files = event.dataTransfer.files; file = droppedFile;
+                    dropZoneText.textContent = `File selected: ${file.name}`;
+                } else {
+                    dropZoneText.textContent = 'Please drop a supported file (PDF, TIFF, PNG, JPG, etc.).';
+                    fileInput.value = '';
+                }
             } else {
-                 dropZoneText.textContent = 'Drag & drop PDF, TIFF, or Image here'; fileInput.value = '';
+                dropZoneText.textContent = 'Drag & drop PDF, TIFF, or Image here'; fileInput.value = '';
             }
             displayPreview(file);
         });
         fileInput.addEventListener('change', () => {
-             let file = null;
-             if (fileInput.files.length > 0) {
-                 file = fileInput.files[0];
-                 dropZoneText.textContent = `File selected: ${file.name}`;
-             } else {
-                 dropZoneText.textContent = 'Drag & drop PDF, TIFF, or Image here';
-             }
+            let file = null;
+            if (fileInput.files.length > 0) {
+                file = fileInput.files[0];
+                dropZoneText.textContent = `File selected: ${file.name}`;
+            } else {
+                dropZoneText.textContent = 'Drag & drop PDF, TIFF, or Image here';
+            }
             displayPreview(file);
         });
     }
-
-    const vlmApiSelect = document.getElementById('vlm-api-select');
-    const openAICompatibleOptionsDiv = document.getElementById('openai-compatible-options');
-    const openAIOptionsDiv = document.getElementById('openai-options');
-    const azureOptionsDiv = document.getElementById('azure-openai-options');
-    const ollamaOptionsDiv = document.getElementById('ollama-options');
 
     if (vlmApiSelect) {
         vlmApiSelect.addEventListener('change', (event) => {
             const selectedApi = event.target.value;
             [openAICompatibleOptionsDiv, openAIOptionsDiv, azureOptionsDiv, ollamaOptionsDiv].forEach(div => {
-                if(div) div.style.display = 'none';
+                if (div) div.style.display = 'none';
             });
             if (selectedApi === 'openai_compatible' && openAICompatibleOptionsDiv) openAICompatibleOptionsDiv.style.display = 'block';
             else if (selectedApi === 'openai' && openAIOptionsDiv) openAIOptionsDiv.style.display = 'block';
             else if (selectedApi === 'azure_openai' && azureOptionsDiv) azureOptionsDiv.style.display = 'block';
             else if (selectedApi === 'ollama' && ollamaOptionsDiv) ollamaOptionsDiv.style.display = 'block';
         });
-         vlmApiSelect.dispatchEvent(new Event('change'));
+        if (vlmApiSelect.value === "") { // Ensure initial state is also handled if no option is pre-selected
+             [openAICompatibleOptionsDiv, openAIOptionsDiv, azureOptionsDiv, ollamaOptionsDiv].forEach(div => {
+                if (div) div.style.display = 'none';
+            });
+        } else {
+            vlmApiSelect.dispatchEvent(new Event('change'));
+        }
     }
 
-    const ocrForm = document.getElementById('ocr-form');
-    const ocrOutputArea = document.getElementById('ocr-output-area');
-    const runOcrButton = document.getElementById('run-ocr-button');
-    const ocrToggleContainer = document.getElementById('ocr-toggle-container');
-    const ocrRenderToggleCheckbox = document.getElementById('ocr-render-toggle-checkbox');
-    const outputHeader = document.getElementById('output-header');
-    const copyOcrButton = document.getElementById('copy-ocr-text');
+    function updatePreviewIcon(format) {
+        if (!previewIcon) return;
+        let iconClass = 'fa-markdown'; let iconTitle = 'Markdown Preview'; let iconLibPrefix = 'fab';
+        if (format === 'html') { iconClass = 'fa-code'; iconTitle = 'HTML Preview'; iconLibPrefix = 'fas'; }
+        else if (format === 'text') { iconClass = 'fa-file-alt'; iconTitle = 'Text Preview'; iconLibPrefix = 'fas'; }
+        previewIcon.className = `${iconLibPrefix} ${iconClass}`; previewIcon.title = iconTitle;
+    }
+
+    if (outputFormatSelect) {
+        outputFormatSelect.addEventListener('change', (event) => {
+            currentOutputFormat = event.target.value.toLowerCase();
+            updatePreviewIcon(currentOutputFormat);
+            if (pageContentsArray.length > 0 && isPreviewMode) { renderFinalOutput(); }
+        });
+        currentOutputFormat = outputFormatSelect.value.toLowerCase(); // Initialize
+        updatePreviewIcon(currentOutputFormat);
+    }
 
     function setOcrStatusMessage(message, type = 'info') {
         if (!ocrOutputArea) return;
         let className = 'ocr-status-message';
         if (type === 'error') className += ' ocr-status-error';
         else if (type === 'processing') className += ' ocr-status-processing';
-        const sanitizedMessage = message.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-        ocrOutputArea.innerHTML = `<p class="${className}">${sanitizedMessage}</p>`;
+        ocrOutputArea.innerHTML = `<p class="${className}">${escapeHtml(message).replace(/\n/g, '<br>')}</p>`;
     }
 
-    if(ocrOutputArea && (!ocrOutputArea.innerHTML.trim() || ocrOutputArea.innerHTML.includes('id="preview-placeholder"'))) {
+    if (ocrOutputArea && (!ocrOutputArea.innerHTML.trim() || ocrOutputArea.innerHTML.includes('id="preview-placeholder"'))) {
         setOcrStatusMessage('OCR results will appear here once a file is processed.', 'info');
     }
 
+    function getCurrentPageDivForLiveStream() {
+        const pageDivWrapperId = `ocr-live-page-wrapper-${pageCounter}`;
+        const shadowHostId = `ocr-live-page-shadowhost-${pageCounter}`;
+        let pageDivWrapper = document.getElementById(pageDivWrapperId);
+        let shadowHost;
+
+        if (!pageDivWrapper) {
+            pageDivWrapper = document.createElement('div');
+            pageDivWrapper.id = pageDivWrapperId;
+            pageDivWrapper.className = 'ocr-page-content-live-wrapper';
+
+            shadowHost = document.createElement('div');
+            shadowHost.id = shadowHostId;
+            shadowHost.className = 'ocr-page-content-shadow-host';
+
+            pageDivWrapper.appendChild(shadowHost);
+            ocrOutputArea.appendChild(pageDivWrapper);
+        } else {
+            shadowHost = document.getElementById(shadowHostId);
+            if (!shadowHost) {
+                console.error(`CRITICAL: Shadow host ${shadowHostId} missing. Recreating.`);
+                shadowHost = document.createElement('div');
+                shadowHost.id = shadowHostId;
+                shadowHost.className = 'ocr-page-content-shadow-host';
+                pageDivWrapper.innerHTML = ''; // Clear wrapper before adding new host
+                pageDivWrapper.appendChild(shadowHost);
+            }
+        }
+
+        if (currentOutputFormat === 'html' && shadowHost && !shadowHost.shadowRoot) {
+            try {
+                const shadow = shadowHost.attachShadow({ mode: 'open' });
+                const style = document.createElement('style');
+                style.textContent = `
+                    :host { display: block; background-color: #f8f9fa; padding: 10px; font-family: sans-serif; color: #212529; }
+                    body { margin: 0; background-color: inherit; color: inherit; } /* For VLM generated body tags */
+                    a { color: #0056b3; } a:hover { color: #003d80; }
+                `;
+                shadow.appendChild(style);
+            } catch (e) {
+                console.error(`Failed to attach Shadow DOM for page ${pageCounter}:`, e, shadowHost);
+                shadowHost.dataset.shadowDomFailed = "true";
+            }
+        }
+        return shadowHost;
+    }
 
     if (ocrForm && ocrOutputArea && runOcrButton) {
         ocrForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+
+            pageCounter = 0; // Reset page counter for new submission
+            ocrRawText = '';
+            pageContentsArray = [];
+            let currentPageRawOutput = ''; // Local to this submission
+
+            // Update currentOutputFormat based on form for this run
+            const formData = new FormData(ocrForm);
+            currentOutputFormat = formData.get('output_format').toLowerCase();
+            updatePreviewIcon(currentOutputFormat);
+
+            ocrOutputArea.innerHTML = ''; // Clear previous results/status
             setOcrStatusMessage('Processing, please wait...', 'processing');
             runOcrButton.disabled = true;
-            if(ocrToggleContainer) ocrToggleContainer.style.display = 'none';
-            if(outputHeader) outputHeader.style.display = 'none';
-            if(ocrRenderToggleCheckbox) ocrRenderToggleCheckbox.checked = true;
-            isOcrPreviewMode = true;
-            accumulatedOcrTextForAllPages = ''; // Reset for new submission
-            pageContentsArray = [];
-            let currentPageMarkdownContent = ''; // Accumulates Markdown for the current page being streamed
-            let pageCounter = 0; // To manage divs for pages
+            if (ocrToggleContainer) ocrToggleContainer.style.display = 'none';
+            if (outputHeader) outputHeader.style.display = 'none';
+            if (previewToggleCheckbox) previewToggleCheckbox.checked = true; // Default to preview
+            isPreviewMode = true;
 
-            // Clear previous content more thoroughly
-            ocrOutputArea.innerHTML = '';
-            // Re-add the "Processing..." message after clearing
-            setOcrStatusMessage('Processing, please wait...', 'processing');
-
-
-            const formData = new FormData(ocrForm);
+            getCurrentPageDivForLiveStream(); // Prepare area for page 0 live stream
 
             try {
                 const response = await fetch('/api/run_ocr', { method: 'POST', body: formData });
@@ -319,77 +387,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorMsg);
                 }
 
-                // Clear "Processing..." message once stream is confirmed to be starting
-                ocrOutputArea.innerHTML = '';
+                // Clear "Processing..." message once stream is confirmed
+                // ocrOutputArea.innerHTML = ''; // Already done above, live divs will be added.
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                let buffer = ""; // Buffer for incomplete JSON lines
-
-                // Function to create or get the div for the current page
-                function getCurrentPageDiv() {
-                    let pageDiv = document.getElementById(`ocr-page-${pageCounter}`);
-                    if (!pageDiv) {
-                        pageDiv = document.createElement('div');
-                        pageDiv.id = `ocr-page-${pageCounter}`;
-                        pageDiv.className = 'ocr-page-content'; // For potential styling
-                        ocrOutputArea.appendChild(pageDiv);
-                    }
-                    return pageDiv;
-                }
-                getCurrentPageDiv(); // Create div for the first page
+                let buffer = "";
 
                 async function processNdjsonStream() {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) {
-                            // Process any remaining content in the buffer (e.g., a final JSON line)
                             if (buffer.trim()) {
                                 try {
                                     const streamItem = JSON.parse(buffer);
-                                    handleStreamItem(streamItem); // This will process the last chunk for currentPageMarkdownContent
-                                } catch (e) {
-                                    console.error("Error parsing final buffered JSON:", e, "Buffer:", buffer);
-                                    // Optionally, display an error or the raw buffer
-                                }
+                                    handleStreamItem(streamItem); 
+                                } catch (e) { console.error("Error parsing final buffered JSON:", e, "Buffer:", buffer); }
                             }
-                            buffer = ""; // Clear buffer
+                            buffer = "";
 
-                            // Add the content of the very last page (if any) from currentPageMarkdownContent
-                            if (currentPageMarkdownContent.trim()) {
-                                const cleanedLastPage = currentPageMarkdownContent
-                                    .replace(/^```markdown\s*?\n?/i, '')
-                                    .replace(/\n?```\s*$/i, '')
-                                    .trim();
-                                pageContentsArray.push(cleanedLastPage);
+                            if (currentPageRawOutput.trim()) {
+                                pageContentsArray.push(currentPageRawOutput);
                             }
-                            currentPageMarkdownContent = ''; // Important to clear it after processing
+                            // currentPageRawOutput = ''; // Already reset after pushing or in delimiter
 
-                            // Final assembly of ocrRawText using the collected page contents and the last known delimiter
-                            if (pageContentsArray.length > 0) {
-                                // Join pages with the delimiter. If only one page, join does nothing.
-                                ocrRawText = pageContentsArray.join(lastReceivedDelimiter);
-                                // For a single page, pageContentsArray will have one item, and .join() won't add a delimiter.
-                                // If pageContentsArray.length is 1, ocrRawText will be pageContentsArray[0].
-                                // This is correct. The .join() method behaves as desired:
-                                // ['page1'].join('delim') -> 'page1'
-                                // ['page1', 'page2'].join('delim') -> 'page1delimpage2'
-                            } else {
-                                ocrRawText = "";
-                            }
+                            ocrRawText = pageContentsArray.join(lastReceivedDelimiter);
                             
-                            console.log('NDJSON Stream complete. Final ocrRawText:', ocrRawText);
-                            // accumulatedOcrTextForAllPages is no longer the primary source for ocrRawText if this new system is used.
+                            isPreviewMode = true; 
+                            if(previewToggleCheckbox) previewToggleCheckbox.checked = true;
+                            renderFinalOutput(); 
 
-                            // Restore UI elements
-                            isOcrPreviewMode = true; // Default to Markdown preview after processing
-                            if(ocrRenderToggleCheckbox) ocrRenderToggleCheckbox.checked = true;
-                            if(ocrToggleContainer) ocrToggleContainer.style.display = 'flex'; // Or your preferred display style
-                            if(outputHeader) outputHeader.style.display = 'flex'; // Or your preferred display style
-                            break; // Exit the loop
+                            if(ocrToggleContainer) ocrToggleContainer.style.display = 'flex';
+                            if(outputHeader) outputHeader.style.display = 'flex';
+                            break; 
                         }
 
-                        // ... (rest of the stream processing logic: buffer += decoder.decode...) ...
                         buffer += decoder.decode(value, { stream: true });
                         let lines = buffer.split('\n');
                         
@@ -399,132 +431,196 @@ document.addEventListener('DOMContentLoaded', () => {
                                 try {
                                     const streamItem = JSON.parse(line);
                                     handleStreamItem(streamItem);
-                                } catch (e) {
-                                    console.error("Error parsing JSON line:", e, "Line:", line);
-                                }
+                                } catch (e) { console.error("Error parsing JSON line:", e, "Line:", line); }
                             }
                         }
                         buffer = lines[lines.length - 1]; 
-
-                        ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
+                        if(ocrOutputArea) ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
                     }
                 }
 
                 function handleStreamItem(item) {
-                    const pageDiv = getCurrentPageDiv(); // Ensure this function correctly gets/creates the div for the current page
+                    const liveContentHost = getCurrentPageDivForLiveStream();
 
                     if (item.type === "ocr_chunk" && item.data) {
-                        currentPageMarkdownContent += item.data;
-                        // Live rendering logic for the current pageDiv remains largely the same
-                        let textForLiveRender = currentPageMarkdownContent;
-                        if (textForLiveRender.toLowerCase().startsWith("```markdown")) {
-                            textForLiveRender = textForLiveRender.substring(textForLiveRender.indexOf('\n') + 1);
-                            if (textForLiveRender.trim().toLowerCase().endsWith("```")) {
-                                textForLiveRender = textForLiveRender.replace(/\n?```\s*$/i, '').trim();
-                            }
-                        } else if (textForLiveRender.trim().toLowerCase().endsWith("```")) {
-                            if (currentPageMarkdownContent.toLowerCase().includes("```markdown")) {
-                                textForLiveRender = textForLiveRender.replace(/\n?```\s*$/i, '').trim();
-                            }
-                        }
+                        currentPageRawOutput += item.data;
+                        let displayData = currentPageRawOutput;
 
-                        try {
-                            if (typeof marked !== 'undefined') {
-                                pageDiv.innerHTML = marked.parse(textForLiveRender);
-                            } else {
-                                pageDiv.textContent = currentPageMarkdownContent;
+                        if (isPreviewMode) {
+                            if (currentOutputFormat === 'markdown') {
+                                let tempDisplayData = displayData.replace(/^```markdown\s*?\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+                                try {
+                                    if (typeof marked !== 'undefined') liveContentHost.innerHTML = marked.parse(tempDisplayData);
+                                    else liveContentHost.textContent = tempDisplayData;
+                                } catch(e) { liveContentHost.textContent = tempDisplayData; }
+                            } else if (currentOutputFormat === 'html') {
+                                if (liveContentHost.shadowRoot && liveContentHost.dataset.shadowDomFailed !== "true") {
+                                    liveContentHost.shadowRoot.innerHTML = displayData;
+                                } else {
+                                    liveContentHost.innerHTML = `<p class='ocr-status-message ocr-status-error' style='text-align:left; font-size:0.8em; padding:5px;'>Live HTML preview using Shadow DOM failed. Displaying raw HTML:</p><pre style='max-height:200px; overflow-y:auto; border:1px solid #ccc; padding:5px;'>${escapeHtml(displayData)}</pre>`;
+                                }
+                            } else { // Plain text
+                                liveContentHost.textContent = displayData;
                             }
-                        } catch (e) {
-                            console.error("Error parsing live Markdown chunk:", e);
-                            pageDiv.textContent = currentPageMarkdownContent; // Fallback
+                        } else { 
+                           liveContentHost.textContent = displayData;
                         }
                     } else if (item.type === "page_delimiter" && item.data) {
-                        // Clean and store the content of the page that just ended
-                        const cleanedPage = currentPageMarkdownContent
-                            .replace(/^```markdown\s*?\n?/i, '') // Remove leading ```markdown
-                            .replace(/\n?```\s*$/i, '')           // Remove trailing ```
-                            .trim();
-                        pageContentsArray.push(cleanedPage);
+                        pageContentsArray.push(currentPageRawOutput);
+                        lastReceivedDelimiter = item.data;
+                        currentPageRawOutput = ''; // Reset for the next page
 
-                        lastReceivedDelimiter = item.data; // Store the actual delimiter string
-
-                        // Add visual delimiter in the main output area
                         const delimiterElement = document.createElement('hr');
                         delimiterElement.className = 'page-delimiter-hr';
                         ocrOutputArea.appendChild(delimiterElement);
                         
-                        // Prepare for next page
-                        pageCounter++;
-                        currentPageMarkdownContent = ''; // Reset for the next page's content
-                        getCurrentPageDiv(); // Create div for the new page
+                        pageCounter++; 
+                        getCurrentPageDivForLiveStream(); // Prepare for next page's live stream
                         
                     } else if (item.type === "error" && item.data) {
                         console.error("Error from stream:", item.data);
-                        setOcrStatusMessage(`Stream Error: ${item.data}`, 'error');
+                        let targetErrorDiv = liveContentHost;
+                        if (currentOutputFormat === 'html' && liveContentHost.shadowRoot) {
+                            targetErrorDiv = liveContentHost.shadowRoot;
+                        }
+                        targetErrorDiv.innerHTML = `<p class="ocr-status-error">Stream Error: ${escapeHtml(item.data)}</p>`;
+                        
+                        // Finalize what we have
+                        if(currentPageRawOutput.trim()) pageContentsArray.push(currentPageRawOutput);
+                        ocrRawText = pageContentsArray.join(lastReceivedDelimiter);
+                        currentPageRawOutput = ''; // Clear for future
+                        // Potentially stop further processing or display final output here.
+                        renderFinalOutput(); // Show what has been processed so far
+                        if(ocrToggleContainer) ocrToggleContainer.style.display = 'flex';
+                        if(outputHeader) outputHeader.style.display = 'flex';
+                        // No 'break' here, stream completion will handle it or reader will be done.
                     }
                 }
-
                 await processNdjsonStream();
-
-            } catch (error) { // Catch errors from fetch itself or initial response check
+            } catch (error) { 
                 setOcrStatusMessage(`Error: ${error.message}`, 'error');
-                accumulatedOcrTextForAllPages = ''; // Clear any partial accumulation
+                ocrRawText = ''; pageContentsArray = [];
                 if(ocrToggleContainer) ocrToggleContainer.style.display = 'none';
                 if(outputHeader) outputHeader.style.display = 'none';
-                isOcrPreviewMode = false; if(ocrRenderToggleCheckbox) ocrRenderToggleCheckbox.checked = false;
+                isPreviewMode = false; if(previewToggleCheckbox) previewToggleCheckbox.checked = false;
             } finally {
                 runOcrButton.disabled = false;
             }
         });
 
-        if (ocrRenderToggleCheckbox) {
-            ocrRenderToggleCheckbox.addEventListener('change', () => {
-                isOcrPreviewMode = ocrRenderToggleCheckbox.checked;
-                // Re-render all content based on accumulatedOcrTextForAllPages
-                ocrOutputArea.innerHTML = ''; // Clear existing page divs
-                pageCounter = 0; // Reset page counter for re-rendering
-                currentPageMarkdownContent = ''; // Reset current page buffer
+        function renderFinalOutput() {
+            if (!ocrOutputArea) return;
+            ocrOutputArea.innerHTML = ''; // Clear ALL previous content
 
-                if (!ocrRawText && accumulatedOcrTextForAllPages) { // Ensure ocrRawText is populated if toggle happens before stream end
-                    ocrRawText = accumulatedOcrTextForAllPages.trim();
+            if (isPreviewMode) {
+                if (pageContentsArray.length === 0 && ocrRawText.trim()) {
+                     console.warn("renderFinalOutput: pageContentsArray empty, rendering ocrRawText directly.");
+                     const pre = document.createElement('pre');
+                     pre.textContent = ocrRawText;
+                     ocrOutputArea.appendChild(pre);
+                     return;
                 }
-                
-                // Split ocrRawText by the actual delimiter string used for accumulation.
-                // Note: The delimiter itself is not stored in ocrRawText if we want pure content.
-                // For simplicity, let's assume ocrRawText will be the full concatenated cleaned markdown for now.
-                // A more robust re-render would re-parse ocrRawText which should be the complete, cleaned markdown.
-                // The `accumulatedOcrTextForAllPages` might contain delimiters.
 
-                if (isOcrPreviewMode) {
-                     try {
-                         if (typeof marked === 'undefined') throw new Error("Marked.js library is not loaded!");
-                         // Parse the *entire accumulated raw text* which should be the cleaned content
-                         // The ocrRawText should be the final, delimiter-stripped, concatenated text.
-                         // If page delimiters are part of ocrRawText they'll become <hr> via Markdown.
-                         ocrOutputArea.innerHTML = marked.parse(ocrRawText);
-                     } catch (renderError) {
-                         setOcrStatusMessage(`Error rendering Markdown: ${renderError.message}`, 'error');
-                         if(ocrRenderToggleCheckbox) ocrRenderToggleCheckbox.checked = false;
-                         isOcrPreviewMode = false;
-                     }
-                } else { // Raw text mode
-                    // Display the raw text, preserving newlines.
-                    // ocrRawText should be the concatenation of cleaned page contents.
-                    const pre = document.createElement('pre');
-                    pre.style.whiteSpace = 'pre-wrap'; // Ensure wrapping for raw text
-                    pre.textContent = ocrRawText;
-                    ocrOutputArea.appendChild(pre);
-                }
+                pageContentsArray.forEach((pageContent, index) => {
+                    let contentToRender = pageContent;
+                    // The wrapper for each page's content (Markdown div, HTML iframe, or Text pre)
+                    let pageElementWrapper = document.createElement('div');
+                    pageElementWrapper.className = 'ocr-page-content-rendered-wrapper'; // Use this for common styling if needed
+
+                    if (currentOutputFormat === 'markdown') {
+                        let mdHost = document.createElement('div');
+                        mdHost.className = 'ocr-markdown-content'; // Specific class for markdown content
+                        let cleanedPageMarkdown = contentToRender.replace(/^```markdown\s*?\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+                        try {
+                            if (typeof marked !== 'undefined') mdHost.innerHTML = marked.parse(cleanedPageMarkdown);
+                            else throw new Error("Marked.js not loaded");
+                        } catch (e) {
+                            console.error("Markdown parsing error for page:", e);
+                            mdHost.textContent = cleanedPageMarkdown; 
+                        }
+                        pageElementWrapper.appendChild(mdHost);
+                    } else if (currentOutputFormat === 'html') {
+                        pageElementWrapper.className = 'ocr-page-content-rendered-wrapper html-wrapper'; // Add specific class
+
+                        const iframe = document.createElement('iframe');
+                        iframe.style.width = '100%';
+                        iframe.style.border = 'none';
+                        // No explicit height here, hoping content + injected style will work.
+
+                        iframe.setAttribute('sandbox', 'allow-scripts');
+                        // The scrolling attribute is deprecated but doesn't hurt.
+                        // Setting to "no" attempts to prevent the iframe from showing its own scrollbars,
+                        // relying on the outer container to scroll.
+                        iframe.setAttribute('scrolling', 'no');
+
+
+                        // Inject a simple style to help the iframe's content expand.
+                        // This assumes the VLM content will be within a <body> tag.
+                        const iframeBaseStyle = `
+                            <style>
+                                html, body {
+                                    margin: 0;
+                                    padding: 0;
+                                    height: auto; /* Let content determine height */
+                                    overflow-y: hidden; /* Try to prevent iframe's own vertical scrollbar */
+                                }
+                                /* You might add a default font matching the main page if needed */
+                                body { font-family: sans-serif; color: #212529; background-color: #ffffff; padding:10px; }
+                            </style>
+                        `;
+                        iframe.srcdoc = iframeBaseStyle + contentToRender;
+
+                        iframe.onerror = () => {
+                            console.error("Error loading content into iframe for page " + index);
+                            pageElementWrapper.innerHTML = `<p class='ocr-status-error'>Error loading HTML preview for this page.</p><pre>${escapeHtml(contentToRender)}</pre>`;
+                        };
+
+                        // The onload height adjustment is generally problematic for sandboxed srcdoc.
+                        // We are relying on the content and the injected style above.
+                        // If it still doesn't work, a large min-height on the iframe via CSS is a fallback.
+
+                        pageElementWrapper.appendChild(iframe);
+                    } else { // Plain text
+                        const pre = document.createElement('pre');
+                        pre.className = 'ocr-plaintext-content'; // Specific class for plaintext
+                        pre.textContent = contentToRender;
+                        pageElementWrapper.appendChild(pre);
+                    }
+                    ocrOutputArea.appendChild(pageElementWrapper);
+
+                    if (index < pageContentsArray.length - 1) {
+                        const delimiterElement = document.createElement('hr');
+                        delimiterElement.className = 'page-delimiter-hr';
+                        ocrOutputArea.appendChild(delimiterElement);
+                    }
+                });
+
+            } else { // Raw text mode
+                const pre = document.createElement('pre');
+                pre.className = 'ocr-rawtext-content';
+                pre.textContent = ocrRawText; 
+                ocrOutputArea.appendChild(pre);
+            }
+            // Scroll the main ocrOutputArea if needed, not individual page wrappers.
+            if(ocrOutputArea) ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
+        }
+        
+        if (previewToggleCheckbox) {
+            previewToggleCheckbox.addEventListener('change', () => {
+                isPreviewMode = previewToggleCheckbox.checked;
+                renderFinalOutput();
             });
         }
+
         if (copyOcrButton) {
             copyOcrButton.addEventListener('click', () => {
-                const textToCopy = ocrRawText.trim(); // ocrRawText should be the final accumulated raw text
+                const textToCopy = ocrRawText.trim(); 
                  if (!textToCopy) return;
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     copyOcrButton.classList.add('copied'); copyOcrButton.title = 'Copied!';
                     setTimeout(() => { copyOcrButton.classList.remove('copied'); copyOcrButton.title = 'Copy Raw Text'; }, 1500);
                 }).catch(err => {
+                    console.error("Copy failed:", err);
                     copyOcrButton.title = 'Copy failed!'; setTimeout(() => { copyOcrButton.title = 'Copy Raw Text'; }, 1500);
                 });
             });
@@ -537,9 +633,7 @@ function isFileTypeAllowed(file) {
     if (ALLOWED_MIME_TYPES.includes(file.type)) return true;
     const extension = '.' + file.name.split('.').pop().toLowerCase();
     if (ALLOWED_EXTENSIONS.includes(extension)) {
-        console.warn(`Allowed file based on extension (${extension}) despite unrecognized or generic MIME type: ${file.type}`);
         return true;
     }
-    console.log(`File type not allowed: MIME type '${file.type}', Extension: '${extension}'`);
     return false;
 }
