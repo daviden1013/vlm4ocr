@@ -9,7 +9,7 @@ SUPPORTED_IMAGE_EXTS = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp'
 
 
 class OCREngine:
-    def __init__(self, vlm_engine:VLMEngine, output_mode:str="markdown", system_prompt:str=None, user_prompt:str=None, page_delimiter:str="\n\n---\n\n"):
+    def __init__(self, vlm_engine:VLMEngine, output_mode:str="markdown", system_prompt:str=None, user_prompt:str=None, page_delimiter:str="auto"):
         """
         This class inputs a image or PDF file path and processes them using a VLM inference engine. Outputs plain text or markdown.
 
@@ -25,6 +25,10 @@ class OCREngine:
             Custom user prompt. It is good to include some information regarding the document. If not specified, a default will be used.
         page_delimiter : str, Optional
             The delimiter to use between PDF pages. 
+            if 'auto', it will be set to the default page delimiter for the output mode: 
+            'markdown' -> '\n\n---\n\n'
+            'HTML' -> '<br><br>'
+            'text' -> '\n\n---\n\n'
         """
         # Check inference engine
         if not isinstance(vlm_engine, VLMEngine):
@@ -54,7 +58,15 @@ class OCREngine:
 
         # Page delimiter
         if isinstance(page_delimiter, str):
-            self.page_delimiter = page_delimiter
+            if page_delimiter == "auto":
+                if self.output_mode == "markdown":
+                    self.page_delimiter = "\n\n---\n\n"
+                elif self.output_mode == "HTML":
+                    self.page_delimiter = "<br><br>"
+                else:
+                    self.page_delimiter = "\n\n---\n\n"
+            else:
+                self.page_delimiter = page_delimiter
         else:
             raise ValueError("page_delimiter must be a string")
         
