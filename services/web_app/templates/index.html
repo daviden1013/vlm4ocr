@@ -7,9 +7,9 @@
         <form id="ocr-form">
             <div class="form-group">
                 <div class="form-group file-drop-zone">
-                    <label for="input-file">Upload PDF or Image:</label>
-                    <input type="file" id="input-file" name="input_file" accept=".pdf,.png,.jpg,.jpeg,.bmp,.gif,.webp" required>
-                    <div class="drop-zone-text">Drag & drop PDF or Image here</div>
+                    <label for="input-file">Upload PDF, TIFF, or Image:</label>
+                    <input type="file" id="input-file" name="input_file" accept=".pdf,.png,.jpg,.jpeg,.bmp,.gif,.webp,.tif,.tiff" required>
+                    <div class="drop-zone-text">Drag & drop PDF, TIFF, or Image here</div>
                     </div>
             </div>
             <div class="form-group">
@@ -89,8 +89,8 @@
                  <h3>Input Preview</h3>
                  <span></span> </div>
             <div id="input-preview-area" class="output-box">
-               <p id="preview-placeholder" style="color: #ccc;">Upload a file to see the preview</p>
-               <p id="preview-render-error" style="color: red; display: none;"></p>
+               <p id="preview-placeholder" class="ocr-status-message" style="color: #ccc;">Upload a file to see the preview</p> {# Added ocr-status-message class for consistent styling #}
+               {# preview-render-error is now dynamically created by JS if needed, or handled within status messages #}
            </div>
        </div>
         <div class="display-column">
@@ -110,11 +110,11 @@
                     </div>
                 </div>
                 <div id="ocr-output-area" class="output-box">
-                    <p>Waiting for OCR results...</p>
+                    {# Initial placeholder message, will be replaced by JS status messages or OCR content #}
+                    <p class="ocr-status-message">OCR results will appear here once a file is processed.</p>
                 </div>
             </div>
-            <div id="ocr-loading-indicator" style="display: none;">Processing...</div>
-            <div id="ocr-error-message" style="display: none; color: red;"></div>
-         </div>
+            {# Old indicator divs commented out as their functionality is now integrated into ocr-output-area #}
+            </div>
     </div>
 </div> {% endblock %}
