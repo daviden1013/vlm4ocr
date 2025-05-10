@@ -17,6 +17,8 @@ python = "^3.11"
 pdf2image = ">=1.16.0"
 pillow = ">=10.0.0"
 
+[tool.poetry.scripts]
+vlm4ocr = "vlm4ocr.cli:main"
 
 [build-system]
 requires = ["poetry-core"]
