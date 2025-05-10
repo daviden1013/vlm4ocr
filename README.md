@@ -23,8 +23,6 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 ## :sparkles:Overview
 `vlm4ocr` provides a simple way to perform OCR using the power of modern Vision Language Models (VLMs). A drag-and-drop **web application** is included for easy access. The **Python package** supports concurrent batch processing for large amount of documents.
 
-https://github.com/user-attachments/assets/b196453c-fd2c-491a-ba1e-0a77cf7f5941
-
 #### Markdown output mode
 <div align="center"><img src=doc_asset/readme_img/table_markdown_demo.PNG width=1000 ></div>
 
@@ -33,7 +31,7 @@ https://github.com/user-attachments/assets/b196453c-fd2c-491a-ba1e-0a77cf7f5941
 
 ## :star:Supported Models 
 ### Open-weights (ALL Supported!!)
-**All open-weights VLMs are supported** via our [Ollama](/packages/vlm4ocr/vlm4ocr/vlm_engines.py) and [OpenAI compitable engines](/packages/vlm4ocr/vlm4ocr/vlm_engines.py), including:
+**All open-weights VLMs are supported** via our [Ollama](/packages/vlm4ocr/vlm4ocr/vlm_engines.py) and [OpenAI compatible engines](/packages/vlm4ocr/vlm4ocr/vlm_engines.py), including:
 - [Qwen2.5-VL](https://huggingface.co/collections/Qwen/qwen25-vl-6795ffac22b334a837c0f9a5)
 - [Llama-3.2](https://huggingface.co/collections/meta-llama/llama-32-66f448ffc8c32f949b04c8cf)
 - [LLaVa-1.5](https://huggingface.co/collections/llava-hf/llava-15-65f762d5b6941db5c2ba07e0)
@@ -55,8 +53,10 @@ pip install ollama # For Ollama
 pip install openai # For OpenAI (compatible) and Azure OpenAI
 ```
 
-## :computer:Web Application
+## :earth_americas:Web Application
 A ready-to-use Flask web application is included.
+
+https://github.com/user-attachments/assets/b196453c-fd2c-491a-ba1e-0a77cf7f5941
 
 ### Installation
 #### Install from source
@@ -70,6 +70,41 @@ git clone https://github.com/daviden1013/vlm4ocr.git
 # Run Web App
 cd vlm4ocr/services/web_app
 python run.py
+```
+
+## :computer:CLI
+Command line interface (CLI) provides an easy way to batch process many images, PDFs, and TIFFs in a directory. 
+### Installation
+
+Install the Python package on PyPi and CLI tool will be automatically installed.
+```bash
+pip install vlm4ocr
+```
+
+### Usage
+Run OCR for all supported file types in the `/examples/synthesized_data/` folder with a locally deployed [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct).
+```sh
+# OpenAI compatible API (batch processing)
+vlm4ocr --input_path /examples/synthesized_data/ \
+        --output_mode markdown \
+        --vlm_engine openai_compatible \
+        --model Qwen/Qwen2.5-VL-7B-Instruct \
+        --api_key EMPTY \
+        --base_url http://localhost:8000/v1 \
+        --concurrent \
+        --concurrent_batch_size 4 \
+```
+
+Alternatively, use *gpt-4o-mini* to process a PDF with many pages by batch.
+```sh
+# OpenAI API
+export OPENAI_API_KEY=<api key>
+vlm4ocr --input_path /examples/synthesized_data/GPT-4o_synthesized_note_1.pdf \
+        --output_mode HTML \
+        --vlm_engine openai \
+        --model gpt-4o-mini \
+        --concurrent \
+        --concurrent_batch_size 4 \
 ```
 
 ## :snake:Python package
