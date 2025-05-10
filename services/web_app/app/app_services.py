@@ -49,10 +49,25 @@ def process_ocr_request(request):
         # 3. Get Form Data
         vlm_api = request.form.get('vlm_api', '')
         user_prompt = request.form.get('ocr_user_prompt', None)
-        # --- ADDED: Get output_format from form ---
-        output_format = request.form.get('output_format', 'markdown') # Default to markdown if not provided
-        print(f"Selected output format: {output_format}")
+        output_format = request.form.get('output_format', 'markdown')
+        
+        # --- ADDED: Get max_new_tokens and temperature from form ---
+        max_new_tokens_str = request.form.get('max_new_tokens', '4096') # Default from OCREngine
+        temperature_str = request.form.get('temperature', '0.0') # Default from OCREngine
+        
+        try:
+            max_new_tokens = int(max_new_tokens_str)
+        except ValueError:
+            raise ValueError("Invalid value for Max New Tokens. Must be an integer.")
+        try:
+            temperature = float(temperature_str)
+        except ValueError:
+            raise ValueError("Invalid value for Temperature. Must be a number.")
         # --- END ADDED ---
+
+        print(f"Selected output format: {output_format}")
+        print(f"Received max_new_tokens: {max_new_tokens}, temperature: {temperature}")
+
 
         vlm_model_compatible = request.form.get('vlm_model', None)
         openai_model_openai = request.form.get('openai_model', None)
@@ -109,20 +124,19 @@ def process_ocr_request(request):
         print(f"Initializing OCREngine with output_mode: {output_format}...")
         ocr_engine = OCREngine(
             vlm_engine=vlm_engine,
-            # --- MODIFIED: Use the output_format from form ---
             output_mode=output_format,
-            # --- END MODIFIED ---
-            system_prompt=None, # OCREngine will pick default based on output_mode
+            system_prompt=None, 
             user_prompt=user_prompt
         )
         print("OCREngine initialized.")
 
         # 6. Define the Streaming Generator
-        def generate_ocr_stream(ocr_eng, file_to_process_path):
+        # --- MODIFIED: Pass max_new_tokens and temperature to stream_ocr ---
+        def generate_ocr_stream(ocr_eng, file_to_process_path, stream_max_tokens, stream_temp):
             print(f"generate_ocr_stream called for: {file_to_process_path}")
             try:
-                print(f"Starting OCREngine.stream_ocr for: {file_to_process_path}")
-                for item_dict in ocr_eng.stream_ocr(file_path=file_to_process_path):
+                print(f"Starting OCREngine.stream_ocr for: {file_to_process_path} with max_tokens={stream_max_tokens}, temp={stream_temp}")
+                for item_dict in ocr_eng.stream_ocr(file_path=file_to_process_path, max_new_tokens=stream_max_tokens, temperature=stream_temp):
                     yield json.dumps(item_dict) + '\n'
                 print(f"Finished OCREngine.stream_ocr for: {file_to_process_path}")
             except ValueError as val_err:
@@ -138,10 +152,13 @@ def process_ocr_request(request):
             finally:
                 print(f"Calling cleanup_file from generate_ocr_stream finally block for {file_to_process_path}")
                 cleanup_file(file_to_process_path, "post-stream cleanup")
+        # --- END MODIFICATION ---
 
         # 7. Return Streaming Response
+        # --- MODIFIED: Pass the new parameters to the generator ---
         print("Setup complete. Returning streaming response object.")
-        return Response(stream_with_context(generate_ocr_stream(ocr_engine, temp_file_path)), mimetype='application/x-ndjson')
+        return Response(stream_with_context(generate_ocr_stream(ocr_engine, temp_file_path, max_new_tokens, temperature)), mimetype='application/x-ndjson')
+        # --- END MODIFICATION ---
 
     except (ValueError, FileNotFoundError) as setup_val_err:
         print(f"--- Setup Validation Error in app_services: {setup_val_err} ---")
@@ -149,16 +166,14 @@ def process_ocr_request(request):
         if temp_file_path:
              print(f"Calling cleanup_file due to setup error for {temp_file_path}")
              cleanup_file(temp_file_path, "setup validation error cleanup")
-        # Re-raise the error so it's caught by the route handler and returned as JSON
-        raise setup_val_err # Ensure this is re-raised
+        raise setup_val_err 
     except Exception as setup_err:
         print(f"--- Unexpected Setup Error in app_services: {setup_err} ---")
         traceback.print_exc()
         if temp_file_path:
              print(f"Calling cleanup_file due to unexpected setup error for {temp_file_path}")
              cleanup_file(temp_file_path, "setup general error cleanup")
-        # Re-raise a generic exception that will be caught by the route handler
-        raise Exception(f"Failed during OCR setup: {setup_err}") # Ensure this is re-raised
+        raise Exception(f"Failed during OCR setup: {setup_err}")
 
 
 def process_tiff_preview_request(request):
@@ -214,7 +229,6 @@ def process_tiff_preview_request(request):
     except Exception as e:
         print(f"--- Error in process_tiff_preview_request: {e} ---")
         traceback.print_exc()
-        # Ensure this raises a ValueError or similar to be caught by the route
         raise ValueError(f"Failed to process TIFF for preview: {str(e)}")
     finally:
         if temp_file_path:

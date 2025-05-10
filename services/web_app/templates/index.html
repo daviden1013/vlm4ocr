@@ -10,9 +10,9 @@
                     <label for="input-file">Upload PDF, TIFF, or Image:</label>
                     <input type="file" id="input-file" name="input_file" accept=".pdf,.png,.jpg,.jpeg,.bmp,.gif,.webp,.tif,.tiff" required>
                     <div class="drop-zone-text">Drag & drop PDF, TIFF, or Image here</div>
-                    </div>
+                </div>
             </div>
-            {# NEW Output Format Dropdown #}
+            {# Output Format Dropdown #}
             <div class="form-group">
                 <label for="output-format-select">Output Format:</label>
                 <select id="output-format-select" name="output_format" required>
@@ -29,7 +29,7 @@
                     {% for api in vlm_api_options %}
                         <option value="{{ api.value }}">{{ api.name }}</option>
                     {% endfor %}
-                </select>            
+                </select>
             </div>
 
             <div id="openai-compatible-options" class="conditional-options indented-option" style="display: none;">
@@ -86,10 +86,26 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="ocr-user-prompt">User Prompt (Optional Context):</label>
-                <textarea id="ocr-user-prompt" name="user_prompt" rows="3" placeholder="Provide context about the image/PDF (e.g., 'This is a doctor's note')"></textarea>
-            </div>
+            {# MODIFIED: Collapsible Advanced OCR Settings Section #}
+            <details class="form-group">
+                <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Advanced OCR Settings</summary>
+                <div class="indented-option">
+                    <div class="form-group">
+                        <label for="ocr-user-prompt">User Prompt (Optional Context):</label>
+                        <textarea id="ocr-user-prompt" name="user_prompt" rows="3" placeholder="Provide context about the image/PDF (e.g., 'This is a doctor's note')"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="max-new-tokens">Max New Tokens:</label>
+                        <input type="number" id="max-new-tokens" name="max_new_tokens" value="4096" min="1" class="api-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="temperature">Temperature:</label>
+                        <input type="number" id="temperature" name="temperature" value="0.0" min="0" max="2" step="0.1" class="api-input">
+                    </div>
+                </div>
+            </details>
+            {# END MODIFICATION #}
+
             <button type="submit" id="run-ocr-button">Run OCR</button>
         </form>
     </div>
@@ -99,8 +115,7 @@
                  <h3>Input Preview</h3>
                  <span></span> </div>
             <div id="input-preview-area" class="output-box">
-               <p id="preview-placeholder" class="ocr-status-message" style="color: #ccc;">Upload a file to see the preview</p> {# Added ocr-status-message class for consistent styling #}
-               {# preview-render-error is now dynamically created by JS if needed, or handled within status messages #}
+               <p id="preview-placeholder" class="ocr-status-message" style="color: #ccc;">Upload a file to see the preview</p>
            </div>
        </div>
         <div class="display-column">
@@ -110,7 +125,6 @@
                     <label class="switch" title="Toggle Markdown Preview">
                         <input type="checkbox" id="ocr-render-toggle-checkbox" checked> <span class="slider round"></span>
                     </label>
-                    {# The icon will be updated in a later step if needed, for now, it remains a Markdown icon #}
                     <i class="fab fa-markdown" id="preview-icon" style="font-size: 1.5em; margin-left: 10px; color: #ccc;" title="Markdown Preview"></i>
                 </div>
             </div>
@@ -121,11 +135,9 @@
                     </div>
                 </div>
                 <div id="ocr-output-area" class="output-box">
-                    {# Initial placeholder message, will be replaced by JS status messages or OCR content #}
                     <p class="ocr-status-message">OCR results will appear here once a file is processed.</p>
                 </div>
             </div>
-            {# Old indicator divs commented out as their functionality is now integrated into ocr-output-area #}
             </div>
     </div>
 </div> {% endblock %}

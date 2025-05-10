@@ -1,5 +1,3 @@
-/* services/web_app/static/css/style.css */
-
 /* Basic Reset & Overall Dark Theme */
 * {
     box-sizing: border-box;
@@ -46,19 +44,17 @@ footer {
 }
 
 /* General heading colors for dark theme parts of the app */
-/* These apply to H1 in header, and H3s above input/output areas */
-h1, .display-column > div > h3 { /* More specific selector for column titles */
+h1, .display-column > div > h3 { 
     color: #ffffff;
     margin-bottom: 10px;
 }
-/* Fallback for other h2, h3 if they appear in dark sections */
 h2, h3:not(.display-column > div > h3) {
     color: #ffffff;
     margin-bottom: 10px;
 }
 
 
-a { /* Default link color for dark theme parts */
+a { 
     color: #4da6ff;
     text-decoration: none;
 }
@@ -70,31 +66,32 @@ a:hover {
 /* Main Layout Grid (Controls | Display) */
 .tab-pane-grid {
     display: grid;
-    grid-template-columns: 350px 1fr; /* Fixed width controls, flexible display area */
-    gap: 20px; /* Space between columns */
+    grid-template-columns: 350px 1fr; 
+    height: 80vh;
+    gap: 20px; 
 }
 
-.controls-panel { /* Dark Theme for controls */
+.controls-panel { 
     background-color: #252525;
     padding: 20px;
-    padding-bottom: 70px; /* Ensure enough space for the absolute positioned button */
+    padding-bottom: 70px; 
     border-radius: 5px;
     border: 1px solid #333;
     min-height: 100px;
-    position: relative; /* For positioning context of the submit button */
-    overflow-y: auto; /* Scroll if content exceeds height */
+    position: relative; 
+    overflow-y: auto; 
 }
 
-.display-panel { /* This is the container for input-preview and ocr-output-wrapper */
+.display-panel { 
     background-color: transparent;
     padding: 0;
     border: none;
-    display: grid; /* Changed from 'flex' to 'grid' for two-column layout */
-    gap: 15px; /* Space between inner columns */
+    display: grid; 
+    gap: 15px; 
 }
 
 .display-panel:has(> .display-column) {
-   grid-template-columns: 1fr 1fr; /* Make the children side-by-side */
+   grid-template-columns: 1fr 1fr; 
 }
 
 /* Form Styling (Dark Theme for controls panel) */
@@ -106,20 +103,21 @@ a:hover {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
-    color: #ccc; /* Light label text */
+    color: #ccc; 
 }
 
 .form-group input[type="file"],
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group input[type="url"],
+.form-group input[type="number"],
 .form-group select,
 .form-group textarea {
     width: 100%;
     padding: 10px;
-    background-color: #333; /* Dark input background */
+    background-color: #333; 
     border: 1px solid #555;
-    color: #e0e0e0; /* Light input text */
+    color: #e0e0e0; 
     border-radius: 3px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     font-family: inherit;
@@ -133,6 +131,7 @@ a:hover {
 .form-group input[type="text"]:focus,
 .form-group input[type="password"]:focus,
 .form-group input[type="url"]:focus,
+.form-group input[type="number"]:focus, /* MODIFIED: Added input[type="number"]:focus */
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
@@ -143,7 +142,7 @@ a:hover {
 /* Button Styling (Dark Theme context) */
 button[type="submit"] {
     background-color: #4da6ff;
-    color: #1a1a1a; /* Dark text on light button */
+    color: #1a1a1a; 
     padding: 10px 20px;
     border: none;
     border-radius: 3px;
@@ -151,9 +150,9 @@ button[type="submit"] {
     font-size: 1em;
     font-weight: bold;
     transition: background-color 0.2s ease;
-    position: absolute;
     bottom: 20px;
     right: 20px;
+    align-items: right;
 }
 
 button[type="submit"]:hover {
@@ -165,7 +164,7 @@ button[type="submit"]:hover {
     border: 2px dashed #555;
     padding: 20px;
     text-align: center;
-    position: relative; /* For absolute positioning of input */
+    position: relative; 
     transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
@@ -177,9 +176,9 @@ button[type="submit"]:hover {
 }
 
 .file-drop-zone .drop-zone-text {
-    color: #888; /* Muted text for drop zone */
-    margin-top: 10px; /* Adjust as needed if label is present */
-    pointer-events: none; /* Text shouldn't interfere with drop */
+    color: #888; 
+    margin-top: 10px; 
+    pointer-events: none; 
 }
 
 .file-drop-zone.drag-over {
@@ -189,25 +188,56 @@ button[type="submit"]:hover {
 
 /* Conditional options styling (Dark Theme context) */
 .conditional-options {
-    display: none; /* Hidden by default */
+    display: none; 
     margin-top: 10px;
 }
 
 .indented-option {
-    margin-left: 15px;
+    margin-left: 15px; /* Provides space for the parent <summary> marker if needed */
     padding-left: 15px;
     border-left: 2px solid #444;
-    margin-bottom: 15px; /* Spacing for indented groups */
+    /* margin-bottom: 15px; /* Removed, as individual form-groups inside will have their own margin */
 }
 
+/* NEW STYLES: For <details> and <summary> in controls-panel */
+.controls-panel details.form-group {
+    /* .form-group already provides margin-bottom: 15px; */
+}
+
+.controls-panel details.form-group summary {
+    font-weight: bold;
+    color: #ccc; /* Consistent with labels */
+    margin-bottom: 10px; /* Space before the indented content when <details> is open */
+    cursor: pointer;
+    padding: 5px 0; /* Add some padding for better clickability */
+    list-style-position: inside; /* Keeps marker more aligned, or use 'none' and add custom marker */
+    outline: none; /* Removes default focus outline from summary, if desired */
+    transition: color 0.2s ease;
+}
+
+.controls-panel details.form-group summary:hover {
+    color: #4da6ff; /* Highlight on hover */
+}
+
+/* Optional: Style the disclosure marker (triangle) */
+/* Note: Styling disclosure markers has limited cross-browser consistency */
+.controls-panel details.form-group summary::-webkit-details-marker {
+    /* color: #4da6ff; */ /* Example: Change marker color for WebKit browsers */
+    /* You can add more specific styling here if needed */
+}
+.controls-panel details.form-group summary::marker { /* Standard property for Firefox & newer browsers */
+    /* color: #4da6ff; */ /* Example: Change marker color */
+}
+/* END NEW STYLES */
+
+
 /* Input Preview Area (Dark Theme) */
-/* H3 for "Input Preview" is styled by .display-column > div > h3 */
-#input-preview-area.output-box { /* This remains dark themed */
+#input-preview-area.output-box { 
     width: 100%;
-    height: 76vh; /* Fixed height for consistency */
-    overflow-y: auto; /* Enable vertical scroll */
+    height: 76vh; 
+    overflow-y: auto; 
     overflow-x: hidden;
-    background-color: #2c2c2c; /* Dark background for input preview */
+    background-color: #2c2c2c; 
     border: 1px solid #444;
     border-radius: 3px;
     padding: 10px;
@@ -225,40 +255,39 @@ button[type="submit"]:hover {
     border-radius: 3px;
 }
 #input-preview-area #preview-placeholder,
-#input-preview-area .ocr-status-message { /* Status messages in dark input preview */
+#input-preview-area .ocr-status-message { 
     color: #888;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
 }
 #input-preview-area .ocr-status-error {
-    color: #e06c75; /* Error color for dark input preview */
-    /* Add other error styling if needed for input preview */
+    color: #e06c75; 
 }
 
 
 /* --- Styles for OCR Output Wrapper and Area (LIGHT THEME) --- */
-#ocr-output-wrapper { /* This wrapper will get a light background */
+#ocr-output-wrapper { 
     display: flex;
     flex-direction: column;
     height: 76vh;
-    border: 1px solid #ced4da; /* Lighter border for light theme */
+    border: 1px solid #ced4da; 
     border-radius: 3px;
-    background-color: #ffffff; /* LIGHT background for the entire OCR output block */
-    overflow: hidden; /* Important for child with flex-grow and overflow-y */
+    background-color: #ffffff; 
+    overflow: hidden; 
 }
 
-/* H3 for "Extracted Text" is styled by .display-column > div > h3 */
-
-#ocr-output-area.output-box { /* This is the scrollable content area */
+#ocr-output-area.output-box { 
     padding: 20px;
-    color: #212529; /* Default DARK text color for content on light background */
-    font-family: inherit; /* Default sans-serif */
-    /* white-space: pre-wrap; /* REMOVED - apply to specific elements like pre */
-    word-wrap: break-word;     /* Ensures long words break to prevent overflow */
-    overflow-wrap: break-word; /* Modern equivalent of word-wrap */
+    color: #212529; 
+    font-family: inherit; 
+    word-wrap: break-word;     
+    overflow-wrap: break-word; 
     flex-grow: 1;
-    overflow-y: auto; /* THIS is the primary scrollbar for the output content */
-    min-height: 0; /* For flex scroll */
+    overflow-y: auto; 
+    min-height: 0; 
     height: 76vh;
-    background-color: #f8f9fa; /* Very LIGHT gray background for the text content area itself */
+    background-color: #f8f9fa; 
 }
 
 /* Markdown generated content styling for LIGHT THEME (rendered by marked.js) */
