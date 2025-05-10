@@ -199,11 +199,6 @@ button[type="submit"]:hover {
     /* margin-bottom: 15px; /* Removed, as individual form-groups inside will have their own margin */
 }
 
-/* NEW STYLES: For <details> and <summary> in controls-panel */
-.controls-panel details.form-group {
-    /* .form-group already provides margin-bottom: 15px; */
-}
-
 .controls-panel details.form-group summary {
     font-weight: bold;
     color: #ccc; /* Consistent with labels */
@@ -218,18 +213,6 @@ button[type="submit"]:hover {
 .controls-panel details.form-group summary:hover {
     color: #4da6ff; /* Highlight on hover */
 }
-
-/* Optional: Style the disclosure marker (triangle) */
-/* Note: Styling disclosure markers has limited cross-browser consistency */
-.controls-panel details.form-group summary::-webkit-details-marker {
-    /* color: #4da6ff; */ /* Example: Change marker color for WebKit browsers */
-    /* You can add more specific styling here if needed */
-}
-.controls-panel details.form-group summary::marker { /* Standard property for Firefox & newer browsers */
-    /* color: #4da6ff; */ /* Example: Change marker color */
-}
-/* END NEW STYLES */
-
 
 /* Input Preview Area (Dark Theme) */
 #input-preview-area.output-box { 
