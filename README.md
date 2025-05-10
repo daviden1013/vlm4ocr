@@ -19,14 +19,18 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 - [Installation](#installation)
 - [Web Application](#web-application)
 - [Python package](#python-package)
+- [CLI](#cli)
 
 ## :sparkles:Overview
-`vlm4ocr` provides a simple way to perform OCR using the power of modern Vision Language Models (VLMs). A drag-and-drop **web application** is included for easy access. The **Python package** supports concurrent batch processing for large amount of documents.
+`vlm4ocr` provides a simple way to perform OCR using the power of modern Vision Language Models (VLMs). A drag-and-drop **web application** is included for easy access. The **Python package** supports concurrent batch processing for large amount of documents. **CLI** provides lightweight access to most OCR features without the burden of coding. 
+Below are screenshots from our [Web Application](#web-application). Note that all contents shown in this README are synthesized. **There is no real personal information**.
 
 #### Markdown output mode
+A scanned lab report with tables and highlights are converted into markdown text by our OCR engine.
 <div align="center"><img src=doc_asset/readme_img/table_markdown_demo.PNG width=1000 ></div>
 
 #### HTML output mode
+A scanned clinical progress note with hand-writting is converted into HTML.
 <div align="center"><img src=doc_asset/readme_img/report_HTML_demo.PNG width=1000 ></div>
 
 ## :star:Supported Models 
@@ -54,7 +58,7 @@ pip install openai # For OpenAI (compatible) and Azure OpenAI
 ```
 
 ## :earth_americas:Web Application
-A ready-to-use Flask web application is included.
+A ready-to-use Flask web application is included. We support input preview, real-time streaming, and output export. 
 
 https://github.com/user-attachments/assets/b196453c-fd2c-491a-ba1e-0a77cf7f5941
 
@@ -72,40 +76,6 @@ cd vlm4ocr/services/web_app
 python run.py
 ```
 
-## :computer:CLI
-Command line interface (CLI) provides an easy way to batch process many images, PDFs, and TIFFs in a directory. 
-### Installation
-
-Install the Python package on PyPi and CLI tool will be automatically installed.
-```bash
-pip install vlm4ocr
-```
-
-### Usage
-Run OCR for all supported file types in the `/examples/synthesized_data/` folder with a locally deployed [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct).
-```sh
-# OpenAI compatible API (batch processing)
-vlm4ocr --input_path /examples/synthesized_data/ \
-        --output_mode markdown \
-        --vlm_engine openai_compatible \
-        --model Qwen/Qwen2.5-VL-7B-Instruct \
-        --api_key EMPTY \
-        --base_url http://localhost:8000/v1 \
-        --concurrent \
-        --concurrent_batch_size 4 \
-```
-
-Alternatively, use *gpt-4o-mini* to process a PDF with many pages by batch.
-```sh
-# OpenAI API
-export OPENAI_API_KEY=<api key>
-vlm4ocr --input_path /examples/synthesized_data/GPT-4o_synthesized_note_1.pdf \
-        --output_mode HTML \
-        --vlm_engine openai \
-        --model gpt-4o-mini \
-        --concurrent \
-        --concurrent_batch_size 4 \
-```
 
 ## :snake:Python package
 ### Installation
@@ -208,3 +178,39 @@ ocr_results = ocr.run_ocr([image_path, pdf_path], verbose=True)
 
 # Batch OCR for multiple image/pdf files
 ocr_results = ocr.run_ocr([image_path, pdf_path], concurrent=True, concurrent_batch_size=32)
+```
+
+## :computer:CLI
+Command line interface (CLI) provides an easy way to batch process many images, PDFs, and TIFFs in a directory. 
+### Installation
+
+Install the Python package on PyPi and CLI tool will be automatically installed.
+```bash
+pip install vlm4ocr
+```
+
+### Usage
+Run OCR for all supported file types in the `/examples/synthesized_data/` folder with a locally deployed [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct).
+```sh
+# OpenAI compatible API (batch processing)
+vlm4ocr --input_path /examples/synthesized_data/ \
+        --output_mode markdown \
+        --vlm_engine openai_compatible \
+        --model Qwen/Qwen2.5-VL-7B-Instruct \
+        --api_key EMPTY \
+        --base_url http://localhost:8000/v1 \
+        --concurrent \
+        --concurrent_batch_size 4 \
+```
+
+Alternatively, use *gpt-4o-mini* to process a PDF with many pages by batch.
+```sh
+# OpenAI API
+export OPENAI_API_KEY=<api key>
+vlm4ocr --input_path /examples/synthesized_data/GPT-4o_synthesized_note_1.pdf \
+        --output_mode HTML \
+        --vlm_engine openai \
+        --model gpt-4o-mini \
+        --concurrent \
+        --concurrent_batch_size 4 \
+```
