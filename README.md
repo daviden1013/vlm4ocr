@@ -5,25 +5,47 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 
 | Feature                 | Support                                                                 |
 | :---------------------- | :---------------------------------------------------------------------- |
-| **File Types** | :white_check_mark: PDF, PNG, JPG/JPEG, BMP, GIF, WEBP         |
+| **File Types** | :white_check_mark: PDF, TIFF, PNG, JPG/JPEG, BMP, GIF, WEBP         |
 | **VLM Engines** | :white_check_mark: Ollama, OpenAI Compatible, OpenAI, Azure OpenAI |
-| **Output Modes** | :white_check_mark: Markdown, plain text |
+| **Output Modes** | :white_check_mark: Markdown, HTML, plain text |
 | **Batch OCR** | :white_check_mark: Processes many pages concurrently by setting `concurrent_batch_size` |
 
 
 ## Table of Contents
 - [Overview](#overview)
+- [Supported Models](#supported-models)
+- [Example Notebooks](#example-notebooks)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Web Application](#web-application)
 - [Python package](#python-package)
 
-## Overview
+## :sparkles:Overview
 `vlm4ocr` provides a simple way to perform OCR using the power of modern Vision Language Models (VLMs). A drag-and-drop **web application** is included for easy access. The **Python package** supports concurrent batch processing for large amount of documents.
 
 https://github.com/user-attachments/assets/b196453c-fd2c-491a-ba1e-0a77cf7f5941
 
-## Prerequisites
+#### Markdown output mode
+<div align="center"><img src=doc_asset/readme_img/table_markdown_demo.PNG width=1000 ></div>
+
+#### HTML output mode
+<div align="center"><img src=doc_asset/readme_img/report_HTML_demo.PNG width=1000 ></div>
+
+## :star:Supported Models 
+### Open-weights (ALL Supported!!)
+**All open-weights VLMs are supported** via our [Ollama](/packages/vlm4ocr/vlm4ocr/vlm_engines.py) and [OpenAI compitable engines](/packages/vlm4ocr/vlm4ocr/vlm_engines.py), including:
+- [Qwen2.5-VL](https://huggingface.co/collections/Qwen/qwen25-vl-6795ffac22b334a837c0f9a5)
+- [Llama-3.2](https://huggingface.co/collections/meta-llama/llama-32-66f448ffc8c32f949b04c8cf)
+- [LLaVa-1.5](https://huggingface.co/collections/llava-hf/llava-15-65f762d5b6941db5c2ba07e0)
+
+### Proprietary 
+Proprietary models such as gpt-4o are supported via our [OpenAI](/packages/vlm4ocr/vlm4ocr/vlm_engines.py) and [Azure](/packages/vlm4ocr/vlm4ocr/vlm_engines.py) engines.
+
+## :books:Example Notebooks
+
+
+
+## :vertical_traffic_light:Prerequisites
 - Python 3.x
 - For PDF processing: [poppler](https://pypi.org/project/pdf2image/) library.
 - At least one VLM inference engine setup (Ollama, OpenAI/Azure API keys, or an OpenAI-compatible API endpoint).
@@ -33,7 +55,7 @@ pip install ollama # For Ollama
 pip install openai # For OpenAI (compatible) and Azure OpenAI
 ```
 
-## Web Application
+## :computer:Web Application
 A ready-to-use Flask web application is included.
 
 ### Installation
@@ -50,7 +72,7 @@ cd vlm4ocr/services/web_app
 python run.py
 ```
 
-## Python package
+## :snake:Python package
 ### Installation
 
 Python package is available on PyPi
