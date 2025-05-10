@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "vlm4ocr"
-version = "0.0.1"
-description = "OCR with vision language models."
+version = "0.1.0"
+description = "Python package and Web App for OCR with vision language models."
 authors = ["Enshuo (David) Hsu"]
 license = "MIT"
 readme = "README.md"
