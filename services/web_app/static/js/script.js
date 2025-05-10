@@ -1,6 +1,3 @@
-// --- services/web_app/static/js/script.js ---
-
-// Global variables
 let previewErrorMsgElement = null;
 let previewArea = null;
 let ocrRawText = '';
@@ -391,9 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                         buffer = lines[lines.length-1];
-                        // requestAnimationFrame(() => {
-                        //    if(ocrOutputArea.scrollHeight > ocrOutputArea.clientHeight) ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
-                        // });
                     }
                 }
 
@@ -441,8 +435,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const eP = document.createElement('p'); eP.className="ocr-status-error";eP.innerHTML=`Stream Error: ${escapeHtml(item.data)}`;
                         if(liveContentHost?.appendChild) liveContentHost.appendChild(eP); else ocrOutputArea.appendChild(eP);
                     }
-                     // Auto-scroll ocrOutputArea to keep current content in view
-                    if (ocrOutputArea.scrollHeight > ocrOutputArea.clientHeight) {
+                    // Auto-scroll ocrOutputArea if user is near the bottom
+                    const scrollThreshold = 50; // Pixels from bottom to still auto-scroll
+                    const userScrolledUp = ocrOutputArea.scrollHeight - ocrOutputArea.scrollTop - ocrOutputArea.clientHeight > scrollThreshold;
+
+                    if (!userScrolledUp && ocrOutputArea.scrollHeight > ocrOutputArea.clientHeight) {
                         ocrOutputArea.scrollTop = ocrOutputArea.scrollHeight;
                     }
                 }
