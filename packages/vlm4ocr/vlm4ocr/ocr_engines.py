@@ -3,13 +3,14 @@ from typing import List, Dict, Union, Generator, Iterable
 import importlib
 import asyncio
 from vlm4ocr.utils import get_images_from_pdf, get_images_from_tiff, get_image_from_file, clean_markdown
+from vlm4ocr.data_types import OCRResult
 from vlm4ocr.vlm_engines import VLMEngine
 
 SUPPORTED_IMAGE_EXTS = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
 
 
 class OCREngine:
-    def __init__(self, vlm_engine:VLMEngine, output_mode:str="markdown", system_prompt:str=None, user_prompt:str=None, page_delimiter:str="auto"):
+    def __init__(self, vlm_engine:VLMEngine, output_mode:str="markdown", system_prompt:str=None, user_prompt:str=None):
         """
         This class inputs a image or PDF file path and processes them using a VLM inference engine. Outputs plain text or markdown.
 
@@ -23,12 +24,6 @@ class OCREngine:
             Custom system prompt. We recommend use a default system prompt by leaving this blank. 
         user_prompt : str, Optional
             Custom user prompt. It is good to include some information regarding the document. If not specified, a default will be used.
-        page_delimiter : str, Optional
-            The delimiter to use between PDF pages. 
-            if 'auto', it will be set to the default page delimiter for the output mode: 
-            'markdown' -> '\n\n---\n\n'
-            'HTML' -> '<br><br>'
-            'text' -> '\n\n---\n\n'
         """
         # Check inference engine
         if not isinstance(vlm_engine, VLMEngine):
@@ -56,20 +51,6 @@ class OCREngine:
             with open(file_path, 'r', encoding='utf-8') as f:
                 self.user_prompt =  f.read()
 
-        # Page delimiter
-        if isinstance(page_delimiter, str):
-            if page_delimiter == "auto":
-                if self.output_mode == "markdown":
-                    self.page_delimiter = "\n\n---\n\n"
-                elif self.output_mode == "HTML":
-                    self.page_delimiter = "<br><br>"
-                else:
-                    self.page_delimiter = "\n\n---\n\n"
-            else:
-                self.page_delimiter = page_delimiter
-        else:
-            raise ValueError("page_delimiter must be a string")
-        
 
     def stream_ocr(self, file_path: str, max_new_tokens:int=4096, temperature:float=0.0, **kwrs) -> Generator[str, None, None]:
         """
@@ -135,7 +116,7 @@ class OCREngine:
             
 
     def run_ocr(self, file_paths: Union[str, Iterable[str]], max_new_tokens:int=4096, temperature:float=0.0, 
-                verbose:bool=False, concurrent:bool=False, concurrent_batch_size:int=32, **kwrs) -> Union[str, Generator[str, None, None]]:
+                verbose:bool=False, concurrent:bool=False, concurrent_batch_size:int=32, **kwrs) -> Union[Iterable[str], Generator[OCRResult]]:
         """
         This method takes a list of file paths (image, PDF, TIFF) and perform OCR using the VLM inference engine.
 
@@ -153,6 +134,11 @@ class OCREngine:
             If True, the function will process the files concurrently.
         concurrent_batch_size : int, Optional
             The number of images/pages to process concurrently. 
+
+        Returns:
+        --------
+        Iterable[str]
+            A list of strings containing the OCR results.
         """
         # if file_paths is a string, convert it to a list
         if isinstance(file_paths, str):
@@ -189,7 +175,7 @@ class OCREngine:
     
 
     def _run_ocr(self, file_paths: Union[str, Iterable[str]], max_new_tokens:int=4096, 
-                 temperature:float=0.0, verbose:bool=False, **kwrs) -> Iterable[str]:
+                 temperature:float=0.0, verbose:bool=False, **kwrs) -> List[OCRResult]:
         """
         This method inputs a file path or a list of file paths (image, PDF, TIFF) and performs OCR using the VLM inference engine.
 
@@ -206,36 +192,28 @@ class OCREngine:
         
         Returns:
         --------
-        Iterable[str]
-            A list of strings containing the OCR results.
+        List[OCRResult]
+            A list of OCR result objects.
         """
         ocr_results = []
         for file_path in file_paths:
             file_ext = os.path.splitext(file_path)[1].lower()
+            filename = os.path.basename(file_path)
+            ocr_result = OCRResult(filename, self.output_mode)
             # PDF or TIFF
             if file_ext in ['.pdf', '.tif', '.tiff']:
                 images = get_images_from_pdf(file_path) if file_ext == '.pdf' else get_images_from_tiff(file_path)
-                if not images:
-                    raise ValueError(f"No images extracted from file: {file_path}")
-                results = []
-                for image in images:
-                    messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
-                    response = self.vlm_engine.chat(
-                        messages,
-                        max_new_tokens=max_new_tokens,
-                        temperature=temperature,
-                        verbose=verbose,
-                        stream=False,
-                        **kwrs
-                    )
-                    results.append(response)
-
-                ocr_text = self.page_delimiter.join(results)
             # Image
             else:
-                image = get_image_from_file(file_path)
+                images = [get_image_from_file(file_path)]
+
+            if not images:
+                raise ValueError(f"No images extracted from file: {file_path}")
+            
+            # Process images
+            for image in images:
                 messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
-                ocr_text = self.vlm_engine.chat(
+                response = self.vlm_engine.chat(
                     messages,
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
@@ -243,17 +221,25 @@ class OCREngine:
                     stream=False,
                     **kwrs
                 )
-            
-            # Clean markdown
-            if self.output_mode == "markdown":
-                ocr_text = clean_markdown(ocr_text)
-            ocr_results.append(ocr_text)
+                if self.output_mode == "markdown":
+                    response = clean_markdown(response)
+                
+                ocr_result.add_page(response)
+
+            # Add the OCR result to the list
+            ocr_results.append(ocr_result)
+
+            if verbose:
+                print(f"Processed {filename} with {len(ocr_result)} pages.")
+                for page in ocr_result:
+                    print(page)
+                    print("-" * 80)
 
         return ocr_results
 
 
     async def _run_ocr_async(self, file_paths: Union[str, Iterable[str]], max_new_tokens:int=4096, 
-                       temperature:float=0.0, concurrent_batch_size:int=32, **kwrs) -> List[str]:
+                       temperature:float=0.0, concurrent_batch_size:int=32, **kwrs) -> Generator[OCRResult]:
         """
         This is the async version of the _run_ocr method. 
         """
