@@ -19,6 +19,7 @@ class OCRResult:
         """
         self.input_dir = input_dir
         self.filename = os.path.basename(input_dir)
+        self.status = "processing"
 
         # Check if the output_mode is valid
         if output_mode not in ["markdown", "HTML", "text"]:
@@ -34,7 +35,7 @@ class OCRResult:
             for page in pages:
                 if not isinstance(page, str):
                     raise ValueError("Each page must be a string")
-        self.pages = pages
+            self.pages = pages
 
     def add_page(self, page:str):
         if isinstance(page, str):
@@ -50,6 +51,9 @@ class OCRResult:
     
     def __iter__(self):
         return iter(self.pages)
+    
+    def __repr__(self):
+        return f"OCRResult(filename={self.filename}, output_mode={self.output_mode}, pages_count={len(self.pages)}, status={self.status})"
     
     def to_string(self, page_delimiter:str="auto") -> str:
         """
