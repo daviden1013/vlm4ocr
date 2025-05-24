@@ -44,7 +44,7 @@ class VLMEngine:
         return NotImplemented
 
     @abc.abstractmethod
-    def get_ocr_messages(self, system_prompt:str, user_prompt:str, image_path:str) -> List[Dict[str,str]]:
+    def get_ocr_messages(self, system_prompt:str, user_prompt:str, image:Image.Image) -> List[Dict[str,str]]:
         """
         This method inputs an image and returns the correesponding chat messages for the inference engine.
 
@@ -54,8 +54,8 @@ class VLMEngine:
             the system prompt.
         user_prompt : str
             the user prompt.
-        image_path : str
-            the image path for OCR.
+        image : Image.Image
+            the image for OCR.
         """
         return NotImplemented
 
@@ -163,8 +163,8 @@ class OllamaVLMEngine(VLMEngine):
             the system prompt.
         user_prompt : str
             the user prompt.
-        image_path : str
-            the image path for OCR.
+        image : Image.Image
+            the image for OCR.
         """
         base64_str = image_to_base64(image)
         return [
