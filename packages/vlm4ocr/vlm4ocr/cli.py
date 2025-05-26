@@ -29,9 +29,9 @@ logger = logging.getLogger("vlm4ocr_cli")
 SUPPORTED_IMAGE_EXTS_CLI = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
 OUTPUT_EXTENSIONS = {'markdown': '.md', 'HTML':'.html', 'text':'.txt'}
 
-def get_output_path(input_file_path, args_output_file, output_mode, num_total_inputs, base_output_dir_for_multiple_no_output_file_arg):
+def get_output_path_for_ocr_result(input_file_path, specified_output_path_arg, output_mode, num_total_inputs, base_output_dir_if_no_specific_path):
     """
-    Determines the full output path for a given input file.
+    Determines the full output path for a given OCR result file.
     Output filename format: <original_basename>_ocr.<new_extension>
     Example: input "abc.pdf", output_mode "markdown" -> "abc.pdf_ocr.md"
     """
@@ -39,34 +39,38 @@ def get_output_path(input_file_path, args_output_file, output_mode, num_total_in
     output_filename_core = f"{original_basename}_ocr"
     
     output_filename_ext = OUTPUT_EXTENSIONS.get(output_mode, '.txt')
-    final_output_filename = f"{output_filename_core}{output_filename_ext}" # "abc.pdf_ocr.md"
+    final_output_filename = f"{output_filename_core}{output_filename_ext}"
 
-    if args_output_file:
-        if num_total_inputs > 1 and os.path.isdir(args_output_file):
-            return os.path.join(args_output_file, final_output_filename)
-        elif num_total_inputs == 1 or not os.path.isdir(args_output_file): # Single input or output_file is a specific file path
-            # If output_file is a dir for a single input, save inside it with the generated name
-            if os.path.isdir(args_output_file) and num_total_inputs == 1:
-                 return os.path.join(args_output_file, final_output_filename)
-            return args_output_file # Assumed to be the exact full output file path desired by user
-        else: # Fallback (should not be commonly reached if primary logic is sound)
-             return os.path.join(base_output_dir_for_multiple_no_output_file_arg, final_output_filename)
-    else: # No args_output_file, save to the determined base output directory
-        return os.path.join(base_output_dir_for_multiple_no_output_file_arg, final_output_filename)
+    if specified_output_path_arg: # If --output_path is used
+        # Scenario 1: Multiple input files, --output_path is expected to be a directory.
+        if num_total_inputs > 1 and os.path.isdir(specified_output_path_arg):
+            return os.path.join(specified_output_path_arg, final_output_filename)
+        # Scenario 2: Single input file.
+        # --output_path could be a full file path OR a directory.
+        elif num_total_inputs == 1:
+            if os.path.isdir(specified_output_path_arg): # If --output_path is a directory for the single file
+                return os.path.join(specified_output_path_arg, final_output_filename)
+            else: # If --output_path is a specific file name for the single file
+                return specified_output_path_arg 
+        # Scenario 3: Multiple input files, but --output_path is NOT a directory (error, handled before this fn)
+        # or other edge cases, fall back to base_output_dir_if_no_specific_path
+        else: 
+             return os.path.join(base_output_dir_if_no_specific_path, final_output_filename)
+    else: # No --output_path, save to the determined base output directory
+        return os.path.join(base_output_dir_if_no_specific_path, final_output_filename)
 
 def setup_file_logger(log_dir, timestamp_str, debug_mode):
     """Sets up a file handler for logging."""
-    log_file_name = f"{timestamp_str}.log"
+    log_file_name = f"vlm4ocr_{timestamp_str}.log"
     log_file_path = os.path.join(log_dir, log_file_name)
 
-    file_handler = logging.FileHandler(log_file_path, mode='a') # Append mode
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler = logging.FileHandler(log_file_path, mode='a')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     file_handler.setFormatter(formatter)
     
     log_level = logging.DEBUG if debug_mode else logging.INFO
     file_handler.setLevel(log_level)
     
-    # Add handler to our specific logger instance
     logger.addHandler(file_handler)
     logger.info(f"Logging to file: {log_file_path}")
 
@@ -80,7 +84,7 @@ def main():
     io_group = parser.add_argument_group("Input/Output Options")
     io_group.add_argument("--input_path", required=True, help="Path to input file or directory.")
     io_group.add_argument("--output_mode", choices=["markdown", "HTML", "text"], default="markdown", help="Output format.")
-    io_group.add_argument("--output_file", help="Optional: Path to save output. If input_path is a directory, this should be an output directory. If not provided, results saved to current working directory.")
+    io_group.add_argument("--output_path", help="Optional: Path to save OCR results. If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory (or a sub-directory for logs if --log is used).")
 
     vlm_engine_group = parser.add_argument_group("VLM Engine Selection")
     vlm_engine_group.add_argument("--vlm_engine", choices=["openai", "azure_openai", "ollama", "openai_compatible"], required=True, help="VLM engine.")
@@ -112,59 +116,65 @@ def main():
         default=4,
         help="Number of images/pages to process concurrently. Set to 1 for sequential processing of VLM calls."
     )
-    processing_group.add_argument("--debug", action="store_true", help="Enable debug level logging for console and file.")
+    # --verbose flag was removed by user in previous version provided
+    processing_group.add_argument("--log", action="store_true", help="Enable writing logs to a timestamped file in the output directory.")
+    processing_group.add_argument("--debug", action="store_true", help="Enable debug level logging for console (and file if --log is active).")
 
     args = parser.parse_args()
     
-    # --- Timestamp for logging and potentially output folders ---
     current_timestamp_str = time.strftime("%Y%m%d_%H%M%S")
 
     # --- Configure Logger Level based on args ---
-    # Console logger level is set by basicConfig initially, then adjusted
-    # The file logger level will be set in setup_file_logger
     if args.debug:
-        logger.setLevel(logging.DEBUG) # Our specific logger
-        logging.getLogger().setLevel(logging.DEBUG) # Root logger for other libs if needed
+        logger.setLevel(logging.DEBUG)
+        # Set root logger to DEBUG only if our specific logger is DEBUG, to avoid overly verbose library logs unless intended.
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Debug mode enabled for console.")
-    else: # Default console level if not debug
-        logger.setLevel(logging.INFO) # Or keep logging.INFO as per basicConfig
-        logging.getLogger().setLevel(logging.WARNING)
+    else:
+        logger.setLevel(logging.INFO) # Default for our CLI's own messages
+        logging.getLogger().setLevel(logging.WARNING) # Keep external libraries quieter by default
 
     if args.concurrent_batch_size < 1:
         parser.error("--concurrent_batch_size must be 1 or greater.")
 
-    # --- Determine Base Output Directory (for log file and default outputs) ---
-    determined_output_dir = os.getcwd() # Default
-    is_processing_multiple_files = False # Will be set after checking input_path
-
-    if os.path.isdir(args.input_path):
-        # Temporarily scan to check if multiple files will be processed for directory logic
-        temp_files_list = [f for f in os.listdir(args.input_path) if os.path.isfile(os.path.join(args.input_path, f)) and os.path.splitext(f)[1].lower() in SUPPORTED_IMAGE_EXTS_CLI]
-        if len(temp_files_list) > 1:
-            is_processing_multiple_files = True
-    elif os.path.isfile(args.input_path):
-        is_processing_multiple_files = False # Single file
-
-    if args.output_file:
-        if is_processing_multiple_files: # Input is a dir with multiple files, output_file should be a dir
-            if os.path.exists(args.output_file) and not os.path.isdir(args.output_file):
-                logger.critical(f"Output path '{args.output_file}' exists and is not a directory, but multiple files are being processed. Please specify a valid directory for --output_file or omit it to use the current directory.")
-                sys.exit(1)
-            determined_output_dir = args.output_file
-        else: # Single input file, output_file is a specific file path
-            determined_output_dir = os.path.dirname(args.output_file)
-            if not determined_output_dir: # If output_file is just a filename
-                determined_output_dir = os.getcwd()
+    # --- Determine Effective Output Directory (for logs and default OCR outputs) ---
+    effective_output_dir = os.getcwd() # Default if no --output_path
     
-    if not os.path.exists(determined_output_dir):
-        logger.info(f"Creating output directory for logs/results: {determined_output_dir}")
-        os.makedirs(determined_output_dir, exist_ok=True)
+    # Preliminary check to see if multiple files will be processed
+    _is_multi_file_scenario = False
+    if os.path.isdir(args.input_path):
+        _temp_files_list = [f for f in os.listdir(args.input_path) if os.path.isfile(os.path.join(args.input_path, f)) and os.path.splitext(f)[1].lower() in SUPPORTED_IMAGE_EXTS_CLI]
+        if len(_temp_files_list) > 1:
+            _is_multi_file_scenario = True
+            
+    if args.output_path:
+        if _is_multi_file_scenario: # Input is a dir with multiple files
+            if os.path.exists(args.output_path) and not os.path.isdir(args.output_path):
+                logger.critical(f"Output path '{args.output_path}' must be a directory when processing multiple files. It currently points to a file.")
+                sys.exit(1)
+            effective_output_dir = args.output_path # --output_path is the directory for outputs and logs
+        else: # Single input file scenario
+            # If args.output_path is a directory, use it.
+            # If args.output_path is a file path, use its directory for logs.
+            if os.path.isdir(args.output_path):
+                effective_output_dir = args.output_path
+            else: # Assumed to be a file path
+                dir_name = os.path.dirname(args.output_path)
+                if dir_name: # If output_path includes a directory
+                    effective_output_dir = dir_name
+                else: # output_path is just a filename, logs go to CWD
+                    effective_output_dir = os.getcwd()
+    
+    if not os.path.exists(effective_output_dir):
+        logger.info(f"Creating output directory: {effective_output_dir}")
+        os.makedirs(effective_output_dir, exist_ok=True)
 
-    # --- Setup File Logger ---
-    # Must be done after determined_output_dir is finalized.
-    setup_file_logger(determined_output_dir, current_timestamp_str, args.debug)
+    # --- Setup File Logger (if --log is specified) ---
+    if args.log:
+        setup_file_logger(effective_output_dir, current_timestamp_str, args.debug)
 
-    logger.debug(f"Parsed arguments: {args}") # Log after file logger is set up
+    logger.debug(f"Parsed arguments: {args}")
 
     # --- Initialize VLM Engine ---
     vlm_engine_instance = None
@@ -224,6 +234,9 @@ def main():
         logger.error(f"Input path not valid: {args.input_path}")
         sys.exit(1)
     
+    # This re-evaluation is useful if the initial _is_multi_file_scenario was just for log dir
+    num_actual_files = len(input_files_to_process)
+
     # --- Run OCR ---
     try:
         logger.info(f"Processing with concurrent_batch_size: {args.concurrent_batch_size}.")
@@ -236,15 +249,16 @@ def main():
                 concurrent_batch_size=args.concurrent_batch_size
             )
             
-            # Progress bar shown only if multiple files are being processed OR single file (tqdm handles total=1 well)
-            show_progress_bar = (len(input_files_to_process) > 0)
+            # Progress bar always attempted if tqdm is available and files exist,
+            # console verbosity controlled by logger level.
+            show_progress_bar = (num_actual_files > 0) 
 
             iterator_wrapper = tqdm.asyncio.tqdm(
                 ocr_task_generator, 
-                total=len(input_files_to_process), 
+                total=num_actual_files, 
                 desc="Processing files", 
                 unit="file",
-                disable=not show_progress_bar 
+                disable=not show_progress_bar # disable if no files, or can remove this disable if tqdm handles total=0
             )
             
             async for result_object in iterator_wrapper:
@@ -253,33 +267,31 @@ def main():
                     continue
 
                 input_file_path_from_result = result_object.input_dir
-                current_output_file_path = get_output_path(
-                    input_file_path_from_result, args.output_file, args.output_mode,
-                    len(input_files_to_process), determined_output_dir # Pass the correctly determined base output dir
+                # For get_output_path_for_ocr_result, effective_output_dir is the base if args.output_path isn't specific enough
+                current_ocr_output_file_path = get_output_path_for_ocr_result(
+                    input_file_path_from_result, args.output_path, args.output_mode,
+                    num_actual_files, effective_output_dir 
                 )
                 
                 if result_object.status == "error":
                     error_message = result_object.pages[0] if result_object.pages else 'Unknown error during OCR'
                     logger.error(f"OCR failed for {result_object.filename}: {error_message}")
-                    # Error is already logged to console and file by logger.error
                 else:
                     try:
                         content_to_write = result_object.to_string()
-                        with open(current_output_file_path, "w", encoding="utf-8") as f:
+                        with open(current_ocr_output_file_path, "w", encoding="utf-8") as f:
                             f.write(content_to_write)
-                        # Log successful save, but not if tqdm is active and providing feedback
-                        if not show_progress_bar:
-                           logger.info(f"OCR result for '{input_file_path_from_result}' saved to: {current_output_file_path}")
+                        # Log less verbosely to console if progress bar is active
+                        if not show_progress_bar or logger.getEffectiveLevel() <= logging.DEBUG:
+                           logger.info(f"OCR result for '{input_file_path_from_result}' saved to: {current_ocr_output_file_path}")
                     except Exception as e:
-                        logger.error(f"Error writing output for '{input_file_path_from_result}' to '{current_output_file_path}': {e}")
+                        logger.error(f"Error writing output for '{input_file_path_from_result}' to '{current_ocr_output_file_path}': {e}")
             
             if hasattr(iterator_wrapper, 'close') and isinstance(iterator_wrapper, tqdm.asyncio.tqdm):
-                # This ensures the pbar finishes cleanly if the loop exits early or there are few items
                 if iterator_wrapper.n < iterator_wrapper.total:
-                    iterator_wrapper.n = iterator_wrapper.total # Force to 100%
+                    iterator_wrapper.n = iterator_wrapper.total 
                     iterator_wrapper.refresh()
                 iterator_wrapper.close()
-
 
         try:
             asyncio.run(process_and_write_concurrently())
