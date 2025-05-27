@@ -10,3 +10,6 @@ packages/vlm4ocr/tests
 # web app
 services/web_app/tests
 services/web_app/uploads
+
+# internal documentation
+docs/release_notes

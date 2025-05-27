@@ -1,0 +1,39 @@
+site_name: VLM4OCR Documentation
+theme:
+    name: material
+
+nav:
+    - 'Home': 'index.md'
+    - 'Web Application': 'web_application.md'
+    - 'CLI': 'cli.md'
+    - 'Python package': 
+      - 'VLM Inference Engine': 'vlm_inference_engine.md'
+      - 'OCR Engine': 'ocr_engine.md'
+      
+    - 'API Reference': 
+      - 'VLM Inference Engine': 'api/vlm_inference_engine.md'
+      - 'OCR Engine': 'api/ocr_engine.md'
+
+plugins:
+    - search 
+    - gen-files:
+      scripts:
+        - docs/generate_cli_docs.py
+    - mkdocs-video
+    - mkdocstrings:
+        handlers:
+          python:
+            options:
+              docstring_style: numpy
+              show_root_heading: true
+              show_source: true 
+              members_order: source 
+              separate_signature: true
+              show_signature_annotations: true
+              show_docstring_annotations: true
+              merge_init_into_class: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
