@@ -1,49 +1,133 @@
+import abc
 import os
 import io
 import base64
-from typing import List
-from pdf2image import convert_from_path
+from typing import Union, List
+from pdf2image import convert_from_path, pdfinfo_from_path
 from PIL import Image
 
-def get_images_from_pdf(file_path: str) -> List[Image.Image]:
-    """ Extracts images from a PDF file. """
-    try:
-        images = convert_from_path(file_path)
-        if not images:
-            print(f"Warning: No images extracted from PDF: {file_path}")
-        return images
-    except Exception as e:
-        print(f"Error converting PDF to images: {e}")
-        raise ValueError(f"Failed to process PDF file '{os.path.basename(file_path)}'. Ensure poppler is installed and the file is valid.") from e
 
-def get_images_from_tiff(file_path: str) -> List[Image.Image]:
-    """ Extracts images from a TIFF file. """
-    images = []
-    try:
-        img = Image.open(file_path)
-        for i in range(img.n_frames):
-            img.seek(i)
-            images.append(img.copy())
-        if not images:
-            print(f"Warning: No images extracted from TIFF: {file_path}")
-        return images
-    except FileNotFoundError:
-        raise FileNotFoundError(f"TIFF file not found: {file_path}")
-    except Exception as e:
-        print(f"Error processing TIFF file: {e}")
-        raise ValueError(f"Failed to process TIFF file '{os.path.basename(file_path)}'. Ensure the file is a valid TIFF.") from e
+class DataLoader(abc.ABC):
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+    @abc.abstractmethod
+    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+        """ 
+        Abstract method to get pages from the file. 
+        
+        Parameters:
+        ----------
+        page_index : int, optional
+            Index of the page to retrieve. If None, all pages are returned.
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_page_count(self) -> int:
+        """ 
+        Abstract method to get the number of pages in the file. 
+        """
+        pass
 
 
-def get_image_from_file(file_path: str) -> Image.Image:
-    """ Loads a single image file. """
-    try:
-        image = Image.open(file_path)
-        image.load()
-        return image
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Image file not found: {file_path}")
-    except Exception as e:
-        raise ValueError(f"Failed to load image file '{os.path.basename(file_path)}': {e}") from e
+class PDFDataLoader(DataLoader):
+    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+        """ 
+        Extracts pages from a PDF file. 
+        
+        Parameters:
+        ----------
+        page_index : int, optional
+            Index of the page to retrieve. If None, all pages are returned.
+        """
+        try:
+            if page_index is None:
+                return convert_from_path(self.file_path, first_page=page_index + 1, last_page=page_index + 1)
+            else:
+                return convert_from_path(self.file_path)
+
+        except Exception as e:
+            print(f"Error converting PDF to images: {e}")
+            raise ValueError(f"Failed to process PDF file '{os.path.basename(self.file_path)}'. Ensure poppler is installed and the file is valid.") from e
+
+    def get_page_count(self) -> int:
+        """ Returns the number of pages in the PDF file. """
+        try:
+            info = pdfinfo_from_path(self.file_path, userpw=None, poppler_path=None)
+            return info['Pages']
+        except Exception as e:
+            print(f"Error getting page count from PDF: {e}")
+            raise ValueError(f"Failed to get page count for PDF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+
+
+class TIFFDataLoader(DataLoader):
+    def __init__(self, file_path: str):
+        super().__init__(file_path)
+        self.img = Image.open(file_path)
+
+    def __del__(self):
+        if self.img:
+            self.img.close()
+
+    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+        """ 
+        Extracts images from a TIFF file. 
+        
+        Parameters:
+        ----------
+        page_index : int, optional
+            Index of the page to retrieve. If None, all pages are returned.
+        """
+        if page_index is None:
+            try:
+                images = []
+                for i in range(self.img.n_frames):
+                    self.img.seek(i)
+                    images.append(self.img.copy())
+                return images
+            except Exception as e:
+                print(f"Error extracting images from TIFF: {e}")
+                raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+        else:
+            try:
+                self.img.seek(page_index)
+                return self.img.copy()
+            except IndexError:
+                raise ValueError(f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.") from None
+            except Exception as e:
+                print(f"Error extracting page {page_index} from TIFF: {e}")
+                raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+
+    def get_page_count(self) -> int:
+        """ Returns the number of images (pages) in the TIFF file. """
+        return self.img.n_frames 
+
+
+class ImageDataLoader(DataLoader):
+    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+        """ 
+        Loads a single image file. 
+        
+        Parameters:
+        ----------
+        page_index : int, optional
+            Index of the page to retrieve. Not applicable for single image files.
+        """
+        try:
+            image = Image.open(self.file_path)
+            image.load()
+            return image
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Image file not found: {self.file_path}")
+        except Exception as e:
+            raise ValueError(f"Failed to load image file '{os.path.basename(self.file_path)}': {e}") from e
+
+    def get_page_count(self) -> int:
+        """ Returns 1 as there is only one image in a single image file. """
+        return 1
 
 
 def image_to_base64(image:Image.Image, format:str="png") -> str:
