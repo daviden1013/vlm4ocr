@@ -82,7 +82,7 @@ def main():
     )
 
     io_group = parser.add_argument_group("Input/Output Options")
-    io_group.add_argument("--input_path", required=True, help="Path to input file or directory.")
+    io_group.add_argument("--input_path", required=True, help="Path to a single input file or a directory of files.")
     io_group.add_argument("--output_mode", choices=["markdown", "HTML", "text"], default="markdown", help="Output format.")
     io_group.add_argument("--output_path", help="Optional: Path to save OCR results. If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory (or a sub-directory for logs if --log is used).")
 
