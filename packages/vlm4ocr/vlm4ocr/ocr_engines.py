@@ -3,7 +3,7 @@ from typing import List, Dict, Union, Generator, AsyncGenerator, Iterable
 import importlib
 import asyncio
 from PIL import Image
-from vlm4ocr.utils import get_images_from_pdf, get_images_from_tiff, get_image_from_file, clean_markdown
+from vlm4ocr.utils import DataLoader, PDFDataLoader, TIFFDataLoader, ImageDataLoader, clean_markdown
 from vlm4ocr.data_types import OCRResult
 from vlm4ocr.vlm_engines import VLMEngine
 
@@ -85,7 +85,8 @@ class OCREngine:
 
         # PDF or TIFF
         if file_ext in ['.pdf', '.tif', '.tiff']:
-            images = get_images_from_pdf(file_path) if file_ext == '.pdf' else get_images_from_tiff(file_path)
+            data_loader = PDFDataLoader(file_path) if file_ext == '.pdf' else TIFFDataLoader(file_path)
+            images = data_loader.get_all_pages()
             if not images:
                 raise ValueError(f"No images extracted from file: {file_path}")
             for i, image in enumerate(images):
@@ -105,7 +106,8 @@ class OCREngine:
 
         # Image
         else:
-            image = get_image_from_file(file_path)
+            data_loader = ImageDataLoader(file_path)
+            image = data_loader.get_page(0)
             messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
             response_stream = self.vlm_engine.chat(
                     messages,
@@ -158,12 +160,15 @@ class OCREngine:
             filename = os.path.basename(file_path)
             
             try:
-                # PDF or TIFF
-                if file_ext in ['.pdf', '.tif', '.tiff']:
-                    images = get_images_from_pdf(file_path) if file_ext == '.pdf' else get_images_from_tiff(file_path)
-                # Image
+                # Load images from file
+                if file_ext == '.pdf':
+                    data_loader = PDFDataLoader(file_path) 
+                elif file_ext in ['.tif', '.tiff']:
+                    data_loader = TIFFDataLoader(file_path)
                 else:
-                    images = [get_image_from_file(file_path)]
+                    data_loader = ImageDataLoader(file_path)
+                
+                images = data_loader.get_all_pages()
             except Exception as e:
                 ocr_result.status = "error"
                 ocr_result.add_page(f"Error processing file {filename}: {str(e)}")
@@ -213,8 +218,8 @@ class OCREngine:
         return ocr_results
 
 
-    def concurrent_ocr(self, file_paths: Union[str, Iterable[str]], max_new_tokens: int = 4096,
-                       temperature: float = 0.0, concurrent_batch_size: int = 32, **kwrs) -> AsyncGenerator[OCRResult, None]:
+    def concurrent_ocr(self, file_paths: Union[str, Iterable[str]], max_new_tokens: int=4096,
+                       temperature: float=0.0, concurrent_batch_size: int=32, max_file_load: int=None, **kwrs) -> AsyncGenerator[OCRResult, None]:
         """
         First complete first out. Input and output order not guaranteed.
         This method inputs a file path or a list of file paths (image, PDF, TIFF) and performs OCR using the VLM inference engine. 
@@ -230,6 +235,8 @@ class OCREngine:
             The temperature to use for sampling.
         concurrent_batch_size : int, Optional
             The number of concurrent VLM calls to make. 
+        max_file_load : int, Optional
+            The maximum number of files to load concurrently. If None, defaults to 2 times of concurrent_batch_size.
         
         Returns:
         --------
@@ -239,15 +246,27 @@ class OCREngine:
         if isinstance(file_paths, str):
             file_paths = [file_paths]
         
-        return self._ocr_async(file_paths, max_new_tokens, temperature, concurrent_batch_size, **kwrs)
+        if max_file_load is None:
+            max_file_load = concurrent_batch_size * 2
+
+        if not isinstance(max_file_load, int) or max_file_load <= 0:
+            raise ValueError("max_file_load must be a positive integer")
+
+        return self._ocr_async(file_paths=file_paths, 
+                               max_new_tokens=max_new_tokens, 
+                               temperature=temperature, 
+                               concurrent_batch_size=concurrent_batch_size, 
+                               max_file_load=max_file_load, 
+                               **kwrs)
     
 
-    async def _ocr_page_with_semaphore(self, semaphore_for_vlm: asyncio.Semaphore, filename: str, 
-                                       image:Image.Image, max_new_tokens:int, temperature:float, **kwrs) -> str:
+    async def _ocr_page_with_semaphore(self, vlm_call_semaphore: asyncio.Semaphore, data_loader: DataLoader,
+                                       page_index:int, max_new_tokens:int, temperature:float, **kwrs) -> str:
         """
         This internal method takes a semaphore and OCR a single image/page using the VLM inference engine.
         """
-        async with semaphore_for_vlm:
+        async with vlm_call_semaphore:
+            image = await data_loader.get_page_async(page_index)
             messages = self.vlm_engine.get_ocr_messages(self.system_prompt, self.user_prompt, image)
             ocr_text = await self.vlm_engine.chat_async( 
                 messages,
@@ -260,74 +279,81 @@ class OCREngine:
             return ocr_text
             
 
-    async def _ocr_file_with_semaphore(self, semaphore_for_vlm:asyncio.Semaphore, file_path:str, 
-                                       max_new_tokens:int, temperature:float, **kwrs) -> OCRResult:
+    async def _ocr_file_with_semaphore(self, file_load_semaphore:asyncio.Semaphore, vlm_call_semaphore:asyncio.Semaphore, 
+                                       file_path:str, max_new_tokens:int, temperature:float, **kwrs) -> OCRResult:
         """
         This internal method takes a semaphore and OCR a single file using the VLM inference engine.
         """
-        filename = os.path.basename(file_path)
-        file_ext = os.path.splitext(file_path)[1].lower()
-        result = OCRResult(input_dir=file_path, output_mode=self.output_mode)
-        # check file extension
-        if file_ext not in SUPPORTED_IMAGE_EXTS:
-            result.status = "error"
-            result.add_page(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
-            return result
-        
-        try:
-            if file_ext in ['.pdf', '.tif', '.tiff']:
-                images = get_images_from_pdf(file_path) if file_ext == '.pdf' else get_images_from_tiff(file_path)
-                if not images:
-                    print(f"Warning: No images extracted from {filename}. It might be empty or corrupted.")
-
-            else: 
-                images = [get_image_from_file(file_path)]
-        except Exception as e:
-            result.status = "error"
-            result.add_page(f"Error processing file {filename}: {str(e)}")
-            return result
-
-        try:
-            page_processing_tasks = []
-            for image in images:
-                task = self._ocr_page_with_semaphore(
-                    semaphore_for_vlm,
-                    filename=filename,
-                    image=image,
-                    max_new_tokens=max_new_tokens,
-                    temperature=temperature,
-                    **kwrs 
-                )
-                page_processing_tasks.append(task)
-
+        async with file_load_semaphore:
+            filename = os.path.basename(file_path)
+            file_ext = os.path.splitext(file_path)[1].lower()
+            result = OCRResult(input_dir=file_path, output_mode=self.output_mode)
+            # check file extension
+            if file_ext not in SUPPORTED_IMAGE_EXTS:
+                result.status = "error"
+                result.add_page(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
+                return result
             
-            if page_processing_tasks:
-                processed_page_texts = await asyncio.gather(*page_processing_tasks)
-                for text in processed_page_texts:
-                    result.add_page(text)
+            try:
+                # Load images from file
+                if file_ext == '.pdf':
+                    data_loader = PDFDataLoader(file_path) 
+                elif file_ext in ['.tif', '.tiff']:
+                    data_loader = TIFFDataLoader(file_path)
+                else:
+                    data_loader = ImageDataLoader(file_path)
 
-        except Exception as e:
-            result.status = "error"
-            result.add_page(f"Error during OCR for {filename}: {str(e)}")
-            return result
+            except Exception as e:
+                result.status = "error"
+                result.add_page(f"Error processing file {filename}: {str(e)}")
+                return result
+
+            try:
+                page_processing_tasks = []
+                for page_index in range(data_loader.get_page_count()):
+                    task = self._ocr_page_with_semaphore(
+                        vlm_call_semaphore=vlm_call_semaphore,
+                        data_loader=data_loader,
+                        page_index=page_index,
+                        max_new_tokens=max_new_tokens,
+                        temperature=temperature,
+                        **kwrs 
+                    )
+                    page_processing_tasks.append(task)
+                
+                if page_processing_tasks:
+                    processed_page_texts = await asyncio.gather(*page_processing_tasks)
+                    for text in processed_page_texts:
+                        result.add_page(text)
+
+            except Exception as e:
+                result.status = "error"
+                result.add_page(f"Error during OCR for {filename}: {str(e)}")
+                return result
 
         # Set status to success if no errors occurred
         result.status = "success"
         return result
     
 
-    async def _ocr_async(self, file_paths: Iterable[str], max_new_tokens: int,
-                         temperature: float, concurrent_batch_size: int, **kwrs) -> AsyncGenerator[OCRResult, None]:
+    async def _ocr_async(self, file_paths: Iterable[str], max_new_tokens: int, temperature: float, 
+                         concurrent_batch_size: int, max_file_load: int, **kwrs) -> AsyncGenerator[OCRResult, None]:
         """
         Internal method to asynchronously process an iterable of file paths.
         Yields OCRResult objects as they complete. Order not guaranteed.
         concurrent_batch_size controls how many VLM calls are made concurrently.
         """
         vlm_call_semaphore = asyncio.Semaphore(concurrent_batch_size)
+        file_load_semaphore = asyncio.Semaphore(max_file_load) 
 
         tasks = []
         for file_path in file_paths:
-            task = self._ocr_file_with_semaphore(vlm_call_semaphore, file_path, max_new_tokens, temperature, **kwrs)
+            task = self._ocr_file_with_semaphore(file_load_semaphore=file_load_semaphore, 
+                                                 vlm_call_semaphore=vlm_call_semaphore, 
+                                                 file_path=file_path, 
+                                                 max_new_tokens=max_new_tokens, 
+                                                 temperature=temperature, 
+                                                 **kwrs)
             tasks.append(task)
 
         

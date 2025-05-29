@@ -5,6 +5,7 @@ import base64
 from typing import Union, List
 from pdf2image import convert_from_path, pdfinfo_from_path
 from PIL import Image
+import asyncio
 
 
 class DataLoader(abc.ABC):
@@ -14,54 +15,91 @@ class DataLoader(abc.ABC):
             raise FileNotFoundError(f"File not found: {file_path}")
 
     @abc.abstractmethod
-    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+    def get_all_pages(self) -> List[Image.Image]:
+        """ 
+        Abstract method to get all pages from the file. 
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_page(self, page_index:int) -> Image.Image:
         """ 
         Abstract method to get pages from the file. 
         
         Parameters:
         ----------
-        page_index : int, optional
-            Index of the page to retrieve. If None, all pages are returned.
+        page_index : int
+            Index of the page to retrieve. 
+        """
+        pass
+
+    @abc.abstractmethod
+    async def get_page_async(self, page_index:int) -> Image.Image:
+        """ 
+        Abstract method to get pages from the file. 
+        
+        Parameters:
+        ----------
+        page_index : int
+            Index of the page to retrieve.
         """
         pass
 
     @abc.abstractmethod
     def get_page_count(self) -> int:
-        """ 
-        Abstract method to get the number of pages in the file. 
-        """
+        """ Returns the number of pages in the PDF file. """
         pass
 
 
 class PDFDataLoader(DataLoader):
-    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+    def __init__(self, file_path: str):
+        super().__init__(file_path)
+        self.info = pdfinfo_from_path(self.file_path, userpw=None, poppler_path=None)
+
+    def get_all_pages(self) -> List[Image.Image]:
         """ 
         Extracts pages from a PDF file. 
-        
-        Parameters:
-        ----------
-        page_index : int, optional
-            Index of the page to retrieve. If None, all pages are returned.
         """
         try:
-            if page_index is None:
-                return convert_from_path(self.file_path, first_page=page_index + 1, last_page=page_index + 1)
-            else:
-                return convert_from_path(self.file_path)
+            return convert_from_path(self.file_path)
 
         except Exception as e:
             print(f"Error converting PDF to images: {e}")
             raise ValueError(f"Failed to process PDF file '{os.path.basename(self.file_path)}'. Ensure poppler is installed and the file is valid.") from e
 
+    def get_page(self, page_index:int) -> Image.Image:
+        """
+        Extracts a page from a PDF file.
+
+        Parameters:
+        ----------
+        page_index : int
+            Index of the page to retrieve.
+        """
+        try:
+            return convert_from_path(self.file_path, first_page=page_index + 1, last_page=page_index + 1)[0]
+        except Exception as e:
+            print(f"Error converting PDF to images: {e}")
+            raise ValueError(f"Failed to process PDF file '{os.path.basename(self.file_path)}'. Ensure poppler is installed and the file is valid.") from e
+
+
+    async def get_page_async(self, page_index:int) -> Image.Image:
+        """ 
+        Asynchronously extracts a page from a PDF file. 
+        
+        Parameters:
+        ----------
+        page_index : int
+            Index of the page to retrieve. 
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.get_page, page_index)
+
+
     def get_page_count(self) -> int:
         """ Returns the number of pages in the PDF file. """
-        try:
-            info = pdfinfo_from_path(self.file_path, userpw=None, poppler_path=None)
-            return info['Pages']
-        except Exception as e:
-            print(f"Error getting page count from PDF: {e}")
-            raise ValueError(f"Failed to get page count for PDF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
-
+        return self.info['Pages'] if 'Pages' in self.info else 0
+    
 
 class TIFFDataLoader(DataLoader):
     def __init__(self, file_path: str):
@@ -69,37 +107,66 @@ class TIFFDataLoader(DataLoader):
         self.img = Image.open(file_path)
 
     def __del__(self):
+        self.close()
+
+    async def __aenter__(self):
+        """ Asynchronous context manager enter method. """
+        return self
+    
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        """ Asynchronous context manager exit method. """
+        self.close()
+
+    def close(self):
+        """ Closes the image file to free resources. """
         if self.img:
             self.img.close()
+            self.img = None
 
-    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+    def get_all_pages(self) -> List[Image.Image]:
         """ 
         Extracts images from a TIFF file. 
-        
-        Parameters:
-        ----------
-        page_index : int, optional
-            Index of the page to retrieve. If None, all pages are returned.
         """
-        if page_index is None:
-            try:
-                images = []
-                for i in range(self.img.n_frames):
-                    self.img.seek(i)
-                    images.append(self.img.copy())
-                return images
-            except Exception as e:
-                print(f"Error extracting images from TIFF: {e}")
-                raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
-        else:
+        try:
+            images = []
+            for i in range(self.img.n_frames):
+                self.img.seek(i)
+                images.append(self.img.copy())
+            return images
+        except Exception as e:
+            print(f"Error extracting images from TIFF: {e}")
+            raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+        
+
+    def get_page(self, page_index:int) -> Image.Image:
+            """
+            Extracts a page from a TIFF file.
+
+            Parameters:
+            ----------
+            page_index : int
+                Index of the page to retrieve. 
+            """
             try:
                 self.img.seek(page_index)
-                return self.img.copy()
+                return [self.img.copy()]
             except IndexError:
                 raise ValueError(f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.") from None
             except Exception as e:
                 print(f"Error extracting page {page_index} from TIFF: {e}")
                 raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+
+    async def get_page_async(self, page_index:int) -> Image.Image:
+        """ 
+        Asynchronously extracts images from a TIFF file. 
+        
+        Parameters:
+        ----------
+        page_index : int
+            Index of the page to retrieve.
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.get_page, page_index)
 
     def get_page_count(self) -> int:
         """ Returns the number of images (pages) in the TIFF file. """
@@ -107,13 +174,26 @@ class TIFFDataLoader(DataLoader):
 
 
 class ImageDataLoader(DataLoader):
-    def get_pages(self, page_index:int=None) -> Union[Image.Image, List[Image.Image]]:
+    def get_all_pages(self) -> List[Image.Image]:
+        """ 
+        Loads a single image file. 
+        """
+        try:
+            image = Image.open(self.file_path)
+            image.load()
+            return [image]
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Image file not found: {self.file_path}")
+        except Exception as e:
+            raise ValueError(f"Failed to load image file '{os.path.basename(self.file_path)}': {e}") from e
+        
+    def get_page(self, page_index:int) -> Image.Image:
         """ 
         Loads a single image file. 
         
         Parameters:
         ----------
-        page_index : int, optional
+        page_index : int
             Index of the page to retrieve. Not applicable for single image files.
         """
         try:
@@ -124,6 +204,18 @@ class ImageDataLoader(DataLoader):
             raise FileNotFoundError(f"Image file not found: {self.file_path}")
         except Exception as e:
             raise ValueError(f"Failed to load image file '{os.path.basename(self.file_path)}': {e}") from e
+        
+    async def get_page_async(self, page_index:int) -> Image.Image:
+        """ 
+        Asynchronously loads a single image file. 
+        
+        Parameters:
+        ----------
+        page_index : int
+            Index of the page to retrieve. Not applicable for single image files.
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.get_page, page_index)
 
     def get_page_count(self) -> int:
         """ Returns 1 as there is only one image in a single image file. """
