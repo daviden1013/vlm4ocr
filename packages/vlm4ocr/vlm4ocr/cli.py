@@ -85,6 +85,7 @@ def main():
     io_group.add_argument("--input_path", required=True, help="Path to a single input file or a directory of files.")
     io_group.add_argument("--output_mode", choices=["markdown", "HTML", "text"], default="markdown", help="Output format.")
     io_group.add_argument("--output_path", help="Optional: Path to save OCR results. If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory (or a sub-directory for logs if --log is used).")
+    io_group.add_argument("--skip_existing", action="store_true", help="Skip processing files that already have OCR results in the output directory.")
 
     vlm_engine_group = parser.add_argument_group("VLM Engine Selection")
     vlm_engine_group.add_argument("--vlm_engine", choices=["openai", "azure_openai", "ollama", "openai_compatible"], required=True, help="VLM engine.")
@@ -115,6 +116,12 @@ def main():
         type=int,
         default=4,
         help="Number of images/pages to process concurrently. Set to 1 for sequential processing of VLM calls."
+    )
+    processing_group.add_argument(
+        "--max_file_load",
+        type=int,
+        default=-1,
+        help="Number of input files to pre-load. Set to -1 for automatic config: 2 * concurrent_batch_size."
     )
     # --verbose flag was removed by user in previous version provided
     processing_group.add_argument("--log", action="store_true", help="Enable writing logs to a timestamped file in the output directory.")
@@ -234,6 +241,24 @@ def main():
         logger.error(f"Input path not valid: {args.input_path}")
         sys.exit(1)
     
+    # --- Skip existing files if --skip_existing is used ---
+    if args.skip_existing:
+        logger.info("Checking for existing OCR results in output path to skip...")        
+        # Check each input file against the expected output file
+        existing_files = os.listdir(effective_output_dir)
+        filtered_input_files_to_process = []
+        for input_file in input_files_to_process:
+            expected_output_name = get_output_path_for_ocr_result(input_file, args.output_path, args.output_mode, len(input_files_to_process), effective_output_dir)
+            if os.path.basename(expected_output_name) not in existing_files:
+                filtered_input_files_to_process.append(input_file)
+
+        original_num_files = len(input_files_to_process)
+        after_filter_num_files = len(filtered_input_files_to_process)
+        input_files_to_process = filtered_input_files_to_process
+        logger.info(f"Dropped {original_num_files - after_filter_num_files} existing files. Number of input files to process after filtering: {len(input_files_to_process)}")
+
+    else:
+        logger.info("All input files will be processed (`--skip_existing=False`).")
     # This re-evaluation is useful if the initial _is_multi_file_scenario was just for log dir
     num_actual_files = len(input_files_to_process)
 
@@ -246,7 +271,8 @@ def main():
                 file_paths=input_files_to_process,
                 max_new_tokens=args.max_new_tokens,
                 temperature=args.temperature,
-                concurrent_batch_size=args.concurrent_batch_size
+                concurrent_batch_size=args.concurrent_batch_size,
+                max_file_load=args.max_file_load if args.max_file_load > 0 else None
             )
             
             # Progress bar always attempted if tqdm is available and files exist,

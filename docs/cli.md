@@ -13,6 +13,7 @@ Run OCR for all supported file types in the `/examples/synthesized_data/` folder
 # OpenAI compatible API
 vlm4ocr --input_path /examples/synthesized_data/ \
         --output_path /examples/ocr_output/ \
+        --skip_existing \
         --output_mode markdown \
         --log \
         --vlm_engine openai_compatible \
@@ -41,6 +42,7 @@ The CLI parameters are grouped into categories to manage the OCR process.
 - `--input_path` Specify a single input file or a directory with multiple files for OCR.
 - `--output_mode` Should be one of `text`, `markdown`, or `HTML`.
 - `--output_path` If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory. 
+- `--skip_existing` Skip processing files that already have OCR results in the output directory. If False, all input files will be processed and potentially overwrite existing outputs.
 
 #### VLM Engine Selection
 - `--vlm_engine` Should be one of `openai`, `azure_openai`, `ollama`, or `openai_compatible`.
@@ -67,5 +69,6 @@ The CLI parameters are grouped into categories to manage the OCR process.
 
 #### Processing Options
 - `--concurrent_batch_size` Number of images/pages to process concurrently. Set to 1 for sequential processing of VLM calls. (default: 4)
+- `max_file_load` Number of input files to pre-load. Set to -1 for automatic config: 2 * concurrent_batch_size. 
 - `--log` Enable writing logs to a timestamped file in the output directory. (default: False)
 - `--debug` Enable debug level logging for console (and file if --log is active). (default: False)
