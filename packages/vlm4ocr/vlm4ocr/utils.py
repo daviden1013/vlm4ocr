@@ -149,7 +149,7 @@ class TIFFDataLoader(DataLoader):
             """
             try:
                 self.img.seek(page_index)
-                return [self.img.copy()]
+                return self.img.copy()
             except IndexError:
                 raise ValueError(f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.") from None
             except Exception as e:
