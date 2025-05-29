@@ -11,10 +11,10 @@ nav:
     - 'Python package':
       - 'Quick Start': 'quick_start.md'
       - 'VLM Engines': 'vlm_engines.md'
-      - 'OCR Engine': 'ocr_engine.md'
+      - 'OCR Engine': 'ocr_engines.md'
     - 'API Reference':
       - 'VLM Engines': 'api/vlm_engines.md'
-      - 'OCR Engine': 'api/ocr_engine.md'
+      - 'OCR Engine': 'api/ocr_engines.md'
       - 'CLI': 'api/cli.md'
       
 plugins:

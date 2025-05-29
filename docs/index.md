@@ -1,17 +1,7 @@
-# Welcome to MkDocs
+# VLM4OCR
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+*vlm4ocr* is a toolkit for Optical character recognition (OCR) with Vision language models (VLMs). In includes three components:
 
-## Commands
-
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
-
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+- [Web Application](./web_application.md) for drag-and-drop access
+- [CLI](./cli.md) for command line access
+- [Python package](./quick_start.md) for Python access
