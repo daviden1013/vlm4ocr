@@ -104,34 +104,17 @@ class PDFDataLoader(DataLoader):
 class TIFFDataLoader(DataLoader):
     def __init__(self, file_path: str):
         super().__init__(file_path)
-        self.img = Image.open(file_path)
-
-    def __del__(self):
-        self.close()
-
-    async def __aenter__(self):
-        """ Asynchronous context manager enter method. """
-        return self
-    
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        """ Asynchronous context manager exit method. """
-        self.close()
-
-    def close(self):
-        """ Closes the image file to free resources. """
-        if self.img:
-            self.img.close()
-            self.img = None
 
     def get_all_pages(self) -> List[Image.Image]:
         """ 
         Extracts images from a TIFF file. 
         """
         try:
+            img = Image.open(self.file_path)
             images = []
-            for i in range(self.img.n_frames):
-                self.img.seek(i)
-                images.append(self.img.copy())
+            for i in range(img.n_frames):
+                img.seek(i)
+                images.append(img.copy())
             return images
         except Exception as e:
             print(f"Error extracting images from TIFF: {e}")
@@ -139,22 +122,23 @@ class TIFFDataLoader(DataLoader):
         
 
     def get_page(self, page_index:int) -> Image.Image:
-            """
-            Extracts a page from a TIFF file.
+        """
+        Extracts a page from a TIFF file.
 
-            Parameters:
-            ----------
-            page_index : int
-                Index of the page to retrieve. 
-            """
-            try:
-                self.img.seek(page_index)
-                return self.img.copy()
-            except IndexError:
-                raise ValueError(f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.") from None
-            except Exception as e:
-                print(f"Error extracting page {page_index} from TIFF: {e}")
-                raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+        Parameters:
+        ----------
+        page_index : int
+            Index of the page to retrieve. 
+        """
+        try:
+            img = Image.open(self.file_path)
+            img.seek(page_index)
+            return img.copy()
+        except IndexError:
+            raise ValueError(f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.") from None
+        except Exception as e:
+            print(f"Error extracting page {page_index} from TIFF: {e}")
+            raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
 
     async def get_page_async(self, page_index:int) -> Image.Image:
         """ 
@@ -170,7 +154,12 @@ class TIFFDataLoader(DataLoader):
 
     def get_page_count(self) -> int:
         """ Returns the number of images (pages) in the TIFF file. """
-        return self.img.n_frames 
+        try:
+            img = Image.open(self.file_path)
+            return img.n_frames 
+        except Exception as e:
+            print(f"Error getting page count from TIFF: {e}")
+            raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
 
 
 class ImageDataLoader(DataLoader):
