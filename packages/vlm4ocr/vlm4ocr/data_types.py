@@ -1,52 +1,81 @@
 import os
-from typing import List
-from dataclasses import dataclass
+from typing import List, Literal
+from dataclasses import dataclass, field
+
+OutputMode = Literal["markdown", "HTML", "text"]
 
 @dataclass
 class OCRResult:
-    def __init__(self, input_dir:str, output_mode:str, pages:List[str]=None):
+    """
+    This class represents the result of an OCR process.
+
+    Parameters:
+    ----------
+    input_dir : str
+        The directory where the input files (e.g., image, PDF, tiff) are located.
+    output_mode : str
+        The output format. Must be 'markdown', 'HTML', or 'text'.
+    pages : List[str]
+        A list of strings, each representing a page of the OCR result.
+    """
+    input_dir: str
+    output_mode: OutputMode
+    pages: List[dict] = field(default_factory=list)
+    filename: str = field(init=False)
+    status: str = field(init=False, default="processing")
+
+    def __post_init__(self):
         """
-        This class represents the result of an OCR process.
+        Called after the dataclass-generated __init__ method.
+        Used for validation and initializing derived fields.
+        """
+        self.filename = os.path.basename(self.input_dir)
+
+        # output_mode validation
+        if self.output_mode not in ["markdown", "HTML", "text"]:
+            raise ValueError("output_mode must be 'markdown', 'HTML', or 'text'")
+
+        # pages validation 
+        if not isinstance(self.pages, list):
+            raise ValueError("pages must be a list of dict")
+        for i, page_content in enumerate(self.pages):
+            if not isinstance(page_content, dict):
+                raise ValueError(f"Each page must be a dict. Page at index {i} is not a dict.")
+
+
+    def add_page(self, text:str, image_processing_status: dict):
+        """
+        This method adds a new page to the OCRResult object.
 
         Parameters:
         ----------
-        input_dir : str
-            The directory where the input files (e.g., image, PDF, tiff) are located.
-        output_mode : str
-            The output format. Must be 'markdown', 'HTML', or 'text'.
-        pages : List[str]
-            A list of strings, each representing a page of the OCR result.
+        text : str
+            The OCR result text of the page.
+        image_processing_status : dict
+            A dictionary containing the image processing status for the page.
+            It can include keys like 'rotate_correction', 'max_dimension_pixels', etc.
         """
-        self.input_dir = input_dir
-        self.filename = os.path.basename(input_dir)
-        self.status = "processing"
+        if not isinstance(text, str):
+            raise ValueError("text must be a string")
+        if not isinstance(image_processing_status, dict):
+            raise ValueError("image_processing_status must be a dict")
+        
+        page = {
+            "text": text,
+            "image_processing_status": image_processing_status
+        }
+        self.pages.append(page)
 
-        # Check if the output_mode is valid
-        if output_mode not in ["markdown", "HTML", "text"]:
-            raise ValueError("output_mode must be 'markdown', 'HTML', or 'text'")
-        self.output_mode = output_mode
-
-        # Check if pages is a list of strings
-        if pages is None:
-            self.pages = []
-        else:
-            if not isinstance(pages, list):
-                raise ValueError("pages must be a list of strings")
-            for page in pages:
-                if not isinstance(page, str):
-                    raise ValueError("Each page must be a string")
-            self.pages = pages
-
-    def add_page(self, page:str):
-        if isinstance(page, str):
-            self.pages.append(page)
-        else:
-            raise ValueError("page must be a string")
 
     def __len__(self):
         return len(self.pages)
 
-    def __getitem__(self, idx):
+    def get_page(self, idx):
+        if not isinstance(idx, int):
+            raise ValueError("Index must be an integer")
+        if idx < 0 or idx >= len(self.pages):
+            raise IndexError(f"Index out of range. The OCRResult has {len(self.pages)} pages, but index {idx} was requested.")
+        
         return self.pages[idx]
     
     def __iter__(self):
@@ -81,4 +110,4 @@ class OCRResult:
         else:
             raise ValueError("page_delimiter must be a string")
         
-        return self.page_delimiter.join(self.pages)
+        return self.page_delimiter.join([page.get("text", "") for page in self.pages])

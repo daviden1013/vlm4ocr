@@ -2,7 +2,8 @@ import abc
 import os
 import io
 import base64
-from typing import Union, List
+from typing import Union, List, Tuple
+import importlib.util
 from pdf2image import convert_from_path, pdfinfo_from_path
 from PIL import Image
 import asyncio
@@ -227,3 +228,106 @@ def image_to_base64(image:Image.Image, format:str="png") -> str:
 def clean_markdown(text:str) -> str:
     cleaned_text = text.replace("```markdown", "").replace("```", "")
     return cleaned_text
+
+
+class ImageProcessor:
+    def __init__(self):
+        self.has_tesseract = importlib.util.find_spec("pytesseract") is not None
+
+    def rotate_correction(self, image: Image.Image) -> Tuple[Image.Image, int]:
+        """ 
+        This method use Tesseract OSD to correct the rotation of the image. 
+        
+        Parameters:
+        ----------
+        image : Image.Image
+            The image to be corrected.
+
+        Returns:
+        -------
+        Image.Image
+            The corrected image.
+        int
+            The rotation angle in degrees.
+        """
+        if importlib.util.find_spec("pytesseract") is None:
+            raise ImportError("pytesseract is not installed. Please install it to use this feature.")
+        
+        import pytesseract
+
+        try:
+            osd = pytesseract.image_to_osd(image, output_type=pytesseract.Output.DICT)
+            rotation_angle = osd['rotate']
+            if rotation_angle != 0:
+                return image.rotate(rotation_angle, expand=True), rotation_angle
+            
+            return image, 0
+        except Exception as e:
+            print(f"Error correcting image rotation: {e}")
+            raise ValueError(f"Failed to correct image rotation: {e}") from e
+
+    async def rotate_correction_async(self, image: Image.Image) -> Tuple[Image.Image, int]:
+        """ 
+        Asynchronous version of rotate_correction method.
+
+        Parameters:
+        ----------
+        image : Image.Image
+            The image to be corrected.
+
+        Returns:
+        -------
+        Image.Image
+            The corrected image.
+        int
+            The rotation angle in degrees.
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.rotate_correction, image)
+
+    def resize(self, image: Image.Image, max_dimension_pixels:int=4000) -> Tuple[Image.Image, bool]:
+        """ 
+        Resizes the image to fit within the specified maximum dimension while maintaining aspect ratio.
+        
+        Parameters:
+        ----------
+        max_dimension_pixels : int
+            The maximum dimension (width or height) in pixels.
+
+        Returns:
+        -------
+        Image.Image
+            The resized image.
+        bool
+            True if the image was resized, False otherwise.
+        """
+        width, height = image.size
+        if width > max_dimension_pixels or height > max_dimension_pixels:
+            if width > height:
+                new_width = max_dimension_pixels
+                new_height = int((max_dimension_pixels / width) * height)
+            else:
+                new_height = max_dimension_pixels
+                new_width = int((max_dimension_pixels / height) * width)
+            return image.resize((new_width, new_height), resample=Image.Resampling.LANCZOS), True  # Resizing was done
+        
+        return image, False  # No resizing needed
+
+    async def resize_async(self, image: Image.Image, max_dimension_pixels:int=4000) -> Tuple[Image.Image, bool]:
+        """ 
+        Asynchronous version of resize method.
+        
+        Parameters:
+        ----------
+        max_dimension_pixels : int
+            The maximum dimension (width or height) in pixels.
+
+        Returns:
+        -------
+        Image.Image
+            The resized image.
+        bool
+            True if the image was resized, False otherwise.
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.resize, image, max_dimension_pixels)
