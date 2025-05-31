@@ -8,12 +8,12 @@ import time
 # Attempt to import from the local package structure
 try:
     from .ocr_engines import OCREngine
-    from .vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine
+    from .vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine, BasicVLMConfig
     from .data_types import OCRResult
 except ImportError:
     # Fallback for when the package is installed
     from vlm4ocr.ocr_engines import OCREngine
-    from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine
+    from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine, BasicVLMConfig
     from vlm4ocr.data_types import OCRResult
 
 import tqdm.asyncio
@@ -99,9 +99,11 @@ def main():
         help="Maximum dimension (width or height) in pixels for input images. Images larger than this will be resized to fit within this limit while maintaining aspect ratio."
     )
 
-    vlm_engine_group = parser.add_argument_group("VLM Engine Selection")
+    vlm_engine_group = parser.add_argument_group("VLM Engine Options")
     vlm_engine_group.add_argument("--vlm_engine", choices=["openai", "azure_openai", "ollama", "openai_compatible"], required=True, help="VLM engine.")
     vlm_engine_group.add_argument("--model", required=True, help="Model identifier for the VLM engine.")
+    vlm_engine_group.add_argument("--max_new_tokens", type=int, default=4096, help="Max new tokens for VLM.")
+    vlm_engine_group.add_argument("--temperature", type=float, default=0.0, help="Sampling temperature.")
 
     openai_group = parser.add_argument_group("OpenAI & OpenAI-Compatible Options")
     openai_group.add_argument("--api_key", default=os.environ.get("OPENAI_API_KEY"), help="API key.")
@@ -119,8 +121,6 @@ def main():
 
     ocr_params_group = parser.add_argument_group("OCR Engine Parameters")
     ocr_params_group.add_argument("--user_prompt", help="Custom user prompt.")
-    ocr_params_group.add_argument("--max_new_tokens", type=int, default=4096, help="Max new tokens for VLM.")
-    ocr_params_group.add_argument("--temperature", type=float, default=0.0, help="Sampling temperature.")
 
     processing_group = parser.add_argument_group("Processing Options")
     processing_group.add_argument(
@@ -199,19 +199,23 @@ def main():
     vlm_engine_instance = None
     try:
         logger.info(f"Initializing VLM engine: {args.vlm_engine} with model: {args.model}")
+        config = BasicVLMConfig(
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature
+        )
         if args.vlm_engine == "openai":
             if not args.api_key: parser.error("--api_key (or OPENAI_API_KEY) is required for OpenAI.")
-            vlm_engine_instance = OpenAIVLMEngine(model=args.model, api_key=args.api_key)
+            vlm_engine_instance = OpenAIVLMEngine(model=args.model, api_key=args.api_key, config=config)
         elif args.vlm_engine == "openai_compatible":
             if not args.base_url: parser.error("--base_url is required for openai_compatible.")
-            vlm_engine_instance = OpenAIVLMEngine(model=args.model, api_key=args.api_key, base_url=args.base_url)
+            vlm_engine_instance = OpenAIVLMEngine(model=args.model, api_key=args.api_key, base_url=args.base_url, config=config)
         elif args.vlm_engine == "azure_openai":
             if not args.azure_api_key: parser.error("--azure_api_key (or AZURE_OPENAI_API_KEY) is required.")
             if not args.azure_endpoint: parser.error("--azure_endpoint (or AZURE_OPENAI_ENDPOINT) is required.")
             if not args.azure_api_version: parser.error("--azure_api_version (or AZURE_OPENAI_API_VERSION) is required.")
-            vlm_engine_instance = AzureOpenAIVLMEngine(model=args.model, api_key=args.azure_api_key, azure_endpoint=args.azure_endpoint, api_version=args.azure_api_version)
+            vlm_engine_instance = AzureOpenAIVLMEngine(model=args.model, api_key=args.azure_api_key, azure_endpoint=args.azure_endpoint, api_version=args.azure_api_version, config=config)
         elif args.vlm_engine == "ollama":
-            vlm_engine_instance = OllamaVLMEngine(model_name=args.model, host=args.ollama_host, num_ctx=args.ollama_num_ctx, keep_alive=args.ollama_keep_alive)
+            vlm_engine_instance = OllamaVLMEngine(model_name=args.model, host=args.ollama_host, num_ctx=args.ollama_num_ctx, keep_alive=args.ollama_keep_alive, config=config)
         logger.info("VLM engine initialized successfully.")
     except ImportError as e:
         logger.error(f"Failed to import library for {args.vlm_engine}: {e}. Install dependencies.")
@@ -283,8 +287,6 @@ def main():
                 file_paths=input_files_to_process,
                 rotate_correction=args.rotate_correction,
                 max_dimension_pixels=args.max_dimension_pixels,
-                max_new_tokens=args.max_new_tokens,
-                temperature=args.temperature,
                 concurrent_batch_size=args.concurrent_batch_size,
                 max_file_load=args.max_file_load if args.max_file_load > 0 else None
             )

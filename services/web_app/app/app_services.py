@@ -11,7 +11,7 @@ from . import app, cleanup_file
 
 try:
     from vlm4ocr.ocr_engines import OCREngine
-    from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine
+    from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine, BasicVLMConfig
 except ImportError as e:
     print(f"Error importing from vlm4ocr in app_services.py: {e}")
     raise
@@ -50,10 +50,8 @@ def process_ocr_request(request):
         vlm_api = request.form.get('vlm_api', '')
         user_prompt = request.form.get('ocr_user_prompt', None)
         output_format = request.form.get('output_format', 'markdown')
-        
-        # --- ADDED: Get max_new_tokens and temperature from form ---
-        max_new_tokens_str = request.form.get('max_new_tokens', '4096') # Default from OCREngine
-        temperature_str = request.form.get('temperature', '0.0') # Default from OCREngine
+        max_new_tokens_str = request.form.get('max_new_tokens', '4096') 
+        temperature_str = request.form.get('temperature', '0.0') 
         
         try:
             max_new_tokens = int(max_new_tokens_str)
@@ -63,7 +61,6 @@ def process_ocr_request(request):
             temperature = float(temperature_str)
         except ValueError:
             raise ValueError("Invalid value for Temperature. Must be a number.")
-        # --- END ADDED ---
 
         print(f"Selected output format: {output_format}")
         print(f"Received max_new_tokens: {max_new_tokens}, temperature: {temperature}")
@@ -82,6 +79,8 @@ def process_ocr_request(request):
 
         # 4. Initialize VLM Engine
         print("Initializing VLM Engine...")
+        config = BasicVLMConfig(max_new_tokens=max_new_tokens, temperature=temperature)
+
         vlm_api_key = None
         if vlm_api == "openai_compatible":
             vlm_api_key = request.form.get('openai_compatible_api_key', None)
@@ -92,14 +91,15 @@ def process_ocr_request(request):
             vlm_engine = OpenAIVLMEngine(
                 model=vlm_model_compatible,
                 api_key=vlm_api_key,
-                base_url=vlm_base_url
+                base_url=vlm_base_url,
+                config=config
             )
         elif vlm_api == "openai":
             vlm_api_key = request.form.get('openai_api_key', None)
             if not openai_model_openai: raise ValueError("Model name is required for OpenAI mode.")
             if not vlm_api_key: raise ValueError("OpenAI API Key is required for OpenAI mode.")
             print(f"Configuring OpenAIVLMEngine (OpenAI): model={openai_model_openai}")
-            vlm_engine = OpenAIVLMEngine(model=openai_model_openai, api_key=vlm_api_key)
+            vlm_engine = OpenAIVLMEngine(model=openai_model_openai, api_key=vlm_api_key, config=config)
         elif vlm_api == "azure_openai":
             vlm_api_key = request.form.get('azure_openai_api_key', None)
             if not azure_deployment_name: raise ValueError("Model/Deployment Name is required for Azure OpenAI mode.")
@@ -107,14 +107,15 @@ def process_ocr_request(request):
             if not azure_api_version: raise ValueError("Azure API Version is required for Azure OpenAI mode.")
             if not vlm_api_key: raise ValueError("Azure API Key is required for Azure OpenAI mode.")
             print(f"Configuring AzureOpenAIVLMEngine: model={azure_deployment_name}, endpoint={azure_endpoint}, api_version={azure_api_version}")
-            vlm_engine = AzureOpenAIVLMEngine(model=azure_deployment_name, api_key=vlm_api_key, azure_endpoint=azure_endpoint, api_version=azure_api_version)
+            vlm_engine = AzureOpenAIVLMEngine(model=azure_deployment_name, api_key=vlm_api_key, azure_endpoint=azure_endpoint, api_version=azure_api_version, config=config)
         elif vlm_api == "ollama":
             if not ollama_model: raise ValueError("Model name is required for Ollama mode.")
             host_to_use = ollama_host if ollama_host else 'http://localhost:11434'
             print(f"Configuring OllamaVLMEngine: model={ollama_model}, host={host_to_use}")
             vlm_engine = OllamaVLMEngine(
                 model_name=ollama_model,
-                host=host_to_use
+                host=host_to_use,
+                config=config
             )
         else:
             raise ValueError(f'Unsupported VLM API type selected: {vlm_api}')
@@ -131,12 +132,11 @@ def process_ocr_request(request):
         print("OCREngine initialized.")
 
         # 6. Define the Streaming Generator
-        # --- MODIFIED: Pass max_new_tokens and temperature to stream_ocr ---
-        def generate_ocr_stream(ocr_eng, file_to_process_path, stream_max_tokens, stream_temp):
+        def generate_ocr_stream(ocr_eng, file_to_process_path):
             print(f"generate_ocr_stream called for: {file_to_process_path}")
             try:
-                print(f"Starting OCREngine.stream_ocr for: {file_to_process_path} with max_tokens={stream_max_tokens}, temp={stream_temp}")
-                for item_dict in ocr_eng.stream_ocr(file_path=file_to_process_path, max_new_tokens=stream_max_tokens, temperature=stream_temp):
+                print(f"Starting OCREngine.stream_ocr for: {file_to_process_path}")
+                for item_dict in ocr_eng.stream_ocr(file_path=file_to_process_path):
                     yield json.dumps(item_dict) + '\n'
                 print(f"Finished OCREngine.stream_ocr for: {file_to_process_path}")
             except ValueError as val_err:
@@ -152,13 +152,10 @@ def process_ocr_request(request):
             finally:
                 print(f"Calling cleanup_file from generate_ocr_stream finally block for {file_to_process_path}")
                 cleanup_file(file_to_process_path, "post-stream cleanup")
-        # --- END MODIFICATION ---
 
         # 7. Return Streaming Response
-        # --- MODIFIED: Pass the new parameters to the generator ---
         print("Setup complete. Returning streaming response object.")
-        return Response(stream_with_context(generate_ocr_stream(ocr_engine, temp_file_path, max_new_tokens, temperature)), mimetype='application/x-ndjson')
-        # --- END MODIFICATION ---
+        return Response(stream_with_context(generate_ocr_stream(ocr_engine, temp_file_path)), mimetype='application/x-ndjson')
 
     except (ValueError, FileNotFoundError) as setup_val_err:
         print(f"--- Setup Validation Error in app_services: {setup_val_err} ---")

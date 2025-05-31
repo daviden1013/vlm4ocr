@@ -229,6 +229,30 @@ def clean_markdown(text:str) -> str:
     cleaned_text = text.replace("```markdown", "").replace("```", "")
     return cleaned_text
 
+def get_default_page_delimiter(output_mode:str) -> str:
+    """ 
+    Returns the default page delimiter based on the environment variable.
+
+    Parameters:
+    ----------
+    output_mode : str
+        The output mode, which can be "markdown", "HTML", or "text".
+    
+    Returns:
+    -------
+    str
+        The default page delimiter.
+    """
+    if output_mode not in ["markdown", "HTML", "text"]:
+        raise ValueError("output_mode must be 'markdown', 'HTML', or 'text'")
+    
+    if output_mode == "markdown":
+        return "\n\n---\n\n"
+    elif output_mode == "HTML":
+        return "<br><br>"
+    elif output_mode == "text":
+        return "\n\n---\n\n"
+
 
 class ImageProcessor:
     def __init__(self):

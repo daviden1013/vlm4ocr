@@ -1,6 +1,7 @@
 import os
 from typing import List, Literal
 from dataclasses import dataclass, field
+from vlm4ocr.utils import get_default_page_delimiter
 
 OutputMode = Literal["markdown", "HTML", "text"]
 
@@ -97,17 +98,12 @@ class OCRResult:
             'HTML' -> '<br><br>'
             'text' -> '\n\n---\n\n'
         """
-        if isinstance(page_delimiter, str):
-            if page_delimiter == "auto":
-                if self.output_mode == "markdown":
-                    self.page_delimiter = "\n\n---\n\n"
-                elif self.output_mode == "HTML":
-                    self.page_delimiter = "<br><br>"
-                else:
-                    self.page_delimiter = "\n\n---\n\n"
-            else:
-                self.page_delimiter = page_delimiter
-        else:
+        if not isinstance(page_delimiter, str):
             raise ValueError("page_delimiter must be a string")
         
+        if page_delimiter == "auto":
+            self.page_delimiter = get_default_page_delimiter(self.output_mode)
+        else:
+            self.page_delimiter = page_delimiter
+
         return self.page_delimiter.join([page.get("text", "") for page in self.pages])
