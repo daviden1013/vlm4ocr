@@ -87,6 +87,18 @@ def main():
     io_group.add_argument("--output_path", help="Optional: Path to save OCR results. If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory (or a sub-directory for logs if --log is used).")
     io_group.add_argument("--skip_existing", action="store_true", help="Skip processing files that already have OCR results in the output directory.")
 
+    image_processing_group = parser.add_argument_group("Image Processing Parameters")
+    image_processing_group.add_argument(
+        "--rotate_correction",
+        action="store_true",
+        help="Enable automatic rotation correction for input images. This requires Tesseract OCR to be installed and configured correctly.")
+    image_processing_group.add_argument(
+        "--max_dimension_pixels",
+        type=int,
+        default=4000,
+        help="Maximum dimension (width or height) in pixels for input images. Images larger than this will be resized to fit within this limit while maintaining aspect ratio."
+    )
+
     vlm_engine_group = parser.add_argument_group("VLM Engine Selection")
     vlm_engine_group.add_argument("--vlm_engine", choices=["openai", "azure_openai", "ollama", "openai_compatible"], required=True, help="VLM engine.")
     vlm_engine_group.add_argument("--model", required=True, help="Model identifier for the VLM engine.")
@@ -269,6 +281,8 @@ def main():
         async def process_and_write_concurrently():
             ocr_task_generator = ocr_engine_instance.concurrent_ocr(
                 file_paths=input_files_to_process,
+                rotate_correction=args.rotate_correction,
+                max_dimension_pixels=args.max_dimension_pixels,
                 max_new_tokens=args.max_new_tokens,
                 temperature=args.temperature,
                 concurrent_batch_size=args.concurrent_batch_size,
@@ -300,7 +314,7 @@ def main():
                 )
                 
                 if result_object.status == "error":
-                    error_message = result_object.pages[0] if result_object.pages else 'Unknown error during OCR'
+                    error_message = result_object.get_page(0) if len(result_object) > 0 else 'Unknown error during OCR'
                     logger.error(f"OCR failed for {result_object.filename}: {error_message}")
                 else:
                     try:
