@@ -16,6 +16,7 @@ vlm4ocr --input_path /examples/synthesized_data/ \
         --skip_existing \
         --output_mode markdown \
         --log \
+        --max_dimension_pixels 4000 \
         --vlm_engine openai_compatible \
         --model Qwen/Qwen2.5-VL-7B-Instruct \
         --api_key EMPTY \
@@ -44,9 +45,15 @@ The CLI parameters are grouped into categories to manage the OCR process.
 - `--output_path` If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory. 
 - `--skip_existing` Skip processing files that already have OCR results in the output directory. If False, all input files will be processed and potentially overwrite existing outputs.
 
+#### Image Processing Parameters
+- `--rotate_correction` Apply automatic rotation correction for input images. This requires Tesseract OCR to be installed and configured correctly. (default: False)
+- `--max_dimension_pixels` Maximum dimension (width or height) in pixels for input images. Images larger than this will be resized to fit within this limit while maintaining aspect ratio. (default: 4000)
+
 #### VLM Engine Selection
 - `--vlm_engine` Should be one of `openai`, `azure_openai`, `ollama`, or `openai_compatible`.
 - `--model` VLM model name.
+- `--max_new_tokens` Set maximum output tokens (default: 4096).
+- `--temperature` Set temperature (default: 0.0).
 
 ##### OpenAI & OpenAI-Compatible Options
 - `--api_key` API key. Can be set though environmental variable.
@@ -64,8 +71,6 @@ The CLI parameters are grouped into categories to manage the OCR process.
 
 #### OCR Engine Parameters
 - `--user_prompt` Specify custom user prompt.
-- `--max_new_tokens` Set maximum output tokens (default: 4096).
-- `--temperature` Set temperature (default: 0.0).
 
 #### Processing Options
 - `--concurrent_batch_size` Number of images/pages to process concurrently. Set to 1 for sequential processing of VLM calls. (default: 4)

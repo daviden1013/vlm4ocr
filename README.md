@@ -10,6 +10,12 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 | **Output Modes** | :white_check_mark: Markdown, HTML, plain text |
 | **Batch OCR** | :white_check_mark: Processes many pages concurrently by setting `concurrent_batch_size` |
 
+## 🆕Recent Updates
+- [v0.2.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.2.0) (May 29, 2025): 
+  - 📐**User Guide** is now available at [Documentation Page](https://daviden1013.github.io/vlm4ocr/)
+  - **Image processing features**: added `rotate_correction` and `max_dimension_pixels` to handle misaligned scan and large images. 
+  - **Optimized file staging**: added `max_file_load` parameter to `concurrent_ocr` method. 
+  
 
 ## Table of Contents
 - [Overview](#overview)
@@ -25,11 +31,11 @@ Below are screenshots from our [Web Application](#web-application). Note that al
 
 #### Markdown output mode
 A scanned lab report with tables and highlights are converted into markdown text by our OCR engine.
-<div align="center"><img src=doc_asset/readme_img/table_markdown_demo.PNG width=1000 ></div>
+<div align="center"><img src=docs/readme_img/web_app/table_markdown_demo.PNG width=1000 ></div>
 
 #### HTML output mode
 A scanned clinical progress note with hand-writting is converted into HTML.
-<div align="center"><img src=doc_asset/readme_img/report_HTML_demo.PNG width=1000 ></div>
+<div align="center"><img src=docs/readme_img/web_app/report_HTML_demo.PNG width=1000 ></div>
 
 ## ⭐Supported Models 
 ### Open-weights (ALL Supported!!)
@@ -129,7 +135,7 @@ vlm_engine = OpenAIVLMEngine(model="<mode_name>", base_url="<base_url>", api_key
 </details>
 
 <details>
-<summary> <img src="doc_asset/readme_img/ollama_icon.png" alt="Icon" width="22"/> Ollama</summary>
+<summary> <img src="docs/readme_img/ollama_icon.png" alt="Icon" width="22"/> Ollama</summary>
 
 ```python
 from vlm4ocr import OllamaVLMEngine
@@ -140,7 +146,7 @@ vlm_engine = OllamaVLMEngine(model_name="llama3.2-vision:11b-instruct-fp16")
 
 
 <details>
-<summary><img src=doc_asset/readme_img/openai-logomark_white.png width=16 /> OpenAI API</summary>
+<summary><img src=docs/readme_img/openai-logomark_white.png width=16 /> OpenAI API</summary>
 
 Follow the [Best Practices for API Key Safety](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety) to set up API key.
 
@@ -156,7 +162,7 @@ vlm_engine = OpenAIVLMEngine(model="gpt-4o-mini")
 </details>
 
 <details>
-<summary><img src=doc_asset/readme_img/Azure_icon.png width=32 /> Azure OpenAI API</summary>
+<summary><img src=docs/readme_img/Azure_icon.png width=32 /> Azure OpenAI API</summary>
 
 Follow the [Azure AI Services Quickstart](https://learn.microsoft.com/en-us/azure/ai-services/openai/quickstart?tabs=command-line%2Ckeyless%2Ctypescript-keyless%2Cpython-new&pivots=programming-language-python) to set up Endpoint and API key.
 
@@ -186,19 +192,39 @@ pdf_path = "/examples/synthesized_data/GPT-4o_synthesized_note_1.pdf"
 ocr = OCREngine(vlm_engine, output_mode="markdown")
 ```
 
-Run OCR for single or multiple files:
+Run OCR sequentially (process one image at a time) for single or multiple files:
 ```python
 # OCR for a single image
-ocr_results = ocr.run_ocr(image_path, verbose=True)
+ocr_results = ocr.sequential_ocr(image_path, verbose=True)
 
 # OCR for a single pdf (multiple pages)
-ocr_results = ocr.run_ocr(pdf_path, verbose=True)
+ocr_results = ocr.sequential_ocr(pdf_path, verbose=True)
 
-# OCR for multiple image/pdf files
-ocr_results = ocr.run_ocr([image_path, pdf_path], verbose=True)
+# OCR for multiple image and pdf files
+ocr_results = ocr.sequential_ocr([pdf_path, image_path], verbose=True)
 
-# Batch OCR for multiple image/pdf files
-ocr_results = ocr.run_ocr([image_path, pdf_path], concurrent=True, concurrent_batch_size=32)
+# Inspect OCR results
+len(ocr_results) # 2 files
+ocr_results[0].input_dir
+ocr_results[0].filename
+len(ocr_results[0]) # PDF file number of pages
+ocr_text = ocr_results[0].to_string() # OCR text (all pages concatenated)
+```
+
+Run OCR concurrently and write to file:
+```python
+import asyncio
+
+async def run_ocr():
+    response = ocr.concurrent_ocr([image_path_1, image_path_2], concurrent_batch_size=4)
+    async for result in response:
+        if result.status == "success":
+            filename = result.filename
+            ocr_text = result.to_string()
+            with open(f"{filename}.md", "w", encoding="utf-8") as f:
+                f.write(ocr_text)
+
+asyncio.run(run_ocr())
 ```
 
 ## 💻CLI
@@ -211,27 +237,28 @@ pip install vlm4ocr
 ```
 
 ### Usage
-Run OCR for all supported file types in the `/examples/synthesized_data/` folder with a locally deployed [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct).
+Run OCR for all supported file types in the `/examples/synthesized_data/` folder with a locally deployed [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct) and generate results as markdown. OCR results and a log file (enabled by `--log`) will be written to the `output_path`. `--concurrent_batch_size` deternmines the number of images/pages can be processed at a time. This is good for managing resources. 
 ```sh
-# OpenAI compatible API (batch processing)
+# OpenAI compatible API
 vlm4ocr --input_path /examples/synthesized_data/ \
+        --output_path /examples/ocr_output/ \
         --output_mode markdown \
+        --log \
         --vlm_engine openai_compatible \
         --model Qwen/Qwen2.5-VL-7B-Instruct \
         --api_key EMPTY \
         --base_url http://localhost:8000/v1 \
-        --concurrent \
-        --concurrent_batch_size 4 \
+        --concurrent_batch_size 4
 ```
 
-Alternatively, use *gpt-4o-mini* to process a PDF with many pages by batch.
+Use *gpt-4o-mini* to process a PDF with many pages. Since `--output_path` is not specified, outputs and logs will be written to the current work directory. 
 ```sh
 # OpenAI API
 export OPENAI_API_KEY=<api key>
 vlm4ocr --input_path /examples/synthesized_data/GPT-4o_synthesized_note_1.pdf \
         --output_mode HTML \
+        --log \
         --vlm_engine openai \
         --model gpt-4o-mini \
-        --concurrent \
-        --concurrent_batch_size 4 \
+        --concurrent_batch_size 4
 ```

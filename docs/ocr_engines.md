@@ -23,13 +23,13 @@ not be converted into text.
 ```
 
 ## Batch OCR
-`concurrent_ocr` is the recommended method to process large amount of files. The method returns an async generator of `OCRResult` instance (`AsyncGenerator[OCRResult, None]`). OCR results are generated whenever is ready (first-done-first-out). **There is no guarantee the input order and output order will match. Use the `OCRResult.filename` as identifier**. The `file_paths` is a single file (image, PDF, TIFF) or a list of file directories. The `max_new_tokens` sets maximum output tokens. `temperature` is the temperature for VLM inferencing. `concurrent_batch_size` is the number of images/pages that VLM processes at a time. This is used to manage inferencing resource (usually GPU). The `max_file_load` is the number of input files to be pre-loaded for staging. This manages the I/O and memory (dRAM) resources. By default, `max_file_load` is twice of `concurrent_batch_size`. 
+`concurrent_ocr` is the recommended method to process large amount of files. The method returns an async generator of `OCRResult` instance (`AsyncGenerator[OCRResult, None]`). OCR results are generated whenever is ready (first-done-first-out). **There is no guarantee the input order and output order will match. Use the `OCRResult.filename` as identifier**. The `file_paths` is a single file (image, PDF, TIFF) or a list of file directories. `rotate_correction` use [Tesseract](https://pypi.org/project/pytesseract/) to correct for rotation. **Please install Tesseract to use this feature**. `max_dimension_pixels` resize images to ensure the largest dimension (width or length) are less than the maximum allowed pixels. `concurrent_batch_size` is the number of images/pages that VLM processes at a time. This is used to manage inferencing resource (usually GPU). The `max_file_load` is the number of input files to be pre-loaded for staging. This manages the I/O and memory (dRAM) resources. By default, `max_file_load` is twice of `concurrent_batch_size`. 
 
 The code below runs OCR in batches of 4 images/pages, while having 8 files pre-loaded to ensure efficiency. 
 ```python
 response = ocr.concurrent_ocr(file_paths=<a list of files>, 
-                              max_new_tokens=4096,
-                              temperature=0.0,
+                              rotate_correction=True,
+                              max_dimension_pixels=4000,
                               concurrent_batch_size=4,
                               max_file_load=8)
 ```
