@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vlm4ocr"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python package and Web App for OCR with vision language models."
 authors = ["Enshuo (David) Hsu"]
 license = "MIT"
@@ -16,9 +16,13 @@ exclude = [
 python = "^3.11"
 pdf2image = ">=1.16.0"
 pillow = ">=10.0.0"
+pytesseract = { version = ">=0.3.13", optional = true }
 
 [tool.poetry.scripts]
 vlm4ocr = "vlm4ocr.cli:main"
+
+[tool.poetry.extras]
+tesseract = ["pytesseract"]
 
 [build-system]
 requires = ["poetry-core"]
