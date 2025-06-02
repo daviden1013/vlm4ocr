@@ -1,0 +1,1786 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../ocr_engines/">
+      
+      
+        <link rel="next" href="../ocr_engines/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>VLM Engines - VLM4OCR Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#vlm-engines-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="VLM4OCR Documentation" class="md-header__button md-logo" aria-label="VLM4OCR Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            VLM4OCR Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              VLM Engines
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="VLM4OCR Documentation" class="md-nav__button md-logo" aria-label="VLM4OCR Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    VLM4OCR Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web_application/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Web Application
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Python package
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Python package
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick_start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../vlm_engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    VLM Engines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ocr_engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Engine
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    VLM Engines
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    VLM Engines
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine" class="md-nav__link">
+    <span class="md-ellipsis">
+      OllamaVLMEngine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OllamaVLMEngine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine.chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine.chat_async" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat_async
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine.get_ocr_messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_ocr_messages
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine" class="md-nav__link">
+    <span class="md-ellipsis">
+      OpenAIVLMEngine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OpenAIVLMEngine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine.chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine.chat_async" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat_async
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine.get_ocr_messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_ocr_messages
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.AzureOpenAIVLMEngine" class="md-nav__link">
+    <span class="md-ellipsis">
+      AzureOpenAIVLMEngine
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ocr_engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Engine
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine" class="md-nav__link">
+    <span class="md-ellipsis">
+      OllamaVLMEngine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OllamaVLMEngine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine.chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine.chat_async" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat_async
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OllamaVLMEngine.get_ocr_messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_ocr_messages
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine" class="md-nav__link">
+    <span class="md-ellipsis">
+      OpenAIVLMEngine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OpenAIVLMEngine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine.chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine.chat_async" class="md-nav__link">
+    <span class="md-ellipsis">
+      chat_async
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.OpenAIVLMEngine.get_ocr_messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_ocr_messages
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vlm4ocr.vlm_engines.AzureOpenAIVLMEngine" class="md-nav__link">
+    <span class="md-ellipsis">
+      AzureOpenAIVLMEngine
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<div><h1 id="vlm-engines-reference">VLM Engines Reference</h1>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="vlm4ocr.vlm_engines.OllamaVLMEngine" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">vlm4ocr.vlm_engines.OllamaVLMEngine</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OllamaVLMEngine</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">num_ctx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8192</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">keep_alive</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">VLMConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="o">**</span><span class="n">kwrs</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="vlm4ocr.vlm_engines.VLMEngine">VLMEngine</span></code></p>
+
+
+        <p>The Ollama inference engine.</p>
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>model_name : str
+    the model name exactly as shown in &gt;&gt; ollama ls
+num_ctx : int, Optional
+    context length that LLM will evaluate.
+keep_alive : int, Optional
+    seconds to hold the LLM after the last API call.
+config : LLMConfig
+    the LLM configuration.</p>
+</details>
+
+
+
+
+
+
+                  <details class="quote">
+                    <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-250">250</a></span>
+<span class="normal"><a href="#__codelineno-0-251">251</a></span>
+<span class="normal"><a href="#__codelineno-0-252">252</a></span>
+<span class="normal"><a href="#__codelineno-0-253">253</a></span>
+<span class="normal"><a href="#__codelineno-0-254">254</a></span>
+<span class="normal"><a href="#__codelineno-0-255">255</a></span>
+<span class="normal"><a href="#__codelineno-0-256">256</a></span>
+<span class="normal"><a href="#__codelineno-0-257">257</a></span>
+<span class="normal"><a href="#__codelineno-0-258">258</a></span>
+<span class="normal"><a href="#__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">num_ctx</span><span class="p">:</span><span class="nb">int</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span> <span class="n">keep_alive</span><span class="p">:</span><span class="nb">int</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span><span class="n">VLMConfig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwrs</span><span class="p">):</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">    The Ollama inference engine.</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">    Parameters:</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    model_name : str</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        the model name exactly as shown in &gt;&gt; ollama ls</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    num_ctx : int, Optional</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">        context length that LLM will evaluate.</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">    keep_alive : int, Optional</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">        seconds to hold the LLM after the last API call.</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">    config : LLMConfig</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">        the LLM configuration. </span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">    """</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>    <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">"ollama"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">"ollama-python not found. Please install ollama-python (```pip install ollama```)."</span><span class="p">)</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>    <span class="kn">from</span> <span class="nn">ollama</span> <span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">AsyncClient</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="o">**</span><span class="n">kwrs</span><span class="p">)</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">async_client</span> <span class="o">=</span> <span class="n">AsyncClient</span><span class="p">(</span><span class="o">**</span><span class="n">kwrs</span><span class="p">)</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">num_ctx</span> <span class="o">=</span> <span class="n">num_ctx</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">keep_alive</span> <span class="o">=</span> <span class="n">keep_alive</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="k">else</span> <span class="n">BasicVLMConfig</span><span class="p">()</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_config</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="vlm4ocr.vlm_engines.OllamaVLMEngine.chat" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">chat</span>
+
+
+</h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">chat</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>This method inputs chat messages and outputs VLM generated text.</p>
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>messages : List[Dict[str,str]]
+    a list of dict with role and content. role must be one of {"system", "user", "assistant"}
+verbose : bool, Optional
+    if True, VLM generated text will be printed in terminal in real-time.
+stream : bool, Optional
+    if True, returns a generator that yields the output in real-time.</p>
+</details>
+
+            <details class="quote">
+              <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-288">288</a></span>
+<span class="normal"><a href="#__codelineno-0-289">289</a></span>
+<span class="normal"><a href="#__codelineno-0-290">290</a></span>
+<span class="normal"><a href="#__codelineno-0-291">291</a></span>
+<span class="normal"><a href="#__codelineno-0-292">292</a></span>
+<span class="normal"><a href="#__codelineno-0-293">293</a></span>
+<span class="normal"><a href="#__codelineno-0-294">294</a></span>
+<span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span>
+<span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span>
+<span class="normal"><a href="#__codelineno-0-305">305</a></span>
+<span class="normal"><a href="#__codelineno-0-306">306</a></span>
+<span class="normal"><a href="#__codelineno-0-307">307</a></span>
+<span class="normal"><a href="#__codelineno-0-308">308</a></span>
+<span class="normal"><a href="#__codelineno-0-309">309</a></span>
+<span class="normal"><a href="#__codelineno-0-310">310</a></span>
+<span class="normal"><a href="#__codelineno-0-311">311</a></span>
+<span class="normal"><a href="#__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#__codelineno-0-320">320</a></span>
+<span class="normal"><a href="#__codelineno-0-321">321</a></span>
+<span class="normal"><a href="#__codelineno-0-322">322</a></span>
+<span class="normal"><a href="#__codelineno-0-323">323</a></span>
+<span class="normal"><a href="#__codelineno-0-324">324</a></span>
+<span class="normal"><a href="#__codelineno-0-325">325</a></span>
+<span class="normal"><a href="#__codelineno-0-326">326</a></span>
+<span class="normal"><a href="#__codelineno-0-327">327</a></span>
+<span class="normal"><a href="#__codelineno-0-328">328</a></span>
+<span class="normal"><a href="#__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#__codelineno-0-331">331</a></span>
+<span class="normal"><a href="#__codelineno-0-332">332</a></span>
+<span class="normal"><a href="#__codelineno-0-333">333</a></span>
+<span class="normal"><a href="#__codelineno-0-334">334</a></span>
+<span class="normal"><a href="#__codelineno-0-335">335</a></span>
+<span class="normal"><a href="#__codelineno-0-336">336</a></span>
+<span class="normal"><a href="#__codelineno-0-337">337</a></span>
+<span class="normal"><a href="#__codelineno-0-338">338</a></span>
+<span class="normal"><a href="#__codelineno-0-339">339</a></span>
+<span class="normal"><a href="#__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#__codelineno-0-341">341</a></span>
+<span class="normal"><a href="#__codelineno-0-342">342</a></span>
+<span class="normal"><a href="#__codelineno-0-343">343</a></span>
+<span class="normal"><a href="#__codelineno-0-344">344</a></span>
+<span class="normal"><a href="#__codelineno-0-345">345</a></span>
+<span class="normal"><a href="#__codelineno-0-346">346</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="k">def</span> <span class="nf">chat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">str</span><span class="p">]],</span> <span class="n">verbose</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]:</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="sd">    This method inputs chat messages and outputs VLM generated text.</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="sd">    Parameters:</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="sd">    messages : List[Dict[str,str]]</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">        a list of dict with role and content. role must be one of {"system", "user", "assistant"}</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">    verbose : bool, Optional</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a><span class="sd">        if True, VLM generated text will be printed in terminal in real-time.</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a><span class="sd">    stream : bool, Optional</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a><span class="sd">        if True, returns a generator that yields the output in real-time.</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a><span class="sd">    """</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="n">processed_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preprocess_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">'num_ctx'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_ctx</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span><span class="p">}</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="k">def</span> <span class="nf">_stream_generator</span><span class="p">():</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>            <span class="n">response_stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> 
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>                <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span> 
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>                <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a>                <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>                <span class="n">keep_alive</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_alive</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a>            <span class="p">)</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a>            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">response_stream</span><span class="p">:</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>                <span class="n">content_chunk</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'content'</span><span class="p">)</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>                <span class="k">if</span> <span class="n">content_chunk</span><span class="p">:</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a>                    <span class="k">yield</span> <span class="n">content_chunk</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">_stream_generator</span><span class="p">())</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="k">elif</span> <span class="n">verbose</span><span class="p">:</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a>        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a>                        <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> 
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>                        <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span> 
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a>                        <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a>                        <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>                        <span class="n">keep_alive</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_alive</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a>                    <span class="p">)</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>        <span class="n">res</span> <span class="o">=</span> <span class="s1">''</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a>            <span class="n">content_chunk</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'content'</span><span class="p">)</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>            <span class="nb">print</span><span class="p">(</span><span class="n">content_chunk</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">''</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a>            <span class="n">res</span> <span class="o">+=</span> <span class="n">content_chunk</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a>        <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a>                            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> 
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a>                            <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span> 
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a>                            <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>                            <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a>                            <span class="n">keep_alive</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_alive</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a>                        <span class="p">)</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a>        <span class="n">res</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'content'</span><span class="p">)</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="vlm4ocr.vlm_engines.OllamaVLMEngine.chat_async" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">chat_async</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">chat_async</span><span class="p">(</span><span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Async version of chat method. Streaming is not supported.</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-349">349</a></span>
+<span class="normal"><a href="#__codelineno-0-350">350</a></span>
+<span class="normal"><a href="#__codelineno-0-351">351</a></span>
+<span class="normal"><a href="#__codelineno-0-352">352</a></span>
+<span class="normal"><a href="#__codelineno-0-353">353</a></span>
+<span class="normal"><a href="#__codelineno-0-354">354</a></span>
+<span class="normal"><a href="#__codelineno-0-355">355</a></span>
+<span class="normal"><a href="#__codelineno-0-356">356</a></span>
+<span class="normal"><a href="#__codelineno-0-357">357</a></span>
+<span class="normal"><a href="#__codelineno-0-358">358</a></span>
+<span class="normal"><a href="#__codelineno-0-359">359</a></span>
+<span class="normal"><a href="#__codelineno-0-360">360</a></span>
+<span class="normal"><a href="#__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#__codelineno-0-362">362</a></span>
+<span class="normal"><a href="#__codelineno-0-363">363</a></span>
+<span class="normal"><a href="#__codelineno-0-364">364</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">chat_async</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    Async version of chat method. Streaming is not supported.</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">    """</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a>    <span class="n">processed_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preprocess_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">async_client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a>                        <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> 
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>                        <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span> 
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>                        <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">'num_ctx'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_ctx</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span><span class="p">},</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a>                        <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a>                        <span class="n">keep_alive</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_alive</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>                    <span class="p">)</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="n">res</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">'message'</span><span class="p">][</span><span class="s1">'content'</span><span class="p">]</span>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="vlm4ocr.vlm_engines.OllamaVLMEngine.get_ocr_messages" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_ocr_messages</span>
+
+
+</h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_ocr_messages</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>This method inputs an image and returns the correesponding chat messages for the inference engine.</p>
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>system_prompt : str
+    the system prompt.
+user_prompt : str
+    the user prompt.
+image : Image.Image
+    the image for OCR.</p>
+</details>
+
+            <details class="quote">
+              <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-366">366</a></span>
+<span class="normal"><a href="#__codelineno-0-367">367</a></span>
+<span class="normal"><a href="#__codelineno-0-368">368</a></span>
+<span class="normal"><a href="#__codelineno-0-369">369</a></span>
+<span class="normal"><a href="#__codelineno-0-370">370</a></span>
+<span class="normal"><a href="#__codelineno-0-371">371</a></span>
+<span class="normal"><a href="#__codelineno-0-372">372</a></span>
+<span class="normal"><a href="#__codelineno-0-373">373</a></span>
+<span class="normal"><a href="#__codelineno-0-374">374</a></span>
+<span class="normal"><a href="#__codelineno-0-375">375</a></span>
+<span class="normal"><a href="#__codelineno-0-376">376</a></span>
+<span class="normal"><a href="#__codelineno-0-377">377</a></span>
+<span class="normal"><a href="#__codelineno-0-378">378</a></span>
+<span class="normal"><a href="#__codelineno-0-379">379</a></span>
+<span class="normal"><a href="#__codelineno-0-380">380</a></span>
+<span class="normal"><a href="#__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#__codelineno-0-384">384</a></span>
+<span class="normal"><a href="#__codelineno-0-385">385</a></span>
+<span class="normal"><a href="#__codelineno-0-386">386</a></span>
+<span class="normal"><a href="#__codelineno-0-387">387</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="k">def</span> <span class="nf">get_ocr_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_prompt</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">user_prompt</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">str</span><span class="p">]]:</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">    This method inputs an image and returns the correesponding chat messages for the inference engine.</span>
+<a id="__codelineno-0-369" name="__codelineno-0-369"></a>
+<a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">    Parameters:</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a><span class="sd">    system_prompt : str</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">        the system prompt.</span>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a><span class="sd">    user_prompt : str</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a><span class="sd">        the user prompt.</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="sd">    image : Image.Image</span>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="sd">        the image for OCR.</span>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">    """</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a>    <span class="n">base64_str</span> <span class="o">=</span> <span class="n">image_to_base64</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>    <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a>        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">},</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a>        <span class="p">{</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a>            <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a>            <span class="s2">"content"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a>            <span class="s2">"images"</span><span class="p">:</span> <span class="p">[</span><span class="n">base64_str</span><span class="p">]</span>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="p">}</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a>    <span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="vlm4ocr.vlm_engines.OpenAIVLMEngine" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">vlm4ocr.vlm_engines.OpenAIVLMEngine</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OpenAIVLMEngine</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VLMConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwrs</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="vlm4ocr.vlm_engines.VLMEngine">VLMEngine</span></code></p>
+
+
+        <p>The OpenAI API inference engine. Supports OpenAI models and OpenAI compatible servers:
+- vLLM OpenAI compatible server (https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html)</p>
+<p>For parameters and documentation, refer to https://platform.openai.com/docs/api-reference/introduction</p>
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>model_name : str
+    model name as described in https://platform.openai.com/docs/models
+config : VLMConfig, Optional
+    the VLM configuration. Must be a child class of VLMConfig.</p>
+</details>
+
+
+
+
+
+
+                  <details class="quote">
+                    <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-391">391</a></span>
+<span class="normal"><a href="#__codelineno-0-392">392</a></span>
+<span class="normal"><a href="#__codelineno-0-393">393</a></span>
+<span class="normal"><a href="#__codelineno-0-394">394</a></span>
+<span class="normal"><a href="#__codelineno-0-395">395</a></span>
+<span class="normal"><a href="#__codelineno-0-396">396</a></span>
+<span class="normal"><a href="#__codelineno-0-397">397</a></span>
+<span class="normal"><a href="#__codelineno-0-398">398</a></span>
+<span class="normal"><a href="#__codelineno-0-399">399</a></span>
+<span class="normal"><a href="#__codelineno-0-400">400</a></span>
+<span class="normal"><a href="#__codelineno-0-401">401</a></span>
+<span class="normal"><a href="#__codelineno-0-402">402</a></span>
+<span class="normal"><a href="#__codelineno-0-403">403</a></span>
+<span class="normal"><a href="#__codelineno-0-404">404</a></span>
+<span class="normal"><a href="#__codelineno-0-405">405</a></span>
+<span class="normal"><a href="#__codelineno-0-406">406</a></span>
+<span class="normal"><a href="#__codelineno-0-407">407</a></span>
+<span class="normal"><a href="#__codelineno-0-408">408</a></span>
+<span class="normal"><a href="#__codelineno-0-409">409</a></span>
+<span class="normal"><a href="#__codelineno-0-410">410</a></span>
+<span class="normal"><a href="#__codelineno-0-411">411</a></span>
+<span class="normal"><a href="#__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#__codelineno-0-413">413</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span><span class="n">VLMConfig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwrs</span><span class="p">):</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">    The OpenAI API inference engine. Supports OpenAI models and OpenAI compatible servers:</span>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">    - vLLM OpenAI compatible server (https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html)</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">    For parameters and documentation, refer to https://platform.openai.com/docs/api-reference/introduction</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">    Parameters:</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">    model_name : str</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">        model name as described in https://platform.openai.com/docs/models</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">    config : VLMConfig, Optional</span>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">        the VLM configuration. Must be a child class of VLMConfig.</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">    """</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">"openai"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a>        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">"OpenAI Python API library not found. Please install OpanAI (```pip install openai```)."</span><span class="p">)</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span><span class="p">,</span> <span class="n">AsyncOpenAI</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="o">**</span><span class="n">kwrs</span><span class="p">)</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">async_client</span> <span class="o">=</span> <span class="n">AsyncOpenAI</span><span class="p">(</span><span class="o">**</span><span class="n">kwrs</span><span class="p">)</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="k">else</span> <span class="n">BasicVLMConfig</span><span class="p">()</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_config</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="vlm4ocr.vlm_engines.OpenAIVLMEngine.chat" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">chat</span>
+
+
+</h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">chat</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>This method inputs chat messages and outputs LLM generated text.</p>
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>messages : List[Dict[str,str]]
+    a list of dict with role and content. role must be one of {"system", "user", "assistant"}
+verbose : bool, Optional
+    if True, VLM generated text will be printed in terminal in real-time.
+stream : bool, Optional
+    if True, returns a generator that yields the output in real-time.</p>
+</details>
+
+            <details class="quote">
+              <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#__codelineno-0-443">443</a></span>
+<span class="normal"><a href="#__codelineno-0-444">444</a></span>
+<span class="normal"><a href="#__codelineno-0-445">445</a></span>
+<span class="normal"><a href="#__codelineno-0-446">446</a></span>
+<span class="normal"><a href="#__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#__codelineno-0-449">449</a></span>
+<span class="normal"><a href="#__codelineno-0-450">450</a></span>
+<span class="normal"><a href="#__codelineno-0-451">451</a></span>
+<span class="normal"><a href="#__codelineno-0-452">452</a></span>
+<span class="normal"><a href="#__codelineno-0-453">453</a></span>
+<span class="normal"><a href="#__codelineno-0-454">454</a></span>
+<span class="normal"><a href="#__codelineno-0-455">455</a></span>
+<span class="normal"><a href="#__codelineno-0-456">456</a></span>
+<span class="normal"><a href="#__codelineno-0-457">457</a></span>
+<span class="normal"><a href="#__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#__codelineno-0-462">462</a></span>
+<span class="normal"><a href="#__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#__codelineno-0-484">484</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="k">def</span> <span class="nf">chat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">str</span><span class="p">]],</span> <span class="n">verbose</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]:</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">    This method inputs chat messages and outputs LLM generated text.</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">    Parameters:</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">    messages : List[Dict[str,str]]</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        a list of dict with role and content. role must be one of {"system", "user", "assistant"}</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">    verbose : bool, Optional</span>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        if True, VLM generated text will be printed in terminal in real-time.</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">    stream : bool, Optional</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        if True, returns a generator that yields the output in real-time.</span>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">    """</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a>    <span class="n">processed_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preprocess_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a>    <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a>        <span class="k">def</span> <span class="nf">_stream_generator</span><span class="p">():</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a>            <span class="n">response_stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a>                                    <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a>                                    <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a>                                    <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>                                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>                                <span class="p">)</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">response_stream</span><span class="p">:</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a>                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a>                    <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a>                        <span class="k">yield</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>                    <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">finish_reason</span> <span class="o">==</span> <span class="s2">"length"</span><span class="p">:</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>                        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Model stopped generating due to context length limit."</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">_stream_generator</span><span class="p">())</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a>    <span class="k">elif</span> <span class="n">verbose</span><span class="p">:</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>            <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>            <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="p">)</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="n">res</span> <span class="o">=</span> <span class="s1">''</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>                <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>                    <span class="n">res</span> <span class="o">+=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>                    <span class="nb">print</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>                <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">finish_reason</span> <span class="o">==</span> <span class="s2">"length"</span><span class="p">:</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Model stopped generating due to context length limit."</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>            <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>            <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>        <span class="p">)</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>        <span class="n">res</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="vlm4ocr.vlm_engines.OpenAIVLMEngine.chat_async" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">chat_async</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">chat_async</span><span class="p">(</span><span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Async version of chat method. Streaming is not supported.</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">chat_async</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="sd">    Async version of chat method. Streaming is not supported.</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="sd">    """</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="n">processed_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preprocess_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">async_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="n">messages</span><span class="o">=</span><span class="n">processed_messages</span><span class="p">,</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="p">)</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">finish_reason</span> <span class="o">==</span> <span class="s2">"length"</span><span class="p">:</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Model stopped generating due to context length limit."</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="n">res</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">postprocess_response</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="vlm4ocr.vlm_engines.OpenAIVLMEngine.get_ocr_messages" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_ocr_messages</span>
+
+
+</h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_ocr_messages</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">user_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"png"</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">detail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"high"</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>This method inputs an image and returns the correesponding chat messages for the inference engine.</p>
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>system_prompt : str
+    the system prompt.
+user_prompt : str
+    the user prompt.
+image : Image.Image
+    the image for OCR.
+format : str, Optional
+    the image format. 
+detail : str, Optional
+    the detail level of the image. Default is "high".</p>
+</details>
+
+            <details class="quote">
+              <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#__codelineno-0-511">511</a></span>
+<span class="normal"><a href="#__codelineno-0-512">512</a></span>
+<span class="normal"><a href="#__codelineno-0-513">513</a></span>
+<span class="normal"><a href="#__codelineno-0-514">514</a></span>
+<span class="normal"><a href="#__codelineno-0-515">515</a></span>
+<span class="normal"><a href="#__codelineno-0-516">516</a></span>
+<span class="normal"><a href="#__codelineno-0-517">517</a></span>
+<span class="normal"><a href="#__codelineno-0-518">518</a></span>
+<span class="normal"><a href="#__codelineno-0-519">519</a></span>
+<span class="normal"><a href="#__codelineno-0-520">520</a></span>
+<span class="normal"><a href="#__codelineno-0-521">521</a></span>
+<span class="normal"><a href="#__codelineno-0-522">522</a></span>
+<span class="normal"><a href="#__codelineno-0-523">523</a></span>
+<span class="normal"><a href="#__codelineno-0-524">524</a></span>
+<span class="normal"><a href="#__codelineno-0-525">525</a></span>
+<span class="normal"><a href="#__codelineno-0-526">526</a></span>
+<span class="normal"><a href="#__codelineno-0-527">527</a></span>
+<span class="normal"><a href="#__codelineno-0-528">528</a></span>
+<span class="normal"><a href="#__codelineno-0-529">529</a></span>
+<span class="normal"><a href="#__codelineno-0-530">530</a></span>
+<span class="normal"><a href="#__codelineno-0-531">531</a></span>
+<span class="normal"><a href="#__codelineno-0-532">532</a></span>
+<span class="normal"><a href="#__codelineno-0-533">533</a></span>
+<span class="normal"><a href="#__codelineno-0-534">534</a></span>
+<span class="normal"><a href="#__codelineno-0-535">535</a></span>
+<span class="normal"><a href="#__codelineno-0-536">536</a></span>
+<span class="normal"><a href="#__codelineno-0-537">537</a></span>
+<span class="normal"><a href="#__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#__codelineno-0-539">539</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="k">def</span> <span class="nf">get_ocr_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_prompt</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">user_prompt</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span><span class="nb">str</span><span class="o">=</span><span class="s1">'png'</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span><span class="nb">str</span><span class="o">=</span><span class="s2">"high"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">str</span><span class="p">]]:</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">    This method inputs an image and returns the correesponding chat messages for the inference engine.</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">    Parameters:</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">    system_prompt : str</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">        the system prompt.</span>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">    user_prompt : str</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        the user prompt.</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">    image : Image.Image</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        the image for OCR.</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a><span class="sd">    format : str, Optional</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">        the image format. </span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">    detail : str, Optional</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="sd">        the detail level of the image. Default is "high". </span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="sd">    """</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="n">base64_str</span> <span class="o">=</span> <span class="n">image_to_base64</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">},</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>        <span class="p">{</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>            <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a>            <span class="s2">"content"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>                <span class="p">{</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"image_url"</span><span class="p">,</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a>                    <span class="s2">"image_url"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>                        <span class="s2">"url"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"data:image/</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">;base64,</span><span class="si">{</span><span class="n">base64_str</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>                        <span class="s2">"detail"</span><span class="p">:</span> <span class="n">detail</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>                    <span class="p">},</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a>                <span class="p">},</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a>                <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">},</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a>            <span class="p">],</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a>        <span class="p">},</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="vlm4ocr.vlm_engines.AzureOpenAIVLMEngine" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">vlm4ocr.vlm_engines.AzureOpenAIVLMEngine</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AzureOpenAIVLMEngine</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">VLMConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="o">**</span><span class="n">kwrs</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="vlm4ocr.vlm_engines.OpenAIVLMEngine" href="#vlm4ocr.vlm_engines.OpenAIVLMEngine">OpenAIVLMEngine</a></code></p>
+
+
+        <p>The Azure OpenAI API inference engine.
+For parameters and documentation, refer to 
+- https://azure.microsoft.com/en-us/products/ai-services/openai-service
+- https://learn.microsoft.com/en-us/azure/ai-services/openai/quickstart</p>
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>model : str
+    model name as described in https://platform.openai.com/docs/models
+api_version : str
+    the Azure OpenAI API version
+config : LLMConfig
+    the LLM configuration.</p>
+</details>
+
+
+
+
+
+
+                  <details class="quote">
+                    <summary>Source code in <code>packages/vlm4ocr/vlm4ocr/vlm_engines.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-543">543</a></span>
+<span class="normal"><a href="#__codelineno-0-544">544</a></span>
+<span class="normal"><a href="#__codelineno-0-545">545</a></span>
+<span class="normal"><a href="#__codelineno-0-546">546</a></span>
+<span class="normal"><a href="#__codelineno-0-547">547</a></span>
+<span class="normal"><a href="#__codelineno-0-548">548</a></span>
+<span class="normal"><a href="#__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#__codelineno-0-551">551</a></span>
+<span class="normal"><a href="#__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#__codelineno-0-565">565</a></span>
+<span class="normal"><a href="#__codelineno-0-566">566</a></span>
+<span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-543" name="__codelineno-0-543"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">api_version</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span><span class="n">VLMConfig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwrs</span><span class="p">):</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a><span class="sd">    The Azure OpenAI API inference engine.</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a><span class="sd">    For parameters and documentation, refer to </span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a><span class="sd">    - https://azure.microsoft.com/en-us/products/ai-services/openai-service</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a><span class="sd">    - https://learn.microsoft.com/en-us/azure/ai-services/openai/quickstart</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="sd">    Parameters:</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="sd">    model : str</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="sd">        model name as described in https://platform.openai.com/docs/models</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="sd">    api_version : str</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">        the Azure OpenAI API version</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="sd">    config : LLMConfig</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">        the LLM configuration.</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">    """</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">"openai"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">"OpenAI Python API library not found. Please install OpanAI (```pip install openai```)."</span><span class="p">)</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">AzureOpenAI</span><span class="p">,</span> <span class="n">AsyncAzureOpenAI</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">api_version</span> <span class="o">=</span> <span class="n">api_version</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">AzureOpenAI</span><span class="p">(</span><span class="n">api_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span> 
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>                              <span class="o">**</span><span class="n">kwrs</span><span class="p">)</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">async_client</span> <span class="o">=</span> <span class="n">AsyncAzureOpenAI</span><span class="p">(</span><span class="n">api_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span> 
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>                                         <span class="o">**</span><span class="n">kwrs</span><span class="p">)</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="k">else</span> <span class="n">BasicVLMConfig</span><span class="p">()</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">formatted_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_config</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.highlight"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
