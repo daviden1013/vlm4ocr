@@ -11,7 +11,7 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 | **Batch OCR** | :white_check_mark: Processes many pages concurrently by setting `concurrent_batch_size` |
 
 ## 🆕Recent Updates
-- [v0.2.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.2.0) (May 29, 2025): 
+- [v0.2.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.2.0) (Jun 1, 2025): 
   - 📐**User Guide** is now available at [Documentation Page](https://daviden1013.github.io/vlm4ocr/)
   - **Image processing features**: added `rotate_correction` and `max_dimension_pixels` to handle misaligned scan and large images. 
   - **Optimized file staging**: added `max_file_load` parameter to `concurrent_ocr` method. 
