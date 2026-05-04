@@ -7,6 +7,10 @@ WORKDIR /app
 # Install Poppler for PDF processing
 RUN apt-get update && apt-get install -y poppler-utils && rm -rf /var/lib/apt/lists/*
 
+# Copy and install the local vlm4ocr package (picks up latest source including bbox support)
+COPY ./packages/vlm4ocr /app/packages/vlm4ocr
+RUN pip install --no-cache-dir /app/packages/vlm4ocr
+
 # Copy the web application requirements file
 COPY ./services/web_app/requirements.txt /app/services/web_app/requirements.txt
 

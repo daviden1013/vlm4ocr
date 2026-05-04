@@ -9,4 +9,5 @@ examples/
 doc_asset/
 nginx/certs/
 packages/
+!packages/vlm4ocr
 services/web_app/temp/
