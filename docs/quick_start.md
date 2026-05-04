@@ -47,6 +47,13 @@ ocr_results[0].filename # input filename
 ocr_results[0].status # OCR result status: 'success'
 len(ocr_results[0]) # PDF file number of pages
 ocr_text = ocr_results[0].to_string() # OCR text (all pages concatenated)
+
+# Per-page access — pages are OCRPage dataclasses
+page = ocr_results[0].get_page(0)
+page.text                         # OCR text for this page
+page.image_processing_status      # rotation/resize status dict
+# Dict-style access is preserved for backward compatibility:
+page["text"]
 ```
 
 #### Run OCR concurrently 
@@ -124,6 +131,66 @@ async def run_ocr():
 
 asyncio.run(run_ocr())
 ```
+
+### OCR with bounding boxes
+For workflows that need region-level positioning — for example, downstream layout analysis, redaction, or visual QA — use `output_mode="bbox"`. The OCR engine returns the same per-page text plus a `bboxes` list of `BBoxItem` records (`bbox=[x1, y1, x2, y2]`, `label`, `text`).
+
+Two complementary modes are supported:
+
+- **Full-text bbox OCR** — leave `user_prompt` empty (or pass `None`). The model transcribes the entire page and returns one box per region.
+- **Targeted extraction** — pass a free-text instruction such as `"Extract patient name and date of birth"`. Only regions matching the instruction are returned.
+
+```python
+from vlm4ocr import VLLMVLMEngine, OCREngine
+
+vlm_engine = VLLMVLMEngine(model="Qwen/Qwen3.5-35B-A3B")
+
+# Full-text OCR with bounding boxes
+ocr = OCREngine(vlm_engine=vlm_engine, output_mode="bbox")
+ocr_results = ocr.sequential_ocr(image_path)
+
+# Targeted extraction with bounding boxes
+ocr = OCREngine(
+    vlm_engine=vlm_engine,
+    output_mode="bbox",
+    user_prompt="Extract patient name and date of birth",
+)
+ocr_results = ocr.sequential_ocr(image_path)
+```
+
+Inspect and visualize results:
+
+```python
+# Inspect bbox results
+for page_num, page in enumerate(ocr_results[0].pages):
+    for item in page.bboxes:
+        print(item.label, item.bbox, item.text)
+
+    # Visualize on the source page
+    annotated = page.plot_bboxes()
+    annotated.save(f"annotated_page{page_num}.png")
+```
+
+#### Per-VLM bbox formats
+Different VLM families emit boxes with different conventions (key names, axis order, coordinate scale). `vlm4ocr` resolves the right format automatically from the model name. **Qwen3-VL**, **Gemma 3/4**, and **GPT-4.1** are registered out of the box. To override the auto-resolved format, pass a custom `BBoxFormat`:
+
+```python
+from vlm4ocr import OCREngine, BBoxFormat
+
+ocr = OCREngine(
+    vlm_engine=vlm_engine,
+    output_mode="bbox",
+    bbox_format=BBoxFormat(
+        coord_scale="normalized_1000",
+        axis_order="x0y0x1y1",
+        bbox_key="bbox_2d",
+        label_key="label",
+        text_key="text",
+    ),
+)
+```
+
+If the model name matches no registered pattern, a default `BBoxFormat()` is used and a warning is logged.
 
 ## Few-shot examples
 Few-shot examples can be provided to improve the accuracy. Below are examples of how to include few-shot examples in the OCR engine.

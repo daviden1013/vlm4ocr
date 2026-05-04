@@ -67,8 +67,17 @@ Use the dropdown to select an output mode:
 - plain text
 - markdown
 - HTML
+- JSON — define the output schema in the user prompt (required).
+- BBox — return per-region bounding boxes. Leave the user prompt empty for full-text bbox OCR, or fill it with a free-text instruction (e.g., `patient name and DOB`) for targeted extraction.
 
 ![output_mode](./readme_img/web_app/tutorial_select_output_mode.PNG)
+
+In **BBox** mode, the output area shows an *Image | Raw response* toggle:
+
+- *Raw response* streams the model's JSON output live as OCR runs.
+- *Image* renders the parsed bounding boxes on top of the input preview at OCR resolution. Use the zoom controls on the output panel to inspect detail.
+
+In batch mode, BBox produces one annotated PNG per page (`<stem>_page_<idx>_bbox.png`) and one consolidated JSON per input file (`<stem>_bbox.json`). Both are included in the *Download All* zip.
 
 #### Select VLM API
 Use the dropdown to select an VLM API:

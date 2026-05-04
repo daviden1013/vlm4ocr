@@ -1,6 +1,6 @@
-OCR engine handles the OCR process. It supports [concurrent processing](#concurrent-ocr) which is ideal for large amount of input files; [sequential processing](#sequential-ocr) which is good for lightweight tasks or testing; [streaming](#stream-ocr) that streams OCR results which is designed for frontend integration. 
+OCR engine handles the OCR process. It supports [concurrent processing](#concurrent-ocr) which is ideal for large amount of input files; [sequential processing](#sequential-ocr) which is good for lightweight tasks or testing; [streaming](#stream-ocr) that streams OCR results which is designed for frontend integration.
 
-OCR engine requires an [VLM engine](./vlm_engines.md) instance and an `output_mode` as one of *markdown*, *HTML*, *text*, or *JSON*. The optional `user_prompt` can be used to provide additional information about the input files. For example, *The input is a scanned MRI report*. Note that for `output_mode="JSON"`, the `user_prompt` is required to define the structure of the JSON output.
+OCR engine requires an [VLM engine](./vlm_engines.md) instance and an `output_mode` as one of *markdown*, *HTML*, *text*, *JSON*, or *bbox*. The optional `user_prompt` can be used to provide additional information about the input files. For example, *The input is a scanned MRI report*. Note that for `output_mode="JSON"`, the `user_prompt` is required to define the structure of the JSON output. For `output_mode="bbox"`, the `user_prompt` is optional — leave it empty for full-text bbox OCR, or set it to a free-text instruction for targeted extraction.
 
 ```python
 from vlm4ocr import OCREngine
