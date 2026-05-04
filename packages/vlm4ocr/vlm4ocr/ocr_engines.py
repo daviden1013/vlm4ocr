@@ -2,42 +2,45 @@ import os
 from typing import Any, Tuple, List, Dict, Union, Generator, AsyncGenerator, Iterable, Literal
 import importlib
 import asyncio
-from colorama import Fore, Style   
+from dataclasses import asdict
+from colorama import Fore, Style
 import json
 from vlm4ocr.utils import DataLoader, PDFDataLoader, TIFFDataLoader, ImageDataLoader, clean_markdown, extract_json, get_default_page_delimiter
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
-from vlm4ocr.data_types import OCRResult, FewShotExample
+from vlm4ocr.data_types import OCRResult, FewShotExample, BBoxFormat
 from vlm4ocr.vlm_engines import VLMEngine, MessagesLogger
 
 SUPPORTED_IMAGE_EXTS = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
 
 
 class OCREngine:
-    def __init__(self, vlm_engine:VLMEngine, output_mode:str="markdown",
-                 system_prompt:Union[str, None, Literal[False]]=None,
-                 user_prompt:Union[str, None, Literal[False]]=None):
+    def __init__(self, vlm_engine: VLMEngine, output_mode: str = "markdown",
+                 system_prompt: Union[str, None, Literal[False]] = None,
+                 user_prompt: Union[str, None, Literal[False]] = None,
+                 bbox_format: Union[BBoxFormat, None] = None):
         """
         This class inputs a image or PDF file path and processes them using a VLM inference engine. Outputs plain text or markdown.
 
         Parameters:
         -----------
-        inference_engine : InferenceEngine
-            The inference engine to use for OCR.
+        vlm_engine : VLMEngine
+            The VLM inference engine to use for OCR.
         output_mode : str, Optional
-            The output format. Must be 'markdown', 'HTML', 'text', or 'JSON'.
+            The output format. Must be 'markdown', 'HTML', 'text', 'JSON', or 'bbox'.
         system_prompt : str | None | False, Optional
             Controls the system prompt sent to the model.
             - None (default): use the built-in default system prompt for the selected output_mode.
             - str: use this custom system prompt.
-            - False: send no system prompt at all. Use this for OCR-specific models (e.g. PaddleOCR,
-              LightOn-OCR) that are not designed to accept a system prompt.
+            - False: send no system prompt at all.
         user_prompt : str | None | False, Optional
             Controls the user-turn text sent alongside the image.
-            - None (default): use the built-in default user prompt for the selected output_mode.
-            - str: use this custom user prompt.
-            - False: send no user prompt text (image only). Use this for OCR-specific models that
-              do not accept a user prompt. Note: when output_mode is 'JSON', passing False bypasses
-              the JSON-structure requirement — the model must handle output formatting on its own.
+            - None (default): use the built-in default user prompt, or empty string in bbox mode
+              (triggers full-text OCR).
+            - str: custom user prompt. In bbox mode a non-empty string triggers targeted extraction.
+            - False: send no user prompt text (image only).
+        bbox_format : BBoxFormat | None, Optional
+            Override the auto-resolved BBoxFormat for bbox output mode. When None (default) the
+            format is resolved from the registry based on vlm_engine.model.
         """
         # Check inference engine
         if not isinstance(vlm_engine, VLMEngine):
@@ -45,34 +48,51 @@ class OCREngine:
         self.vlm_engine = vlm_engine
 
         # Check output mode
-        if output_mode not in ["markdown", "HTML", "text", "JSON"]:
-            raise ValueError("output_mode must be 'markdown', 'HTML', 'text', or 'JSON'.")
+        if output_mode not in ["markdown", "HTML", "text", "JSON", "bbox"]:
+            raise ValueError("output_mode must be 'markdown', 'HTML', 'text', 'JSON', or 'bbox'.")
         self.output_mode = output_mode
+
+        # Resolve BBoxFormat (only used in bbox mode, but resolved eagerly so init fails fast)
+        if output_mode == "bbox":
+            from vlm4ocr.bbox import resolve_bbox_format
+            if bbox_format is not None:
+                if not isinstance(bbox_format, BBoxFormat):
+                    raise TypeError("bbox_format must be a BBoxFormat instance or None")
+                self.bbox_format = bbox_format
+            else:
+                self.bbox_format = resolve_bbox_format(self.vlm_engine.model)
+        else:
+            self.bbox_format = None
 
         # System prompt
         if system_prompt is False:
-            # Explicitly disabled — OCR-specific models that accept no system prompt
             self.system_prompt = None
         elif isinstance(system_prompt, str) and system_prompt:
             self.system_prompt = system_prompt
         else:
-            prompt_template_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath(f'ocr_{self.output_mode}_system_prompt.txt')
+            if output_mode == "bbox":
+                prompt_file = self.bbox_format.system_prompt_file
+            else:
+                prompt_file = f'ocr_{self.output_mode}_system_prompt.txt'
+            prompt_template_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath(prompt_file)
             with prompt_template_path.open('r', encoding='utf-8') as f:
                 self.system_prompt = f.read()
 
         # User prompt
         if user_prompt is False:
-            # Explicitly disabled — OCR-specific models that accept no user prompt text
             self.user_prompt = None
         elif isinstance(user_prompt, str) and user_prompt:
             self.user_prompt = user_prompt
         else:
             if self.output_mode == "JSON":
                 raise ValueError("user_prompt must be provided when output_mode is 'JSON' to define the JSON structure.")
-
-            prompt_template_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath(f'ocr_{self.output_mode}_user_prompt.txt')
-            with prompt_template_path.open('r', encoding='utf-8') as f:
-                self.user_prompt = f.read()
+            if self.output_mode == "bbox":
+                # None / empty → full-text OCR (empty user text)
+                self.user_prompt = ""
+            else:
+                prompt_template_path = importlib.resources.files('vlm4ocr.assets.default_prompt_templates').joinpath(f'ocr_{self.output_mode}_user_prompt.txt')
+                with prompt_template_path.open('r', encoding='utf-8') as f:
+                    self.user_prompt = f.read()
 
         # Image processor
         self.image_processor = ImageProcessor(vlm_engine=self.vlm_engine)
@@ -120,17 +140,16 @@ class OCREngine:
             # Check if images were extracted
             if not images:
                 raise ValueError(f"No images extracted from file: {file_path}")
-            
+
             # OCR each image
             for i, image in enumerate(images):
                 # Apply rotate correction if specified
                 if rotate_correction:
                     try:
                         image, _ = self.image_processor.rotate_correction(image, method=rotate_correction)
-
                     except Exception as e:
                         yield {"type": "info", "data": f"Error during rotate correction: {str(e)}"}
-                        
+
                 # Resize the image if max_dimension_pixels is specified
                 if max_dimension_pixels is not None:
                     try:
@@ -139,18 +158,26 @@ class OCREngine:
                         yield {"type": "info", "data": f"Error resizing image: {str(e)}"}
 
                 # Get OCR messages
-                messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt, 
-                                                            user_prompt=self.user_prompt, 
+                messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt,
+                                                            user_prompt=self.user_prompt,
                                                             image=image,
                                                             few_shot_examples=few_shot_examples)
-                
+
                 # Stream response
-                response_stream = self.vlm_engine.chat_stream(
-                    messages
-                )
+                response_stream = self.vlm_engine.chat_stream(messages)
+                buffered_chunks = []
                 for chunk in response_stream:
                     if chunk["type"] == "response":
                         yield {"type": "ocr_chunk", "data": chunk["data"]}
+                        buffered_chunks.append(chunk["data"])
+
+                # bbox post-processing after stream completes
+                if self.output_mode == "bbox":
+                    from vlm4ocr.bbox import parse_bbox_response
+                    img_w, img_h = image.size
+                    raw_response = "".join(buffered_chunks)
+                    bboxes = parse_bbox_response(raw_response, self.bbox_format, img_w, img_h)
+                    yield {"type": "bbox_result", "data": [asdict(b) for b in bboxes]}
 
                 if i < len(images) - 1:
                     yield {"type": "page_delimiter", "data": get_default_page_delimiter(self.output_mode)}
@@ -164,10 +191,9 @@ class OCREngine:
             if rotate_correction:
                 try:
                     image, _ = self.image_processor.rotate_correction(image, method=rotate_correction)
-
                 except Exception as e:
                     yield {"type": "info", "data": f"Error during rotate correction: {str(e)}"}
-                    
+
             # Resize the image if max_dimension_pixels is specified
             if max_dimension_pixels is not None:
                 try:
@@ -176,17 +202,25 @@ class OCREngine:
                     yield {"type": "info", "data": f"Error resizing image: {str(e)}"}
 
             # Get OCR messages
-            messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt, 
-                                                        user_prompt=self.user_prompt, 
+            messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt,
+                                                        user_prompt=self.user_prompt,
                                                         image=image,
                                                         few_shot_examples=few_shot_examples)
             # Stream response
-            response_stream = self.vlm_engine.chat_stream(
-                    messages
-                )
+            response_stream = self.vlm_engine.chat_stream(messages)
+            buffered_chunks = []
             for chunk in response_stream:
                 if chunk["type"] == "response":
                     yield {"type": "ocr_chunk", "data": chunk["data"]}
+                    buffered_chunks.append(chunk["data"])
+
+            # bbox post-processing after stream completes
+            if self.output_mode == "bbox":
+                from vlm4ocr.bbox import parse_bbox_response
+                img_w, img_h = image.size
+                raw_response = "".join(buffered_chunks)
+                bboxes = parse_bbox_response(raw_response, self.bbox_format, img_w, img_h)
+                yield {"type": "bbox_result", "data": [asdict(b) for b in bboxes]}
             
 
     def sequential_ocr(self, file_paths: Union[str, Iterable[str]],
@@ -303,8 +337,8 @@ class OCREngine:
                             print(f"{Fore.RED}Error resizing image for {filename}:{Style.RESET_ALL} {resized['error']}. OCR continues without resizing.")
 
                 try:
-                    messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt, 
-                                                                user_prompt=self.user_prompt, 
+                    messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt,
+                                                                user_prompt=self.user_prompt,
                                                                 image=image,
                                                                 few_shot_examples=few_shot_examples)
                     # Define a messages logger to capture messages
@@ -316,23 +350,31 @@ class OCREngine:
                         messages_logger=messages_logger
                     )
                     ocr_text = response["response"]
-                    # Clean the response if output mode is markdown
+                    bboxes = None
+                    img_w = img_h = None
+
+                    # Mode-specific post-processing
                     if self.output_mode == "markdown":
                         ocr_text = clean_markdown(ocr_text)
-
-                    # Parse the response if output mode is JSON
                     elif self.output_mode == "JSON":
                         json_list = extract_json(ocr_text)
-                        # Serialize the JSON list to a string
                         ocr_text = json.dumps(json_list, indent=4)
-                    
+                    elif self.output_mode == "bbox":
+                        from vlm4ocr.bbox import parse_bbox_response
+                        img_w, img_h = image.size
+                        bboxes = parse_bbox_response(ocr_text, self.bbox_format, img_w, img_h)
+                        ocr_text = "\n".join(item.text for item in bboxes)
+
                     # Add the page to the OCR result
-                    ocr_result.add_page(text=ocr_text, 
-                                        image_processing_status=image_processing_status)
-                    
+                    ocr_result.add_page(text=ocr_text,
+                                        image_processing_status=image_processing_status,
+                                        bboxes=bboxes,
+                                        image_width=img_w,
+                                        image_height=img_h)
+
                     # Add messages log to the OCR result
                     ocr_result.add_messages_to_log(messages_logger.get_messages_log())
-                
+
                 except Exception as page_e:
                     ocr_result.status = "error"
                     ocr_result.add_page(text=f"Error during OCR for a page in {filename}: {str(page_e)}",
@@ -489,8 +531,9 @@ class OCREngine:
                     page_tasks = [asyncio.ensure_future(t) for t in page_processing_tasks]
                     try:
                         processed_page_results = await asyncio.gather(*page_tasks)
-                        for text, image_processing_status in processed_page_results:
-                            result.add_page(text=text, image_processing_status=image_processing_status)
+                        for text, image_processing_status, bboxes, img_w, img_h in processed_page_results:
+                            result.add_page(text=text, image_processing_status=image_processing_status,
+                                            bboxes=bboxes, image_width=img_w, image_height=img_h)
                     except asyncio.CancelledError:
                         for pt in page_tasks:
                             if not pt.done():
@@ -556,23 +599,27 @@ class OCREngine:
                         "error": str(e)
                     }
 
-            messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt, 
-                                                        user_prompt=self.user_prompt, 
+            messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt,
+                                                        user_prompt=self.user_prompt,
                                                         image=image,
                                                         few_shot_examples=few_shot_examples)
-            response = await self.vlm_engine.chat_async( 
+            response = await self.vlm_engine.chat_async(
                 messages,
                 messages_logger=messages_logger
             )
             ocr_text = response["response"]
-            # Clean the OCR text if output mode is markdown
+            bboxes = None
+            img_w = img_h = None
+
             if self.output_mode == "markdown":
                 ocr_text = clean_markdown(ocr_text)
-
-            # Parse the response if output mode is JSON
             elif self.output_mode == "JSON":
                 json_list = extract_json(ocr_text)
-                # Serialize the JSON list to a string
                 ocr_text = json.dumps(json_list, indent=4)
+            elif self.output_mode == "bbox":
+                from vlm4ocr.bbox import parse_bbox_response
+                img_w, img_h = image.size
+                bboxes = parse_bbox_response(ocr_text, self.bbox_format, img_w, img_h)
+                ocr_text = "\n".join(item.text for item in bboxes)
 
-            return ocr_text, image_processing_status
+            return ocr_text, image_processing_status, bboxes, img_w, img_h

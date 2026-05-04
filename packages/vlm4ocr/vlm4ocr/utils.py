@@ -294,9 +294,9 @@ def get_default_page_delimiter(output_mode:str) -> str:
     str
         The default page delimiter.
     """
-    if output_mode not in ["markdown", "HTML", "text", "JSON"]:
-        raise ValueError("output_mode must be 'markdown', 'HTML', 'text', or 'JSON'")
-    
+    if output_mode not in ["markdown", "HTML", "text", "JSON", "bbox"]:
+        raise ValueError("output_mode must be 'markdown', 'HTML', 'text', 'JSON', or 'bbox'")
+
     if output_mode == "markdown":
         return "\n\n---\n\n"
     elif output_mode == "HTML":
@@ -304,4 +304,6 @@ def get_default_page_delimiter(output_mode:str) -> str:
     elif output_mode == "text":
         return "\n\n---\n\n"
     elif output_mode == "JSON":
+        return "\n\n---\n\n"
+    elif output_mode == "bbox":
         return "\n\n---\n\n"

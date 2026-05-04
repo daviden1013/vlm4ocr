@@ -8,7 +8,27 @@ from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
 if TYPE_CHECKING:
     from vlm4ocr.vlm_engines import VLMEngine
 
-OutputMode = Literal["markdown", "HTML", "text", "JSON"]
+OutputMode = Literal["markdown", "HTML", "text", "JSON", "bbox"]
+
+
+@dataclass
+class BBoxItem:
+    """A single detected region with its bounding box, label, and text."""
+    bbox: List[int]   # [x1, y1, x2, y2] absolute pixels
+    label: str
+    text: str
+
+
+@dataclass
+class BBoxFormat:
+    """Describes how a specific VLM family encodes bbox output."""
+    coord_scale: Literal["normalized_1000", "auto"] = "auto"
+    axis_order: Literal["x0y0x1y1", "y0x0y1x1"] = "x0y0x1y1"
+    bbox_key: str = "bbox"
+    label_key: str = "label"
+    text_key: str = "text"
+    system_prompt_file: str = "ocr_bbox_system_prompt_default.txt"
+
 
 @dataclass
 class OCRResult:
@@ -39,8 +59,8 @@ class OCRResult:
         self.filename = os.path.basename(self.input_dir)
 
         # output_mode validation
-        if self.output_mode not in ["markdown", "HTML", "text", "JSON"]:
-            raise ValueError("output_mode must be 'markdown', 'HTML', 'text', or 'JSON'")
+        if self.output_mode not in ["markdown", "HTML", "text", "JSON", "bbox"]:
+            raise ValueError("output_mode must be 'markdown', 'HTML', 'text', 'JSON', or 'bbox'")
 
         # pages validation 
         if not isinstance(self.pages, list):
@@ -50,7 +70,10 @@ class OCRResult:
                 raise ValueError(f"Each page must be a dict. Page at index {i} is not a dict.")
 
 
-    def add_page(self, text:str, image_processing_status: dict):
+    def add_page(self, text: str, image_processing_status: dict,
+                 bboxes: Optional[List["BBoxItem"]] = None,
+                 image_width: Optional[int] = None,
+                 image_height: Optional[int] = None):
         """
         This method adds a new page to the OCRResult object.
 
@@ -60,16 +83,24 @@ class OCRResult:
             The OCR result text of the page.
         image_processing_status : dict
             A dictionary containing the image processing status for the page.
-            It can include keys like 'rotate_correction', 'max_dimension_pixels', etc.
+        bboxes : List[BBoxItem] | None, Optional
+            Parsed bounding-box records (populated in bbox output mode).
+        image_width : int | None, Optional
+            Width of the post-resize image (pixels), populated in bbox mode.
+        image_height : int | None, Optional
+            Height of the post-resize image (pixels), populated in bbox mode.
         """
         if not isinstance(text, str):
             raise ValueError("text must be a string")
         if not isinstance(image_processing_status, dict):
             raise ValueError("image_processing_status must be a dict")
-        
+
         page = {
             "text": text,
-            "image_processing_status": image_processing_status
+            "image_processing_status": image_processing_status,
+            "bboxes": bboxes,
+            "image_width": image_width,
+            "image_height": image_height,
         }
         self.pages.append(page)
 
@@ -124,6 +155,67 @@ class OCRResult:
             self.page_delimiter = page_delimiter
 
         return self.page_delimiter.join([page.get("text", "") for page in self.pages])
+
+    def get_bboxes(self, page_idx: int) -> Optional[List["BBoxItem"]]:
+        """Returns the parsed bbox records for a given page, or None."""
+        return self.get_page(page_idx).get("bboxes")
+
+    def plot_bboxes(self, page_idx: int, **kwargs) -> Image.Image:
+        """
+        Render the source page image with this page's bboxes drawn on top.
+
+        Reloads the source file, re-applies the rotation used during OCR (if any),
+        and resizes to the dimensions sent to the VLM. Then calls the standalone
+        `vlm4ocr.plot_bbox` to draw the boxes.
+
+        Parameters
+        ----------
+        page_idx : int
+            Page index in this result.
+        **kwargs
+            Forwarded to `vlm4ocr.plot_bbox` (e.g. show_label, color_by_label,
+            box_width, font_path, font_size).
+
+        Returns
+        -------
+        PIL.Image.Image
+            A copy of the source page with bboxes drawn on it.
+        """
+        page = self.get_page(page_idx)
+        bboxes = page.get("bboxes")
+        if bboxes is None:
+            raise ValueError(
+                f"Page {page_idx} has no bboxes. plot_bbox is only available for "
+                "OCRResult produced with output_mode='bbox'."
+            )
+
+        # Lazy imports to avoid circular dependency
+        from vlm4ocr.utils import PDFDataLoader, TIFFDataLoader, ImageDataLoader
+        from vlm4ocr.bbox import plot_bbox as _plot_bbox
+
+        file_ext = os.path.splitext(self.input_dir)[1].lower()
+        if file_ext == ".pdf":
+            loader = PDFDataLoader(self.input_dir)
+        elif file_ext in (".tif", ".tiff"):
+            loader = TIFFDataLoader(self.input_dir)
+        else:
+            loader = ImageDataLoader(self.input_dir)
+        image = loader.get_page(page_idx)
+
+        # Re-apply rotation that was used during OCR (same convention as ImageProcessor)
+        rot_status = page.get("image_processing_status", {}).get("rotate_correction")
+        if rot_status and rot_status.get("status") == "success":
+            angle = rot_status.get("rotation_angle") or 0
+            if angle:
+                image = image.rotate(angle, expand=True)
+
+        # Resize to match the post-resize image the VLM saw
+        target_w = page.get("image_width")
+        target_h = page.get("image_height")
+        if target_w and target_h and image.size != (target_w, target_h):
+            image = image.resize((target_w, target_h), Image.LANCZOS)
+
+        return _plot_bbox(bboxes, image, **kwargs)
     
 @dataclass
 class FewShotExample:
