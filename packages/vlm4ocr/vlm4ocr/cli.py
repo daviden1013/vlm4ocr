@@ -359,7 +359,7 @@ def main():
                 )
                 
                 if result_object.status == "error":
-                    error_message = result_object.get_page(0) if len(result_object) > 0 else 'Unknown error during OCR'
+                    error_message = result_object.get_page(0).text if len(result_object) > 0 else 'Unknown error during OCR'
                     logger.error(f"OCR failed for {result_object.filename}: {error_message}")
                 else:
                     try:

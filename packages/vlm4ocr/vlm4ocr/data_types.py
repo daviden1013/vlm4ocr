@@ -30,6 +30,138 @@ class BBoxFormat:
     system_prompt_file: str = "ocr_bbox_system_prompt_default.txt"
 
 
+_OCR_PAGE_KEYS = ("text", "image_processing_status", "bboxes", "image_width", "image_height")
+
+
+@dataclass
+class OCRPage:
+    """
+    Holds all data for a single OCR-processed page.
+
+    Attributes are the canonical access pattern. Dict-style access
+    (page["text"], page.get("bboxes")) is supported for backward compatibility.
+    """
+    text: str
+    image_processing_status: dict
+    bboxes: Optional[List["BBoxItem"]] = None
+    image_width: Optional[int] = None
+    image_height: Optional[int] = None
+    # Internal fields set by OCRResult.add_page — not part of public API
+    _source_path: str = field(default="", repr=False)
+    _page_idx: int = field(default=0, repr=False)
+
+    def __repr__(self):
+        return f"OCRPage(page_idx={self._page_idx}, text_length={len(self.text)})"
+
+    # --- dict-style compat ---
+
+    def __getitem__(self, key: str):
+        if key not in _OCR_PAGE_KEYS:
+            raise KeyError(key)
+        return getattr(self, key)
+
+    def get(self, key: str, default=None):
+        if key not in _OCR_PAGE_KEYS:
+            return default
+        return getattr(self, key)
+
+    def __contains__(self, key: str):
+        return key in _OCR_PAGE_KEYS
+
+    def keys(self):
+        return _OCR_PAGE_KEYS
+
+    # --- bbox methods ---
+
+    def get_bboxes(self) -> Optional[List["BBoxItem"]]:
+        """Returns the parsed bbox records for this page, or None."""
+        return self.bboxes
+
+    def plot_bboxes(
+        self,
+        show_label: bool = True,
+        color_by_label: bool = True,
+        box_width: int = 3,
+        font_path: Optional[str] = None,
+        font_size: int = 20,
+    ) -> Image.Image:
+        """
+        Render this page's source image with bboxes drawn on top.
+
+        Reloads the source file, re-applies the rotation used during OCR (if any),
+        and resizes to the dimensions sent to the VLM. When the source image is
+        downscaled, `box_width` and `font_size` are scaled by the same factor so
+        the outlines and labels stay visually proportional to the page content.
+
+        Parameters
+        ----------
+        show_label : bool, default True
+            Draw each box's label as a tag above the box.
+        color_by_label : bool, default True
+            Color each box deterministically by its label so distinct categories
+            are visually separable. If False, all boxes are red.
+        box_width : int, default 3
+            Outline thickness in pixels, specified at original image scale. Scaled
+            down automatically if the image was resized for OCR.
+        font_path : str | None, Optional
+            Path to a TTF font for label text. Falls back to a common system font,
+            then to PIL's default bitmap font.
+        font_size : int, default 20
+            Label font size in pixels, specified at original image scale. Scaled
+            down automatically if the image was resized for OCR.
+
+        Returns
+        -------
+        PIL.Image.Image
+            A copy of the source page with bboxes drawn on it.
+        """
+        if self.bboxes is None:
+            raise ValueError(
+                f"Page {self._page_idx} has no bboxes. plot_bboxes is only available for "
+                "OCRResult produced with output_mode='bbox'."
+            )
+
+        from vlm4ocr.utils import PDFDataLoader, TIFFDataLoader, ImageDataLoader
+        from vlm4ocr.bbox import plot_bbox as _plot_bbox
+
+        file_ext = os.path.splitext(self._source_path)[1].lower()
+        if file_ext == ".pdf":
+            loader = PDFDataLoader(self._source_path)
+        elif file_ext in (".tif", ".tiff"):
+            loader = TIFFDataLoader(self._source_path)
+        else:
+            loader = ImageDataLoader(self._source_path)
+        image = loader.get_page(self._page_idx)
+
+        rot_status = self.image_processing_status.get("rotate_correction")
+        if rot_status and rot_status.get("status") == "success":
+            angle = rot_status.get("rotation_angle") or 0
+            if angle:
+                image = image.rotate(angle, expand=True)
+
+        resize_status = self.image_processing_status.get("resize")
+        if (resize_status and resize_status.get("status") == "success"
+                and resize_status.get("resized") and self.image_width and self.image_height):
+            image_processor = ImageProcessor()
+            original_w = image.size[0]
+            image, _ = image_processor.resize(
+                image, max_dimension_pixels=max(self.image_width, self.image_height)
+            )
+            scale = image.size[0] / original_w
+            box_width = max(1, int(round(box_width * scale)))
+            font_size = max(6, int(round(font_size * scale)))
+
+        return _plot_bbox(
+            self.bboxes,
+            image,
+            show_label=show_label,
+            color_by_label=color_by_label,
+            box_width=box_width,
+            font_path=font_path,
+            font_size=font_size,
+        )
+
+
 @dataclass
 class OCRResult:
     """
@@ -40,42 +172,27 @@ class OCRResult:
     input_dir : str
         The directory where the input files (e.g., image, PDF, tiff) are located.
     output_mode : str
-        The output format. Must be 'markdown', 'HTML', or 'text'.
-    pages : List[str]
-        A list of strings, each representing a page of the OCR result.
+        The output format. Must be 'markdown', 'HTML', 'text', 'JSON', or 'bbox'.
     """
     input_dir: str
     output_mode: OutputMode
-    pages: List[dict] = field(default_factory=list)
+    pages: List[OCRPage] = field(default_factory=list)
     filename: str = field(init=False)
     status: str = field(init=False, default="processing")
     messages_log: List[List[Dict[str,str]]] = field(default_factory=list)
 
     def __post_init__(self):
-        """
-        Called after the dataclass-generated __init__ method.
-        Used for validation and initializing derived fields.
-        """
         self.filename = os.path.basename(self.input_dir)
 
-        # output_mode validation
         if self.output_mode not in ["markdown", "HTML", "text", "JSON", "bbox"]:
             raise ValueError("output_mode must be 'markdown', 'HTML', 'text', 'JSON', or 'bbox'")
-
-        # pages validation 
-        if not isinstance(self.pages, list):
-            raise ValueError("pages must be a list of dict")
-        for i, page_content in enumerate(self.pages):
-            if not isinstance(page_content, dict):
-                raise ValueError(f"Each page must be a dict. Page at index {i} is not a dict.")
-
 
     def add_page(self, text: str, image_processing_status: dict,
                  bboxes: Optional[List["BBoxItem"]] = None,
                  image_width: Optional[int] = None,
                  image_height: Optional[int] = None):
         """
-        This method adds a new page to the OCRResult object.
+        Adds a new page to the OCRResult. Internal method called by OCR engines.
 
         Parameters:
         ----------
@@ -95,21 +212,22 @@ class OCRResult:
         if not isinstance(image_processing_status, dict):
             raise ValueError("image_processing_status must be a dict")
 
-        page = {
-            "text": text,
-            "image_processing_status": image_processing_status,
-            "bboxes": bboxes,
-            "image_width": image_width,
-            "image_height": image_height,
-        }
+        page = OCRPage(
+            text=text,
+            image_processing_status=image_processing_status,
+            bboxes=bboxes,
+            image_width=image_width,
+            image_height=image_height,
+            _source_path=self.input_dir,
+            _page_idx=len(self.pages),
+        )
         self.pages.append(page)
 
-    def get_page(self, idx):
+    def get_page(self, idx: int) -> OCRPage:
         if not isinstance(idx, int):
             raise ValueError("Index must be an integer")
         if idx < 0 or idx >= len(self.pages):
             raise IndexError(f"Index out of range. The OCRResult has {len(self.pages)} pages, but index {idx} was requested.")
-        
         return self.pages[idx]
 
     def clear_messages_log(self):
@@ -118,7 +236,6 @@ class OCRResult:
     def add_messages_to_log(self, messages: List[Dict[str,str]]):
         if not isinstance(messages, list):
             raise ValueError("messages must be a list of dict")
-        
         self.messages_log.extend(messages)
 
     def get_messages_log(self) -> List[List[Dict[str,str]]]:
@@ -126,96 +243,33 @@ class OCRResult:
 
     def __len__(self):
         return len(self.pages)
-    
+
     def __iter__(self):
         return iter(self.pages)
-    
+
     def __repr__(self):
         return f"OCRResult(filename={self.filename}, output_mode={self.output_mode}, pages_count={len(self.pages)}, status={self.status})"
-    
-    def to_string(self, page_delimiter:str="auto") -> str:
+
+    def to_string(self, page_delimiter: str = "auto") -> str:
         """
         Convert the OCRResult object to a string representation.
 
         Parameters:
         ----------
         page_delimiter : str, Optional
-            Only applies if separate_pages = True. The delimiter to use between PDF pages. 
-            if 'auto', it will be set to the default page delimiter for the output mode: 
-            'markdown' -> '\n\n---\n\n'
-            'HTML' -> '<br><br>'
-            'text' -> '\n\n---\n\n'
+            The delimiter to use between pages. If 'auto', defaults by output mode:
+            'markdown' / 'text' -> '\\n\\n---\\n\\n', 'HTML' -> '<br><br>'
         """
         if not isinstance(page_delimiter, str):
             raise ValueError("page_delimiter must be a string")
-        
+
         if page_delimiter == "auto":
             self.page_delimiter = get_default_page_delimiter(self.output_mode)
         else:
             self.page_delimiter = page_delimiter
 
-        return self.page_delimiter.join([page.get("text", "") for page in self.pages])
+        return self.page_delimiter.join([page.text for page in self.pages])
 
-    def get_bboxes(self, page_idx: int) -> Optional[List["BBoxItem"]]:
-        """Returns the parsed bbox records for a given page, or None."""
-        return self.get_page(page_idx).get("bboxes")
-
-    def plot_bboxes(self, page_idx: int, **kwargs) -> Image.Image:
-        """
-        Render the source page image with this page's bboxes drawn on top.
-
-        Reloads the source file, re-applies the rotation used during OCR (if any),
-        and resizes to the dimensions sent to the VLM. Then calls the standalone
-        `vlm4ocr.plot_bbox` to draw the boxes.
-
-        Parameters
-        ----------
-        page_idx : int
-            Page index in this result.
-        **kwargs
-            Forwarded to `vlm4ocr.plot_bbox` (e.g. show_label, color_by_label,
-            box_width, font_path, font_size).
-
-        Returns
-        -------
-        PIL.Image.Image
-            A copy of the source page with bboxes drawn on it.
-        """
-        page = self.get_page(page_idx)
-        bboxes = page.get("bboxes")
-        if bboxes is None:
-            raise ValueError(
-                f"Page {page_idx} has no bboxes. plot_bbox is only available for "
-                "OCRResult produced with output_mode='bbox'."
-            )
-
-        # Lazy imports to avoid circular dependency
-        from vlm4ocr.utils import PDFDataLoader, TIFFDataLoader, ImageDataLoader
-        from vlm4ocr.bbox import plot_bbox as _plot_bbox
-
-        file_ext = os.path.splitext(self.input_dir)[1].lower()
-        if file_ext == ".pdf":
-            loader = PDFDataLoader(self.input_dir)
-        elif file_ext in (".tif", ".tiff"):
-            loader = TIFFDataLoader(self.input_dir)
-        else:
-            loader = ImageDataLoader(self.input_dir)
-        image = loader.get_page(page_idx)
-
-        # Re-apply rotation that was used during OCR (same convention as ImageProcessor)
-        rot_status = page.get("image_processing_status", {}).get("rotate_correction")
-        if rot_status and rot_status.get("status") == "success":
-            angle = rot_status.get("rotation_angle") or 0
-            if angle:
-                image = image.rotate(angle, expand=True)
-
-        # Resize to match the post-resize image the VLM saw
-        target_w = page.get("image_width")
-        target_h = page.get("image_height")
-        if target_w and target_h and image.size != (target_w, target_h):
-            image = image.resize((target_w, target_h), Image.LANCZOS)
-
-        return _plot_bbox(bboxes, image, **kwargs)
     
 @dataclass
 class FewShotExample:
