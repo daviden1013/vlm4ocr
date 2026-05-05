@@ -1,4 +1,60 @@
 /**
+ * Attaches zoom controls to a scroll container + content wrapper pair.
+ * When useCanvasScale is true, scales canvas children via CSS transform instead of
+ * resizing the wrapper width (used for the bbox output panel).
+ */
+function attachZoomPanel({ panelEl, contentWrapperEl, zoomInBtn, zoomOutBtn, zoomResetBtn, zoomLevelDisplay, useCanvasScale = false }) {
+    const ZOOM_STEP = 0.25;
+    const ZOOM_MIN = 0.25;
+    const ZOOM_MAX = 4.0;
+    let zoomLevel = 1.0;
+
+    function applyZoom() {
+        if (useCanvasScale) {
+            // Scale each canvas relative to its fit-to-container base width
+            const canvases = contentWrapperEl.querySelectorAll('canvas.bbox-output-canvas');
+            canvases.forEach(c => {
+                const base = c._baseDisplayWidth || c._intrinsicWidth || c.width;
+                c.style.width = (base * zoomLevel) + 'px';
+                c.style.height = 'auto';
+            });
+        } else {
+            contentWrapperEl.style.width = (zoomLevel * 100) + '%';
+        }
+        if (zoomLevelDisplay) zoomLevelDisplay.textContent = Math.round(zoomLevel * 100) + '%';
+    }
+
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => {
+            zoomLevel = Math.min(ZOOM_MAX, parseFloat((zoomLevel + ZOOM_STEP).toFixed(2)));
+            applyZoom();
+        });
+    }
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => {
+            zoomLevel = Math.max(ZOOM_MIN, parseFloat((zoomLevel - ZOOM_STEP).toFixed(2)));
+            applyZoom();
+        });
+    }
+    if (zoomResetBtn) {
+        zoomResetBtn.addEventListener('click', () => {
+            zoomLevel = 1.0;
+            applyZoom();
+        });
+    }
+
+    if (panelEl) {
+        panelEl.addEventListener('wheel', (e) => {
+            if (!e.ctrlKey && !e.metaKey) return;
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+            zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, parseFloat((zoomLevel + delta).toFixed(2))));
+            applyZoom();
+        }, { passive: false });
+    }
+}
+
+/**
  * Attaches event listeners to the VLM API select dropdowns on both forms.
  */
 function initializeVlmOptionHandlers() {
@@ -63,50 +119,27 @@ function initializeFilePreviewHandlers() {
     }
 
     // --- ZOOM STATE ---
-    let zoomLevel = 1.0;
-    const ZOOM_STEP = 0.25;
-    const ZOOM_MIN = 0.25;
-    const ZOOM_MAX = 4.0;
+    attachZoomPanel({
+        panelEl: previewArea,
+        contentWrapperEl: previewContentWrapper,
+        zoomInBtn: document.getElementById('zoom-in-btn'),
+        zoomOutBtn: document.getElementById('zoom-out-btn'),
+        zoomResetBtn: document.getElementById('zoom-reset-btn'),
+        zoomLevelDisplay: document.getElementById('zoom-level-display'),
+    });
 
-    const zoomInBtn = document.getElementById('zoom-in-btn');
-    const zoomOutBtn = document.getElementById('zoom-out-btn');
-    const zoomResetBtn = document.getElementById('zoom-reset-btn');
-    const zoomLevelDisplay = document.getElementById('zoom-level-display');
-
-    function applyZoom() {
-        // Set wrapper width so max-width:100% children (img/canvas) scale with it.
-        // Zoom > 1 makes wrapper wider than scroll container, triggering horizontal scrollbar.
-        previewContentWrapper.style.width = (zoomLevel * 100) + '%';
-        if (zoomLevelDisplay) zoomLevelDisplay.textContent = Math.round(zoomLevel * 100) + '%';
-    }
-
-    if (zoomInBtn) {
-        zoomInBtn.addEventListener('click', () => {
-            zoomLevel = Math.min(ZOOM_MAX, parseFloat((zoomLevel + ZOOM_STEP).toFixed(2)));
-            applyZoom();
-        });
-    }
-    if (zoomOutBtn) {
-        zoomOutBtn.addEventListener('click', () => {
-            zoomLevel = Math.max(ZOOM_MIN, parseFloat((zoomLevel - ZOOM_STEP).toFixed(2)));
-            applyZoom();
-        });
-    }
-    if (zoomResetBtn) {
-        zoomResetBtn.addEventListener('click', () => {
-            zoomLevel = 1.0;
-            applyZoom();
-        });
-    }
-
-    // Ctrl+scroll to zoom
-    previewArea.addEventListener('wheel', (e) => {
-        if (!e.ctrlKey && !e.metaKey) return;
-        e.preventDefault();
-        const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-        zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, parseFloat((zoomLevel + delta).toFixed(2))));
-        applyZoom();
-    }, { passive: false });
+    // bbox output zoom panel
+    const bboxOutputArea = document.getElementById('ocr-output-area');
+    const bboxOutputWrapper = document.getElementById('ocr-output-area');
+    attachZoomPanel({
+        panelEl: bboxOutputArea,
+        contentWrapperEl: bboxOutputArea,
+        zoomInBtn: document.getElementById('bbox-zoom-in-btn'),
+        zoomOutBtn: document.getElementById('bbox-zoom-out-btn'),
+        zoomResetBtn: document.getElementById('bbox-zoom-reset-btn'),
+        zoomLevelDisplay: document.getElementById('bbox-zoom-level-display'),
+        useCanvasScale: true,
+    });
 
     // --- RENDER FUNCTIONS ---
 

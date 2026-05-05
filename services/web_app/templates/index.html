@@ -37,6 +37,7 @@
                             <option value="markdown" selected>Markdown</option>
                             <option value="HTML">HTML</option>
                             <option value="JSON">JSON</option>
+                            <option value="bbox">BBox</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -106,7 +107,7 @@
                         <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Advanced OCR Settings</summary>
                         <div class="indented-option">
                             <div class="form-group">
-                                <label for="ocr-user-prompt">User Prompt <span id="single-user-prompt-required" class="json-required-hint" style="display:none;">(Required for JSON — describe the output schema)</span><span id="single-user-prompt-optional" class="json-optional-hint">(Optional Context)</span>:</label>
+                                <label for="ocr-user-prompt">User Prompt <span id="single-user-prompt-required" class="json-required-hint" style="display:none;">(Required for JSON — describe the output schema)</span><span id="single-user-prompt-bbox" class="json-optional-hint" style="display:none;">(Optional: target extraction, e.g. "patient name and DOB")</span><span id="single-user-prompt-optional" class="json-optional-hint">(Optional Context)</span>:</label>
                                 <div class="prompt-editor-wrapper">
                                     <button type="button" class="prompt-expand-btn" data-target="ocr-user-prompt" title="Expand editor"><i class="fas fa-expand-alt"></i></button>
                                     <div class="prompt-highlight-backdrop" id="ocr-user-prompt-backdrop"></div>
@@ -164,6 +165,11 @@
                             </label>
                             <i class="fab fa-markdown" id="preview-icon" style="font-size: 1.5em; margin-left: 10px; color: #ccc;" title="Markdown Preview"></i>
                         </div>
+                        <!-- BBox tab toggle (shown only in bbox mode) -->
+                        <div id="bbox-tab-toggle" style="display: none; align-items: center; gap: 4px;">
+                            <button type="button" id="bbox-tab-raw" class="bbox-pill-btn bbox-pill-active">Raw</button>
+                            <button type="button" id="bbox-tab-image" class="bbox-pill-btn">Image</button>
+                        </div>
                     </div>
                     <div id="ocr-output-wrapper">
                          <div id="output-header" class="output-header" style="display: none;">
@@ -171,6 +177,13 @@
                                <i id="copy-ocr-text" class="fas fa-copy action-icon" title="Copy Raw Text"></i>
                            </div>
                        </div>
+                        <!-- BBox output zoom panel (shown only in bbox mode, Image tab) -->
+                        <div id="bbox-output-zoom-panel" style="display: none;">
+                            <button id="bbox-zoom-out-btn" title="Zoom Out"><i class="fas fa-minus"></i></button>
+                            <span id="bbox-zoom-level-display">100%</span>
+                            <button id="bbox-zoom-in-btn" title="Zoom In"><i class="fas fa-plus"></i></button>
+                            <button id="bbox-zoom-reset-btn" title="Reset Zoom"><i class="fas fa-compress-arrows-alt"></i></button>
+                        </div>
                         <div id="ocr-output-area" class="output-box">
                             <p class="ocr-status-message">OCR results will appear here once a file is processed.</p>
                         </div>
@@ -203,6 +216,7 @@
                             <option value="markdown" selected>Markdown</option>
                             <option value="HTML">HTML</option>
                             <option value="JSON">JSON</option>
+                            <option value="bbox">BBox</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -269,7 +283,7 @@
                         <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Advanced OCR Settings</summary>
                         <div class="indented-option">
                             <div class="form-group">
-                                <label for="batch-ocr-user-prompt">User Prompt <span id="batch-user-prompt-required" class="json-required-hint" style="display:none;">(Required for JSON — describe the output schema)</span><span id="batch-user-prompt-optional" class="json-optional-hint">(Optional Context)</span>:</label>
+                                <label for="batch-ocr-user-prompt">User Prompt <span id="batch-user-prompt-required" class="json-required-hint" style="display:none;">(Required for JSON — describe the output schema)</span><span id="batch-user-prompt-bbox" class="json-optional-hint" style="display:none;">(Optional: target extraction, e.g. "patient name and DOB")</span><span id="batch-user-prompt-optional" class="json-optional-hint">(Optional Context)</span>:</label>
                                 <div class="prompt-editor-wrapper">
                                     <button type="button" class="prompt-expand-btn" data-target="batch-ocr-user-prompt" title="Expand editor"><i class="fas fa-expand-alt"></i></button>
                                     <div class="prompt-highlight-backdrop" id="batch-ocr-user-prompt-backdrop"></div>

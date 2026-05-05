@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+from dataclasses import asdict
 from PIL import Image
 from markdown import markdown
 import io
@@ -274,11 +275,32 @@ def process_batch_ocr_stream(batch_id, base_url):
                             if cancel_event.is_set():
                                 break
                             if result.status == "success":
-                                output_filename = f"{Path(result.filename).stem}.{output_format_ext}"
-                                output_content = result.to_string()
-                                with open(batch_dir / output_filename, "w", encoding="utf-8") as f:
-                                    f.write(output_content)
-                                q.put(json.dumps({'type': 'result', 'filename': output_filename}))
+                                if output_format == "bbox":
+                                    stem = Path(result.filename).stem
+                                    bbox_data = []
+                                    user_prompt = form_data.get('user_prompt') or ""
+                                    for page_idx, page in enumerate(result.pages):
+                                        if page.bboxes:
+                                            if user_prompt:
+                                                marked = page.plot_bboxes(show_label=True, show_text=True, color="label")
+                                            else:
+                                                marked = page.plot_bboxes(show_label=False, show_text=True, color="random")
+                                            png_name = f"{stem}_page_{page_idx}_bbox.png"
+                                            marked.save(batch_dir / png_name)
+                                            q.put(json.dumps({'type': 'result', 'filename': png_name}))
+                                            bbox_data.append({
+                                                "page_idx": page_idx,
+                                                "bboxes": [asdict(b) for b in page.bboxes],
+                                            })
+                                    json_name = f"{stem}_bbox.json"
+                                    (batch_dir / json_name).write_text(json.dumps(bbox_data, indent=2))
+                                    q.put(json.dumps({'type': 'result', 'filename': json_name}))
+                                else:
+                                    output_filename = f"{Path(result.filename).stem}.{output_format_ext}"
+                                    output_content = result.to_string()
+                                    with open(batch_dir / output_filename, "w", encoding="utf-8") as f:
+                                        f.write(output_content)
+                                    q.put(json.dumps({'type': 'result', 'filename': output_filename}))
                             else:
                                 error_data = result.pages and result.pages[0].get('text') or 'Unknown error.'
                                 q.put(json.dumps({'type': 'error', 'filename': Path(result.filename).name, 'data': error_data}))
@@ -351,7 +373,7 @@ def download_batch_as_zip(batch_id):
     directory = Path(current_app.config["temp_directory"]) / str(batch_id)
     memory_file = io.BytesIO()
     
-    output_extensions = ('.md', '.txt', '.html', '.json')
+    output_extensions = ('.md', '.txt', '.html', '.json', '.png')
 
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
         for f in directory.iterdir():

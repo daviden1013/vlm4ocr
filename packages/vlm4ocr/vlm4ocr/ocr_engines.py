@@ -177,7 +177,12 @@ class OCREngine:
                     img_w, img_h = image.size
                     raw_response = "".join(buffered_chunks)
                     bboxes = parse_bbox_response(raw_response, self.bbox_format, img_w, img_h)
-                    yield {"type": "bbox_result", "data": [asdict(b) for b in bboxes]}
+                    yield {"type": "bbox_result", "data": {
+                        "page_idx": i,
+                        "bboxes": [asdict(b) for b in bboxes],
+                        "image_width": img_w,
+                        "image_height": img_h,
+                    }}
 
                 if i < len(images) - 1:
                     yield {"type": "page_delimiter", "data": get_default_page_delimiter(self.output_mode)}
@@ -220,7 +225,12 @@ class OCREngine:
                 img_w, img_h = image.size
                 raw_response = "".join(buffered_chunks)
                 bboxes = parse_bbox_response(raw_response, self.bbox_format, img_w, img_h)
-                yield {"type": "bbox_result", "data": [asdict(b) for b in bboxes]}
+                yield {"type": "bbox_result", "data": {
+                    "page_idx": 0,
+                    "bboxes": [asdict(b) for b in bboxes],
+                    "image_width": img_w,
+                    "image_height": img_h,
+                }}
             
 
     def sequential_ocr(self, file_paths: Union[str, Iterable[str]],

@@ -16,20 +16,29 @@ document.addEventListener('DOMContentLoaded', function () {
     const ocrToggleContainer = document.getElementById('ocr-toggle-container');
     const outputHeader = document.getElementById('output-header');
 
-    // --- JSON UX helper ---
-    function applyJsonUx(formatValue, detailsId, requiredHintId, optionalHintId, textareaId) {
+    // --- Prompt UX helper (handles JSON, bbox, and other formats) ---
+    function applyPromptUx(formatValue, detailsId, requiredHintId, bboxHintId, optionalHintId, textareaId) {
         const isJson = formatValue === 'JSON';
+        const isBbox = formatValue === 'bbox';
         const details = document.getElementById(detailsId);
         const requiredHint = document.getElementById(requiredHintId);
+        const bboxHint = document.getElementById(bboxHintId);
         const optionalHint = document.getElementById(optionalHintId);
         const textarea = document.getElementById(textareaId);
 
-        if (details && isJson) details.open = true;
+        if (details && (isJson || isBbox)) details.open = true;
         if (requiredHint) requiredHint.style.display = isJson ? 'inline' : 'none';
-        if (optionalHint) optionalHint.style.display = isJson ? 'none' : 'inline';
-        if (textarea) textarea.placeholder = isJson
-            ? 'Required: describe the JSON schema (e.g., {"patient_name": str, "dob": str})'
-            : "Provide context about the image/PDF (e.g., 'This is a doctor\\'s note')";
+        if (bboxHint) bboxHint.style.display = isBbox ? 'inline' : 'none';
+        if (optionalHint) optionalHint.style.display = (isJson || isBbox) ? 'none' : 'inline';
+        if (textarea) {
+            if (isJson) {
+                textarea.placeholder = 'Required: describe the JSON schema (e.g., {"patient_name": str, "dob": str})';
+            } else if (isBbox) {
+                textarea.placeholder = "Optional: target extraction (e.g., 'patient name and DOB'). Leave blank for full-text OCR.";
+            } else {
+                textarea.placeholder = "Provide context about the image/PDF (e.g., 'This is a doctor\\'s note')";
+            }
+        }
     }
 
     // --- Event Listener for Output Format Change ---
@@ -37,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
         outputFormatSelect.addEventListener('change', function() {
             currentOutputFormat = this.value;
             updatePreviewIcon(currentOutputFormat);
-            applyJsonUx(this.value, 'single-advanced-settings', 'single-user-prompt-required', 'single-user-prompt-optional', 'ocr-user-prompt');
+            applyPromptUx(this.value, 'single-advanced-settings', 'single-user-prompt-required', 'single-user-prompt-bbox', 'single-user-prompt-optional', 'ocr-user-prompt');
             if (pageContentsArray.length > 0) {
                 // Pass the element itself
                 renderFinalOutput(pageContentsArray, currentOutputFormat, ocrOutputArea, ocrRenderToggle);
@@ -87,8 +96,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     const { done, value } = await reader.read();
                     if (done) {
                         renderFinalOutput(pageContentsArray, currentOutputFormat, ocrOutputArea, ocrRenderToggle);
-                        ocrToggleContainer.style.display = 'flex';
-                        outputHeader.style.display = 'flex';
+                        // Show the appropriate toggle for the format. In bbox mode,
+                        // output-header visibility is managed by _bboxSetActiveTab
+                        // (hidden in Image tab, shown in Raw tab).
+                        const bboxTabToggle = document.getElementById('bbox-tab-toggle');
+                        if (currentOutputFormat === 'bbox') {
+                            ocrToggleContainer.style.display = 'none';
+                            if (bboxTabToggle) bboxTabToggle.style.display = 'flex';
+                        } else {
+                            ocrToggleContainer.style.display = 'flex';
+                            if (bboxTabToggle) bboxTabToggle.style.display = 'none';
+                            outputHeader.style.display = 'flex';
+                        }
                         break;
                     }
                     buffer += decoder.decode(value, { stream: true });
@@ -136,7 +155,23 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Event Listener for Copy Button ---
     if (copyOcrTextButton) {
         copyOcrTextButton.addEventListener('click', function() {
-            const textToCopy = pageContentsArray.join('\n\n---\n\n');
+            let textToCopy;
+            if (currentOutputFormat === 'bbox') {
+                // Collect bboxes from all page raw pre elements and parse them
+                const allBboxes = [];
+                document.querySelectorAll('.bbox-raw-sub').forEach((pre, idx) => {
+                    try {
+                        const raw = pre.textContent.replace(/```json|```/g, '').trim();
+                        const parsed = JSON.parse(raw);
+                        allBboxes.push({ page_idx: idx, bboxes: parsed });
+                    } catch (_) {
+                        allBboxes.push({ page_idx: idx, bboxes: pre.textContent });
+                    }
+                });
+                textToCopy = JSON.stringify(allBboxes, null, 2);
+            } else {
+                textToCopy = pageContentsArray.join('\n\n---\n\n');
+            }
             copyTextToClipboard(textToCopy, this);
         });
     }
@@ -169,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (batchOutputFormatSelect) {
         batchOutputFormatSelect.addEventListener('change', function() {
-            applyJsonUx(this.value, 'batch-advanced-settings', 'batch-user-prompt-required', 'batch-user-prompt-optional', 'batch-ocr-user-prompt');
+            applyPromptUx(this.value, 'batch-advanced-settings', 'batch-user-prompt-required', 'batch-user-prompt-bbox', 'batch-user-prompt-optional', 'batch-ocr-user-prompt');
         });
     }
 

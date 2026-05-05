@@ -93,7 +93,11 @@ a:hover {
 }
 
 .display-panel:has(> .display-column) {
-   grid-template-columns: 1fr 1fr; 
+   grid-template-columns: 1fr 1fr;
+}
+
+.display-column {
+    min-width: 0;
 }
 
 /* Form Styling (Dark Theme for controls panel) */
@@ -332,27 +336,29 @@ button[type="submit"].btn-stop:hover {
 
 
 /* --- Styles for OCR Output Wrapper and Area (LIGHT THEME) --- */
-#ocr-output-wrapper { 
+#ocr-output-wrapper {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 74vh;
-    border: 1px solid #ced4da; 
+    border: 1px solid #ced4da;
     border-radius: 3px;
-    background-color: #ffffff; 
-    overflow: hidden; 
+    background-color: #ffffff;
+    overflow: hidden;
 }
 
-#ocr-output-area.output-box { 
+#ocr-output-area.output-box {
     padding: 20px;
-    color: #212529; 
-    font-family: inherit; 
-    word-wrap: break-word;     
-    overflow-wrap: break-word; 
+    color: #212529;
+    font-family: inherit;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     flex-grow: 1;
-    overflow-y: auto; 
-    min-height: 0; 
+    overflow-y: auto;
+    overflow-x: auto;
+    min-height: 0;
     height: 74vh;
-    background-color: #f8f9fa; 
+    background-color: #f8f9fa;
 }
 
 /* Markdown generated content styling for LIGHT THEME (rendered by marked.js) */
@@ -1099,6 +1105,65 @@ a.list-group-item-action:hover {
 
 #prompt-modal-cancel-btn:hover {
     background-color: #4a4a4a;
+}
+
+/* BBox pill tab toggle */
+.bbox-pill-btn {
+    background: transparent;
+    border: 1px solid #555;
+    color: #bbb;
+    padding: 3px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.82em;
+    transition: background-color 0.15s, color 0.15s;
+}
+.bbox-pill-btn.bbox-pill-active {
+    background: #4da6ff;
+    border-color: #4da6ff;
+    color: #fff;
+}
+.bbox-pill-btn:hover:not(.bbox-pill-active) {
+    background: rgba(77, 166, 255, 0.15);
+    color: #4da6ff;
+}
+
+/* BBox output zoom panel — floats top-right of the output wrapper */
+#bbox-output-zoom-panel {
+    position: absolute;
+    top: 8px;
+    right: 24px;
+    z-index: 10;
+    display: none;
+    align-items: center;
+    gap: 2px;
+    background: rgba(20, 20, 20, 0.82);
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 4px 6px;
+    backdrop-filter: blur(4px);
+    user-select: none;
+}
+#bbox-output-zoom-panel button {
+    background: transparent;
+    border: none;
+    color: #bbb;
+    cursor: pointer;
+    padding: 3px 7px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    line-height: 1;
+    transition: background-color 0.15s, color 0.15s;
+}
+#bbox-output-zoom-panel button:hover {
+    background: rgba(77, 166, 255, 0.2);
+    color: #4da6ff;
+}
+#bbox-zoom-level-display {
+    color: #bbb;
+    font-size: 0.78em;
+    min-width: 36px;
+    text-align: center;
 }
 
 /* JSON syntax highlight block */
