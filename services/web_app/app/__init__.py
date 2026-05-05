@@ -4,6 +4,7 @@ from easydict import EasyDict
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from pathlib import Path
+from importlib.metadata import version, PackageNotFoundError
 import logging
 
 """ Define configuration Paths """
@@ -68,6 +69,27 @@ if "temp_directory" not in app.config:
 # create temp directory if it doesn't exist
 temp_dir = Path(app.config.get("temp_directory", "temp"))
 temp_dir.mkdir(exist_ok=True)
+
+""" Inject version info into all templates """
+import tomllib
+
+try:
+    VLM4OCR_VERSION = version("vlm4ocr")
+except PackageNotFoundError:
+    VLM4OCR_VERSION = "unknown"
+
+try:
+    with open(os.path.join(WEB_APP_ROOT, "pyproject.toml"), "rb") as f:
+        WEB_APP_VERSION = tomllib.load(f)["tool"]["poetry"]["version"]
+except (FileNotFoundError, KeyError):
+    WEB_APP_VERSION = "unknown"
+
+@app.context_processor
+def inject_version():
+    return {
+        "vlm4ocr_version": VLM4OCR_VERSION,
+        "web_app_version": WEB_APP_VERSION,
+    }
 
 """ Import Routes (must be done after app is created) """
 print("Importing routes...")
