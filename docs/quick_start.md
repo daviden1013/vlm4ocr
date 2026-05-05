@@ -166,8 +166,8 @@ for page_num, page in enumerate(ocr_results[0].pages):
     for item in page.bboxes:
         print(item.label, item.bbox, item.text)
 
-    # Visualize on the source page
-    annotated = page.plot_bboxes()
+    # Visualize on the source page (full-text mode: random colors, text only)
+    annotated = page.plot_bboxes(show_label=False, show_text=True, color="random")
     annotated.save(f"annotated_page{page_num}.png")
 ```
 

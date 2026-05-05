@@ -14,6 +14,7 @@ nav:
       - 'Quick Start': 'quick_start.md'
       - 'VLM Engines': 'vlm_engines.md'
       - 'OCR Engine': 'ocr_engines.md'
+      - 'BBox Mode': 'bbox.md'
     - 'API Reference':
       - 'VLM Engines': 'api/vlm_engines.md'
       - 'OCR Engine': 'api/ocr_engines.md'
