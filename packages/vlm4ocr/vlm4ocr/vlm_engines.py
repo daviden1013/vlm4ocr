@@ -172,7 +172,7 @@ class VLLMVLMEngine(VLLMInferenceEngine, OpenAICompatibleVLMEngine):
     """
     pass
 
-class SGLangVLMEngine(SGLangInferenceEngine, OpenAICompatibleInferenceEngine):
+class SGLangVLMEngine(SGLangInferenceEngine, OpenAICompatibleVLMEngine):
     """
     SGLang OpenAI compatible API inference engine.
     https://docs.sglang.ai/basic_usage/openai_api.html
