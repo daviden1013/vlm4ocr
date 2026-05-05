@@ -30,6 +30,8 @@ plugins:
         handlers:
           python:
             options:
+              preload_modules:
+                - llm_inference_engine
               docstring_style: numpy
               show_root_heading: true
               show_source: true
