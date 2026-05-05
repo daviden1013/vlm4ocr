@@ -80,7 +80,8 @@ class OCRPage:
     def plot_bboxes(
         self,
         show_label: bool = True,
-        color_by_label: bool = True,
+        show_text: bool = False,
+        color: str = "label",
         box_width: int = 3,
         font_path: Optional[str] = None,
         font_size: int = 20,
@@ -97,9 +98,14 @@ class OCRPage:
         ----------
         show_label : bool, default True
             Draw each box's label as a tag above the box.
-        color_by_label : bool, default True
-            Color each box deterministically by its label so distinct categories
-            are visually separable. If False, all boxes are red.
+        show_text : bool, default False
+            Draw each box's OCR text (italic) in the tag above the box. When
+            both show_label and show_text are True the tag reads "label; text"
+            with the label in bold and the text in italic.
+        color : "label" | "random" | str, default "label"
+            Box color strategy. "label" assigns a deterministic color per label.
+            "random" picks a random color per box. Any other string is treated as
+            a PIL color (name or hex, e.g. "red", "#E63946") for all boxes.
         box_width : int, default 3
             Outline thickness in pixels, specified at original image scale. Scaled
             down automatically if the image was resized for OCR.
@@ -155,7 +161,8 @@ class OCRPage:
             self.bboxes,
             image,
             show_label=show_label,
-            color_by_label=color_by_label,
+            show_text=show_text,
+            color=color,
             box_width=box_width,
             font_path=font_path,
             font_size=font_size,

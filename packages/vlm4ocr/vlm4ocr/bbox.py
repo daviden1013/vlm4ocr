@@ -1,6 +1,7 @@
 import hashlib
 import logging
-from typing import List, Optional, Tuple
+import random as _random
+from typing import List, Literal, Optional, Tuple, Union
 
 import json_repair
 from PIL import Image, ImageDraw, ImageFont
@@ -209,8 +210,8 @@ def _load_font(font_path: Optional[str], font_size: int) -> ImageFont.ImageFont:
             pass
     for candidate in (
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/Library/Fonts/Arial.ttf",
-        "C:/Windows/Fonts/arial.ttf",
+        "/Library/Fonts/Arial Bold.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
     ):
         try:
             return ImageFont.truetype(candidate, size=font_size)
@@ -219,11 +220,32 @@ def _load_font(font_path: Optional[str], font_size: int) -> ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
+def _load_italic_font(font_path: Optional[str], font_size: int) -> ImageFont.ImageFont:
+    if font_path:
+        italic_path = font_path.replace(".ttf", "-Italic.ttf").replace(".TTF", "-Italic.TTF")
+        for p in (italic_path, font_path):
+            try:
+                return ImageFont.truetype(p, size=font_size)
+            except OSError:
+                continue
+    for candidate in (
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf",
+        "/Library/Fonts/Arial Italic.ttf",
+        "C:/Windows/Fonts/ariali.ttf",
+    ):
+        try:
+            return ImageFont.truetype(candidate, size=font_size)
+        except OSError:
+            continue
+    return _load_font(None, font_size)
+
+
 def plot_bbox(
     bboxes: List[BBoxItem],
     image: Image.Image,
     show_label: bool = True,
-    color_by_label: bool = True,
+    show_text: bool = False,
+    color: Union[Literal["label", "random"], str] = "label",
     box_width: int = 3,
     font_path: Optional[str] = None,
     font_size: int = 20,
@@ -242,42 +264,77 @@ def plot_bbox(
     image : PIL.Image.Image
         The image to draw on. The original is not modified; a copy is returned.
     show_label : bool, default True
-        Draw each box's label as a tag above the box.
-    color_by_label : bool, default True
-        Color each box deterministically by its label so distinct categories are
-        visually separable. If False, all boxes are red.
+        Draw each box's label (bold) as a tag above the box.
+    show_text : bool, default False
+        Draw each box's OCR text (italic) in the tag above the box. When both
+        show_label and show_text are True the tag reads "label; text".
+    color : "label" | "random" | str, default "label"
+        Box color strategy. "label" assigns a deterministic color per label so
+        distinct categories are visually separable. "random" picks a different
+        random color for every box. Any other string is treated as a PIL color
+        (name or hex, e.g. "red", "#E63946") applied to all boxes.
     box_width : int, default 3
         Outline thickness in pixels.
     font_path : str | None
         Path to a TTF font for label text. Falls back to a common system font,
-        then to PIL's default bitmap font.
+        then to PIL's default bitmap font. An italic variant is derived
+        automatically (by appending -Italic or -Oblique) for the text portion.
     font_size : int, default 20
 
     Returns
     -------
     PIL.Image.Image
-        A copy of `image` with the boxes (and optional labels) drawn on it.
+        A copy of `image` with the boxes (and optional tag) drawn on it.
     """
     out = image.copy()
     draw = ImageDraw.Draw(out)
-    font = _load_font(font_path, font_size) if show_label else None
+    needs_font = show_label or show_text
+    font_bold = _load_font(font_path, font_size) if needs_font else None
+    font_italic = _load_italic_font(font_path, font_size) if show_text else None
 
     for item in bboxes:
         try:
             x1, y1, x2, y2 = item.bbox
             label = item.label or ""
+            text = item.text or ""
         except (TypeError, ValueError, AttributeError):
             continue
 
-        color = _color_for_label(label) if color_by_label else "red"
-        draw.rectangle([x1, y1, x2, y2], outline=color, width=box_width)
+        if color == "label":
+            box_color = _color_for_label(label)
+        elif color == "random":
+            box_color = (_random.randint(0, 199), _random.randint(0, 199), _random.randint(0, 199))
+        else:
+            box_color = color
+        draw.rectangle([x1, y1, x2, y2], outline=box_color, width=box_width)
 
+        # Build tag parts: (string, font) pairs rendered left-to-right
+        parts: List[Tuple[str, ImageFont.ImageFont]] = []
         if show_label and label:
-            tb = draw.textbbox((x1, y1), label, font=font)
-            text_w = tb[2] - tb[0]
-            text_h = tb[3] - tb[1]
-            label_y0 = max(y1 - text_h - 4, 0)
-            draw.rectangle([x1, label_y0, x1 + text_w + 4, y1], fill=color)
-            draw.text((x1 + 2, label_y0), label, fill="white", font=font)
+            parts.append((label, font_bold))
+        if show_label and label and show_text and text:
+            parts.append(("; ", font_bold))
+        if show_text and text:
+            parts.append((text, font_italic))
+
+        if not parts:
+            continue
+
+        # Measure combined tag dimensions
+        total_w = 0
+        max_h = 0
+        for seg, seg_font in parts:
+            tb = draw.textbbox((0, 0), seg, font=seg_font)
+            total_w += tb[2] - tb[0]
+            max_h = max(max_h, tb[3] - tb[1])
+
+        tag_y0 = max(y1 - max_h - 4, 0)
+        draw.rectangle([x1, tag_y0, x1 + total_w + 4, y1], fill=box_color)
+
+        x_cursor = x1 + 2
+        for seg, seg_font in parts:
+            draw.text((x_cursor, tag_y0), seg, fill="white", font=seg_font)
+            tb = draw.textbbox((x_cursor, tag_y0), seg, font=seg_font)
+            x_cursor += tb[2] - tb[0]
 
     return out
