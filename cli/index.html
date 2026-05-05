@@ -366,9 +366,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#openai-openai-compatible-options" class="md-nav__link">
+  <a href="#openai-openai-compatible-options-openai-openai_compatible-vllm-sglang-openrouter" class="md-nav__link">
     <span class="md-ellipsis">
-      OpenAI &amp; OpenAI-Compatible Options
+      OpenAI &amp; OpenAI-Compatible Options (openai, openai_compatible, vllm, sglang, openrouter)
     </span>
   </a>
   
@@ -417,6 +417,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output Files
+    </span>
+  </a>
   
 </li>
       
@@ -525,6 +534,29 @@
   
   <span class="md-ellipsis">
     OCR Engine
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    BBox Mode
     
   </span>
   
@@ -737,9 +769,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#openai-openai-compatible-options" class="md-nav__link">
+  <a href="#openai-openai-compatible-options-openai-openai_compatible-vllm-sglang-openrouter" class="md-nav__link">
     <span class="md-ellipsis">
-      OpenAI &amp; OpenAI-Compatible Options
+      OpenAI &amp; OpenAI-Compatible Options (openai, openai_compatible, vllm, sglang, openrouter)
     </span>
   </a>
   
@@ -791,6 +823,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output Files
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -812,13 +853,13 @@
 
   <h1>CLI</h1>
 
-<div><p>Command line interface (CLI) provides an easy way to batch process many images, PDFs, and TIFFs in a directory. </p>
+<div><p>Command line interface (CLI) provides an easy way to batch process many images, PDFs, and TIFFs in a directory.</p>
 <h2 id="installation">Installation</h2>
 <p>Install the Python package on PyPi and the CLI tool will be automatically installed.
 </p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>vlm4ocr
 </code></pre></div>
 <h2 id="quick-start">Quick Start</h2>
-<p>Run OCR for all supported file types in the <code>/examples/synthesized_data/</code> folder with a locally deployed <a href="https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct">Qwen2.5-VL-7B-Instruct</a> and generate results as markdown. OCR results and a log file (enabled by <code>--log</code>) will be written to the <code>output_path</code>. <code>--concurrent_batch_size</code> deternmines the number of images/pages can be processed at a time. This is good for managing resources. 
+<p>Run OCR for all supported file types in the <code>/examples/synthesized_data/</code> folder with a locally deployed <a href="https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct">Qwen2.5-VL-7B-Instruct</a> and generate results as markdown. OCR results and a log file (enabled by <code>--log</code>) will be written to the <code>output_path</code>. <code>--concurrent_batch_size</code> determines the number of images/pages that can be processed at a time.
 </p><div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># OpenAI compatible API</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>vlm4ocr<span class="w"> </span>--input_path<span class="w"> </span>/examples/synthesized_data/<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">        </span>--output_path<span class="w"> </span>/examples/ocr_output/<span class="w"> </span><span class="se">\</span>
@@ -832,7 +873,7 @@
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">        </span>--base_url<span class="w"> </span>http://localhost:8000/v1<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">        </span>--concurrent_batch_size<span class="w"> </span><span class="m">4</span>
 </code></pre></div>
-<p>Use <em>gpt-4o-mini</em> to process a PDF with many pages. Since <code>--output_path</code> is not specified, outputs and logs will be written to the current work directory. 
+<p>Use <em>gpt-4o-mini</em> to process a PDF. Since <code>--output_path</code> is not specified, outputs and logs will be written to the current working directory.
 </p><div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># OpenAI API</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>&lt;api<span class="w"> </span>key&gt;
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>vlm4ocr<span class="w"> </span>--input_path<span class="w"> </span>/examples/synthesized_data/GPT-4o_synthesized_note_1.pdf<span class="w"> </span><span class="se">\</span>
@@ -842,55 +883,151 @@
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">        </span>--model<span class="w"> </span>gpt-4o-mini<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span>--concurrent_batch_size<span class="w"> </span><span class="m">4</span>
 </code></pre></div>
+<p>Use a locally deployed <em>Qwen3.5-35B-A3B</em> via vLLM. Pass <code>extra_body</code> to disable the model's thinking mode:
+</p><div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>vlm4ocr<span class="w"> </span>--input_path<span class="w"> </span>/examples/synthesized_data/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">        </span>--output_path<span class="w"> </span>/examples/ocr_output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">        </span>--skip_existing<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">        </span>--output_mode<span class="w"> </span>markdown<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">        </span>--log<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">        </span>--vlm_engine<span class="w"> </span>vllm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">        </span>--model<span class="w"> </span>Qwen/Qwen3.5-35B-A3B<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">        </span>--base_url<span class="w"> </span>http://localhost:8000/v1<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">        </span>--max_new_tokens<span class="w"> </span><span class="m">16384</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">        </span>--temperature<span class="w"> </span><span class="m">0</span>.7<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">        </span>--top_p<span class="w"> </span><span class="m">0</span>.8<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">        </span>--presence_penalty<span class="w"> </span><span class="m">1</span>.5<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">        </span>--extra_body<span class="w"> </span><span class="s1">'{"top_k": 20, "min_p": 0.0, "chat_template_kwargs": {"enable_thinking": false}}'</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">        </span>--concurrent_batch_size<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>Extract structured JSON from a document by describing the fields in a prompt file:
+</p><div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>vlm4ocr<span class="w"> </span>--input_path<span class="w"> </span>/examples/invoice.pdf<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">        </span>--output_mode<span class="w"> </span>JSON<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">        </span>--user_prompt_file<span class="w"> </span>/examples/prompts/invoice_schema.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">        </span>--output_path<span class="w"> </span>/examples/ocr_output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">        </span>--vlm_engine<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">        </span>--model<span class="w"> </span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">        </span>--concurrent_batch_size<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>Detect and localize all text regions (full-text bbox OCR) across a directory of images:
+</p><div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>vlm4ocr<span class="w"> </span>--input_path<span class="w"> </span>/examples/images/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">        </span>--output_mode<span class="w"> </span>bbox<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">        </span>--output_path<span class="w"> </span>/examples/bbox_output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">        </span>--vlm_engine<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">        </span>--model<span class="w"> </span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">        </span>--concurrent_batch_size<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>Target a specific field (targeted bbox extraction) with a user prompt:
+</p><div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>vlm4ocr<span class="w"> </span>--input_path<span class="w"> </span>/examples/images/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">        </span>--output_mode<span class="w"> </span>bbox<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">        </span>--user_prompt<span class="w"> </span><span class="s2">"Extract all price and total amount fields."</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">        </span>--output_path<span class="w"> </span>/examples/bbox_output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">        </span>--vlm_engine<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">        </span>--model<span class="w"> </span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">        </span>--concurrent_batch_size<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
 <h2 id="usage">Usage</h2>
 <p>The CLI parameters are grouped into categories to manage the OCR process.</p>
 <h4 id="inputoutput-options">Input/Output Options</h4>
 <ul>
 <li><code>--input_path</code> Specify a single input file or a directory with multiple files for OCR.</li>
-<li><code>--output_mode</code> Should be one of <code>text</code>, <code>markdown</code>, or <code>HTML</code>.</li>
-<li><code>--output_path</code> If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory. </li>
-<li><code>--skip_existing</code> Skip processing files that already have OCR results in the output directory. If False, all input files will be processed and potentially overwrite existing outputs.</li>
+<li><code>--output_mode</code> Output format. One of <code>text</code>, <code>markdown</code>, <code>HTML</code>, <code>JSON</code>, or <code>bbox</code>. (default: <code>markdown</code>)</li>
+<li><code>JSON</code> — extracts structured data; requires <code>--user_prompt</code> or <code>--user_prompt_file</code> to define the JSON structure.</li>
+<li><code>bbox</code> — detects and localizes text regions. Writes one <code>.json</code> file per document (bounding box coordinates and text) and one annotated <code>.png</code> per page. Without a user prompt, performs full-text OCR over the whole page; with a user prompt, targets the described fields.</li>
+<li><code>--output_path</code> If <code>input_path</code> is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory.</li>
+<li><code>--skip_existing</code> Skip processing files that already have OCR results in the output directory.</li>
 </ul>
 <h4 id="image-processing-parameters">Image Processing Parameters</h4>
 <ul>
-<li><code>--rotate_correction</code> Apply automatic rotation correction for input images. This requires Tesseract OCR to be installed and configured correctly. (default: False)</li>
-<li><code>--max_dimension_pixels</code> Maximum dimension (width or height) in pixels for input images. Images larger than this will be resized to fit within this limit while maintaining aspect ratio. (default: 4000)</li>
+<li><code>--rotate_correction</code> Apply automatic rotation correction. Choices: <code>tesseract</code> (requires Tesseract OCR), <code>vlm</code> (prompts the configured VLM). Omit to disable. (default: disabled)</li>
+<li><code>--max_dimension_pixels</code> Maximum dimension (width or height) in pixels for input images. Images larger than this will be resized while maintaining aspect ratio. (default: 4000)</li>
 </ul>
 <h4 id="vlm-engine-selection">VLM Engine Selection</h4>
 <ul>
-<li><code>--vlm_engine</code> Should be one of <code>openai</code>, <code>azure_openai</code>, <code>ollama</code>, or <code>openai_compatible</code>.</li>
+<li><code>--vlm_engine</code> VLM backend. One of <code>openai</code>, <code>azure_openai</code>, <code>ollama</code>, <code>openai_compatible</code>, <code>vllm</code>, <code>sglang</code>, or <code>openrouter</code>.</li>
 <li><code>--model</code> VLM model name.</li>
-<li><code>--max_new_tokens</code> Set maximum output tokens (default: 4096).</li>
-<li><code>--temperature</code> Set temperature (default: 0.0).</li>
+<li><code>--max_new_tokens</code> Maximum output tokens. (default: 4096)</li>
+<li><code>--temperature</code> Sampling temperature. (default: model default)</li>
+<li><code>--top_p</code> Sampling top-p. (default: model default)</li>
+<li><code>--presence_penalty</code> Presence penalty. (default: model default)</li>
+<li><code>--extra_body</code> Additional request body fields as a JSON string. Useful for engine-specific parameters such as <code>top_k</code>, <code>min_p</code>, or <code>chat_template_kwargs</code> (e.g. to disable thinking mode on Qwen3 models).</li>
 </ul>
-<h5 id="openai-openai-compatible-options">OpenAI &amp; OpenAI-Compatible Options</h5>
+<h5 id="openai-openai-compatible-options-openai-openai_compatible-vllm-sglang-openrouter">OpenAI &amp; OpenAI-Compatible Options (<code>openai</code>, <code>openai_compatible</code>, <code>vllm</code>, <code>sglang</code>, <code>openrouter</code>)</h5>
 <ul>
-<li><code>--api_key</code> API key. Can be set though environmental variable.</li>
-<li><code>--base_url</code> Base URL.</li>
+<li><code>--api_key</code> API key. Can also be set via <code>OPENAI_API_KEY</code> (OpenAI) or <code>OPENROUTER_API_KEY</code> (openrouter) environment variable. Optional for <code>vllm</code> and <code>sglang</code> (local servers typically don't require one).</li>
+<li><code>--base_url</code> Base URL for the API. Required for <code>openai_compatible</code>. Defaults: <code>vllm</code> → <code>http://localhost:8000/v1</code>, <code>sglang</code> → <code>http://localhost:30000/v1</code>, <code>openrouter</code> → <code>https://openrouter.ai/api/v1</code>.</li>
 </ul>
 <h5 id="azure-openai-options">Azure OpenAI Options</h5>
 <ul>
-<li><code>--azure_api_key</code> Azure API key. Can be set though environmental variable. </li>
-<li><code>--azure_endpoint</code> Azure endpoint. Can be set though environmental variable. </li>
-<li><code>--azure_api_version</code> Azure API version. </li>
+<li><code>--azure_api_key</code> Azure API key. Can also be set via <code>AZURE_OPENAI_API_KEY</code>.</li>
+<li><code>--azure_endpoint</code> Azure endpoint URL. Can also be set via <code>AZURE_OPENAI_ENDPOINT</code>.</li>
+<li><code>--azure_api_version</code> Azure API version. Can also be set via <code>AZURE_OPENAI_API_VERSION</code>.</li>
 </ul>
 <h5 id="ollama-options">Ollama Options</h5>
 <ul>
-<li><code>--ollama_host</code> Ollama host:port (default: http://localhost:11434).</li>
-<li><code>--ollama_num_ctx</code> Ollama context length (default: 4096).</li>
-<li><code>--ollama_keep_alive</code> Ollama keep_alive seconds. (default: 300)</li>
+<li><code>--ollama_host</code> Ollama host URL. (default: <code>http://localhost:11434</code>)</li>
+<li><code>--ollama_num_ctx</code> Context length. (default: 4096)</li>
+<li><code>--ollama_keep_alive</code> Keep-alive seconds. (default: 300)</li>
 </ul>
 <h4 id="ocr-engine-parameters">OCR Engine Parameters</h4>
 <ul>
-<li><code>--user_prompt</code> Specify custom user prompt.</li>
+<li><code>--user_prompt</code> Custom user prompt as an inline string. For multi-line prompts prefer <code>--user_prompt_file</code>. If both are provided, <code>--user_prompt</code> takes precedence with a warning.</li>
+<li><code>--user_prompt_file</code> Path to a text file containing the user prompt. Useful for long prompts or JSON schema definitions.</li>
+<li><code>--system_prompt</code> Custom system prompt as an inline string. Overrides the built-in default for the selected output mode. If both <code>--system_prompt</code> and <code>--system_prompt_file</code> are provided, <code>--system_prompt</code> takes precedence with a warning.</li>
+<li><code>--system_prompt_file</code> Path to a text file containing the system prompt.</li>
 </ul>
 <h4 id="processing-options">Processing Options</h4>
 <ul>
-<li><code>--concurrent_batch_size</code> Number of images/pages to process concurrently. Set to 1 for sequential processing of VLM calls. (default: 4)</li>
-<li><code>max_file_load</code> Number of input files to pre-load. Set to -1 for automatic config: 2 * concurrent_batch_size. </li>
-<li><code>--log</code> Enable writing logs to a timestamped file in the output directory. (default: False)</li>
-<li><code>--debug</code> Enable debug level logging for console (and file if --log is active). (default: False)</li>
-</ul></div>
+<li><code>--concurrent_batch_size</code> Number of images/pages to process concurrently. Set to 1 for sequential processing. (default: 4)</li>
+<li><code>--max_file_load</code> Number of input files to pre-load. Set to -1 for automatic: 2 × <code>concurrent_batch_size</code>. (default: -1)</li>
+<li><code>--log</code> Write logs to a timestamped file in the output directory.</li>
+<li><code>--debug</code> Enable debug-level logging on the console (and in the log file if <code>--log</code> is active).</li>
+</ul>
+<h2 id="output-files">Output Files</h2>
+<table>
+<thead>
+<tr>
+<th><code>--output_mode</code></th>
+<th>Output per document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>markdown</code></td>
+<td><code>&lt;filename&gt;_ocr.md</code></td>
+</tr>
+<tr>
+<td><code>HTML</code></td>
+<td><code>&lt;filename&gt;_ocr.html</code></td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td><code>&lt;filename&gt;_ocr.txt</code></td>
+</tr>
+<tr>
+<td><code>JSON</code></td>
+<td><code>&lt;filename&gt;_ocr.json</code></td>
+</tr>
+<tr>
+<td><code>bbox</code></td>
+<td><code>&lt;filename&gt;_ocr.json</code> + <code>&lt;filename&gt;_ocr_page1.png</code>, <code>_page2.png</code>, …</td>
+</tr>
+</tbody>
+</table>
+<p>The bbox JSON structure is:
+</p><div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">"filename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"document.pdf"</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">"pages"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">      </span><span class="nt">"page_idx"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">      </span><span class="nt">"image_width"</span><span class="p">:</span><span class="w"> </span><span class="mi">1024</span><span class="p">,</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">      </span><span class="nt">"image_height"</span><span class="p">:</span><span class="w"> </span><span class="mi">768</span><span class="p">,</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">      </span><span class="nt">"bboxes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nt">"bbox"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">x</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="err">y</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="err">x</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="err">y</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">      </span><span class="p">]</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="p">}</span>
+</code></pre></div></div>
 
 
 

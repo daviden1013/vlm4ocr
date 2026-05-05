@@ -227,6 +227,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="." class="md-nav__link md-nav__link--active">
         
   
@@ -238,6 +251,34 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#whats-new-in-v050" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's new in v0.5.0
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -394,6 +435,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="bbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    BBox Mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -535,6 +599,23 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#whats-new-in-v050" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's new in v0.5.0
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -558,6 +639,12 @@
 <li><a href="web_application/">Web Application</a> for drag-and-drop access</li>
 <li><a href="cli/">CLI</a> for command line access</li>
 <li><a href="quick_start/">Python package</a> for Python access</li>
+</ul>
+<h2 id="whats-new-in-v050">What's new in v0.5.0</h2>
+<ul>
+<li><strong>BBox output mode</strong> — <code>OCREngine(output_mode="bbox", ...)</code> returns text with bounding-box coordinates and labels. Leave <code>user_prompt</code> empty for full-text bbox OCR or set it to a free-text instruction (e.g., <code>"patient name and DOB"</code>) for targeted extraction. Built-in format registry covers Qwen3-VL, Gemma 3/4, and GPT-4.1. See <a href="quick_start/#ocr-with-bounding-boxes">Quick Start</a>.</li>
+<li><strong>Web app — BBox tab</strong> — visualize bounding boxes directly in the browser with an <em>Image | Raw response</em> toggle. Batch mode emits annotated PNGs and a consolidated JSON per file.</li>
+<li><strong><code>OCRPage</code> dataclass</strong> — <code>OCRResult.pages</code> entries are now <code>OCRPage</code> dataclasses with <code>.text</code>, <code>.bboxes</code>, <code>.image_width</code>, <code>.image_height</code>, and a <code>.plot_bboxes()</code> helper. Dict-style access still works.</li>
 </ul></div>
 
 

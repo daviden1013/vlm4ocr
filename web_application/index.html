@@ -541,6 +541,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    BBox Mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -875,8 +898,16 @@ With <code>--network="host"</code>, you don't need the <code>-p</code> flag for 
 <li>plain text</li>
 <li>markdown</li>
 <li>HTML</li>
+<li>JSON — define the output schema in the user prompt (required).</li>
+<li>BBox — return per-region bounding boxes. Leave the user prompt empty for full-text bbox OCR, or fill it with a free-text instruction (e.g., <code>patient name and DOB</code>) for targeted extraction.</li>
 </ul>
 <p><img alt="output_mode" src="../readme_img/web_app/tutorial_select_output_mode.PNG"></p>
+<p>In <strong>BBox</strong> mode, the output area shows an <em>Image | Raw response</em> toggle:</p>
+<ul>
+<li><em>Raw response</em> streams the model's JSON output live as OCR runs.</li>
+<li><em>Image</em> renders the parsed bounding boxes on top of the input preview at OCR resolution. Use the zoom controls on the output panel to inspect detail.</li>
+</ul>
+<p>In batch mode, BBox produces one annotated PNG per page (<code>&lt;stem&gt;_page_&lt;idx&gt;_bbox.png</code>) and one consolidated JSON per input file (<code>&lt;stem&gt;_bbox.json</code>). Both are included in the <em>Download All</em> zip.</p>
 <h4 id="select-vlm-api">Select VLM API</h4>
 <p>Use the dropdown to select an VLM API:</p>
 <ul>

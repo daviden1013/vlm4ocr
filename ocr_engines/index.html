@@ -12,7 +12,7 @@
         <link rel="prev" href="../vlm_engines/">
       
       
-        <link rel="next" href="../api/vlm_engines/">
+        <link rel="next" href="../bbox/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -477,6 +477,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    BBox Mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -694,8 +717,8 @@
 
   <h1>OCR Engine</h1>
 
-<div><p>OCR engine handles the OCR process. It supports <a href="#concurrent-ocr">concurrent processing</a> which is ideal for large amount of input files; <a href="#sequential-ocr">sequential processing</a> which is good for lightweight tasks or testing; <a href="#stream-ocr">streaming</a> that streams OCR results which is designed for frontend integration. </p>
-<p>OCR engine requires an <a href="../vlm_engines/">VLM engine</a> instance and an <code>output_mode</code> as one of <em>markdown</em>, <em>HTML</em>, <em>text</em>, or <em>JSON</em>. The optional <code>user_prompt</code> can be used to provide additional information about the input files. For example, <em>The input is a scanned MRI report</em>. Note that for <code>output_mode="JSON"</code>, the <code>user_prompt</code> is required to define the structure of the JSON output.</p>
+<div><p>OCR engine handles the OCR process. It supports <a href="#concurrent-ocr">concurrent processing</a> which is ideal for large amount of input files; <a href="#sequential-ocr">sequential processing</a> which is good for lightweight tasks or testing; <a href="#stream-ocr">streaming</a> that streams OCR results which is designed for frontend integration.</p>
+<p>OCR engine requires an <a href="../vlm_engines/">VLM engine</a> instance and an <code>output_mode</code> as one of <em>markdown</em>, <em>HTML</em>, <em>text</em>, <em>JSON</em>, or <em>bbox</em>. The optional <code>user_prompt</code> can be used to provide additional information about the input files. For example, <em>The input is a scanned MRI report</em>. Note that for <code>output_mode="JSON"</code>, the <code>user_prompt</code> is required to define the structure of the JSON output. For <code>output_mode="bbox"</code>, the <code>user_prompt</code> is optional — leave it empty for full-text bbox OCR, or set it to a free-text instruction for targeted extraction.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">vlm4ocr</span> <span class="kn">import</span> <span class="n">OCREngine</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">ocr</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="o">=</span><span class="n">vlm_engine</span><span class="p">,</span> 
