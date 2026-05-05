@@ -8,7 +8,7 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 | :---------------------- | :---------------------------------------------------------------------- |
 | **File Types** | :white_check_mark: PDF, TIFF, PNG, JPG/JPEG, BMP, GIF, WEBP         |
 | **VLM Engines** | :white_check_mark: Ollama, OpenAI Compatible (vLLM, SGLang, OpenRouter), OpenAI, Azure OpenAI |
-| **Output Modes** | :white_check_mark: Markdown, HTML, plain text |
+| **Output Modes** | :white_check_mark: Markdown, HTML, plain text, JSON, BBox |
 | **Batch OCR** | :white_check_mark: Processes many files concurrently with Python, CLI, and web app |
 
 ## 🆕Recent Updates
@@ -26,10 +26,10 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
   - **Few-shot examples**: Added support for few-shot examples to improve OCR accuracy.
 - [v0.4.3](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.4.3):
   - **SGLang support**: Added `SGLangVLMEngine` for serving VLMs with SGLang.
-  - **Optional prompts**: `OCREngine` now accepts `system_prompt=False` / `user_prompt=False` for models that don't need them (e.g., PaddleOCR, LightOn-OCR).
-  - **Graceful shutdown**: `concurrent_ocr()` cancels in-flight VLM calls when the consumer stops iterating. CLI Ctrl+C and the web app Stop button now abort cleanly.
 - [v0.4.4](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.4.4):
   - **VLM-based rotation correction**: `rotate_correction` now accepts `"tesseract"`, `"vlm"`, or `False`. Use `"vlm"` when Tesseract isn't installed or struggles with noisy scans.
+- [v0.5.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.5.0) (May 4, 2026):
+  - **BBox output mode**: New `output_mode="bbox"` returns OCR text with bounding-box coordinates and labels per region. Leave `user_prompt` empty for full-text bbox OCR or set it to a free-text instruction (e.g., `"patient name and DOB"`) for targeted extraction. Built-in format registry covers Qwen3-VL, Gemma 3/4, and GPT-4.1.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -242,6 +242,49 @@ async def run_ocr():
 
 asyncio.run(run_ocr())
 ```
+
+Run OCR with bounding boxes (`output_mode="bbox"`). Leave `user_prompt` empty for full-text bbox OCR, or set it to a free-text instruction for targeted extraction:
+
+```python
+from vlm4ocr import VLLMVLMEngine, OCREngine
+
+vlm_engine = VLLMVLMEngine(model="Qwen/Qwen3.5-35B-A3B")
+
+# Full-text OCR with bounding boxes
+ocr = OCREngine(vlm_engine=vlm_engine, output_mode="bbox")
+ocr_results = ocr.sequential_ocr(image_path)
+
+# Targeted extraction with bounding boxes
+ocr = OCREngine(
+    vlm_engine=vlm_engine,
+    output_mode="bbox",
+    user_prompt="Extract patient name, date of birth, Platelets, CMP glucose, BUN, and RBCs values.",
+)
+ocr_results = ocr.sequential_ocr(image_path)
+
+# Inspect bbox results
+for page_num, page in enumerate(ocr_results[0].pages):
+    for item in page.bboxes:
+        print(item.label, item.bbox, item.text)
+
+    # Visualize on the source page (targeted extraction: color by label, show both)
+    annotated = page.plot_bboxes(show_label=True, show_text=True, color="label")
+    annotated.save(f"annotated_page{page_num}.png")
+```
+
+Note that this is a **synthesized data with NO real PHI!!**
+```json
+[
+	{"bbox_2d": [508, 143, 620, 158], "label": "patient name", "text": "Mary Johnson"},
+	{"bbox_2d": [508, 160, 610, 176], "label": "date of birth", "text": "Jan 29, 1990"},
+	{"bbox_2d": [484, 405, 569, 421], "label": "Platelets", "text": "280 x10⁹/L"},
+	{"bbox_2d": [484, 455, 560, 470], "label": "CMP glucose", "text": "90 mg/dL"},
+	{"bbox_2d": [484, 540, 562, 555], "label": "BUN", "text": "12 mg/dL"},
+	{"bbox_2d": [484, 778, 690, 794], "label": "RBCs", "text": "0 - 1 per high power field"}
+]
+```
+
+<div align="left"><img src=docs/readme_img/bbox.png width=500 ></div>
 
 Supply few-shot examples to improve OCR accuracy:
 ```python
