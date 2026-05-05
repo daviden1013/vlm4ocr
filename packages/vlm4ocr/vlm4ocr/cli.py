@@ -1,11 +1,14 @@
 import argparse
 import os
 import sys
+import json
 import logging
 import asyncio
 import time
+from dataclasses import asdict
 from .ocr_engines import OCREngine
-from .vlm_engines import OpenAICompatibleVLMEngine, OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine, BasicVLMConfig
+from .vlm_engines import (OpenAICompatibleVLMEngine, OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine,
+                          VLLMVLMEngine, SGLangVLMEngine, OpenRouterVLMEngine, BasicVLMConfig)
 from .data_types import OCRResult
 import tqdm.asyncio
 
@@ -23,7 +26,25 @@ warnings_logger = logging.getLogger('py.warnings')
 
 
 SUPPORTED_IMAGE_EXTS_CLI = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
-OUTPUT_EXTENSIONS = {'markdown': '.md', 'HTML':'.html', 'text':'.txt'}
+OUTPUT_EXTENSIONS = {'markdown': '.md', 'HTML': '.html', 'text': '.txt', 'JSON': '.json', 'bbox': '.json'}
+
+
+def resolve_prompt_arg(inline_value, file_path, flag_name):
+    """
+    Resolve a prompt arg from either an inline string or a file path.
+    If both are provided, inline wins and a warning is logged.
+    Returns the prompt string, or None if neither is provided.
+    """
+    if inline_value is not None and file_path is not None:
+        logger.warning(f"Both --{flag_name} and --{flag_name}_file provided; using --{flag_name} and ignoring --{flag_name}_file.")
+        return inline_value
+    if inline_value is not None:
+        return inline_value
+    if file_path is not None:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return None
+
 
 def get_output_path_for_ocr_result(input_file_path, specified_output_path_arg, output_mode, num_total_inputs, base_output_dir_if_no_specific_path):
     """
@@ -88,7 +109,7 @@ def main():
 
     io_group = parser.add_argument_group("Input/Output Options")
     io_group.add_argument("--input_path", required=True, help="Path to a single input file or a directory of files.")
-    io_group.add_argument("--output_mode", choices=["markdown", "HTML", "text"], default="markdown", help="Output format.")
+    io_group.add_argument("--output_mode", choices=["markdown", "HTML", "text", "JSON", "bbox"], default="markdown", help="Output format. 'JSON' requires --user_prompt or --user_prompt_file to define the JSON structure. 'bbox' writes per-doc <basename>_ocr.json plus per-page <basename>_ocr_page<N>.png annotated images.")
     io_group.add_argument("--output_path", help="Optional: Path to save OCR results. If input_path is a directory of multiple files, this should be an output directory. If input is a single file, this can be a full file path or a directory. If not provided, results are saved to the current working directory (or a sub-directory for logs if --log is used).")
     io_group.add_argument("--skip_existing", action="store_true", help="Skip processing files that already have OCR results in the output directory.")
 
@@ -106,11 +127,13 @@ def main():
     )
 
     vlm_engine_group = parser.add_argument_group("VLM Engine Options")
-    vlm_engine_group.add_argument("--vlm_engine", choices=["openai", "azure_openai", "ollama", "openai_compatible"], required=True, help="VLM engine.")
+    vlm_engine_group.add_argument("--vlm_engine", choices=["openai", "azure_openai", "ollama", "openai_compatible", "vllm", "sglang", "openrouter"], required=True, help="VLM engine.")
     vlm_engine_group.add_argument("--model", required=True, help="Model identifier for the VLM engine.")
     vlm_engine_group.add_argument("--max_new_tokens", type=int, default=4096, help="Max new tokens for VLM.")
     vlm_engine_group.add_argument("--temperature", type=float, default=None, help="Sampling temperature.")
     vlm_engine_group.add_argument("--top_p", type=float, default=None, help="Sampling top p.")
+    vlm_engine_group.add_argument("--presence_penalty", type=float, default=None, help="Presence penalty.")
+    vlm_engine_group.add_argument("--extra_body", default=None, help="Extra body parameters as a JSON string (e.g. '{\"chat_template_kwargs\": {\"enable_thinking\": false}}').")
 
     openai_group = parser.add_argument_group("OpenAI & OpenAI-Compatible Options")
     openai_group.add_argument("--api_key", default=os.environ.get("OPENAI_API_KEY"), help="API key.")
@@ -127,7 +150,10 @@ def main():
     ollama_group.add_argument("--ollama_keep_alive", type=int, default=300, help="Ollama keep_alive seconds.")
 
     ocr_params_group = parser.add_argument_group("OCR Engine Parameters")
-    ocr_params_group.add_argument("--user_prompt", help="Custom user prompt.")
+    ocr_params_group.add_argument("--user_prompt", help="Custom user prompt (inline string). For longer prompts use --user_prompt_file. If both are given, --user_prompt wins with a warning.")
+    ocr_params_group.add_argument("--user_prompt_file", help="Path to a text file containing the user prompt.")
+    ocr_params_group.add_argument("--system_prompt", help="Custom system prompt (inline string). For longer prompts use --system_prompt_file. If both are given, --system_prompt wins with a warning.")
+    ocr_params_group.add_argument("--system_prompt_file", help="Path to a text file containing the system prompt.")
 
     processing_group = parser.add_argument_group("Processing Options")
     processing_group.add_argument(
@@ -170,6 +196,19 @@ def main():
         
     if args.concurrent_batch_size < 1:
         parser.error("--concurrent_batch_size must be 1 or greater.")
+
+    # --- Resolve prompt args (inline vs. file) ---
+    for flag_name, file_arg in (("user_prompt", args.user_prompt_file), ("system_prompt", args.system_prompt_file)):
+        if file_arg is not None and not os.path.isfile(file_arg):
+            parser.error(f"--{flag_name}_file does not exist or is not a file: {file_arg}")
+    try:
+        resolved_user_prompt = resolve_prompt_arg(args.user_prompt, args.user_prompt_file, "user_prompt")
+        resolved_system_prompt = resolve_prompt_arg(args.system_prompt, args.system_prompt_file, "system_prompt")
+    except OSError as e:
+        parser.error(f"Failed to read prompt file: {e}")
+
+    if args.output_mode == "JSON" and not resolved_user_prompt:
+        parser.error("--output_mode=JSON requires --user_prompt or --user_prompt_file to define the JSON structure.")
 
     # --- Determine Effective Output Directory (for logs and default OCR outputs) ---
     effective_output_dir = os.getcwd() # Default if no --output_path
@@ -222,11 +261,21 @@ def main():
     vlm_engine_instance = None
     try:
         logger.info(f"Initializing VLM engine: {args.vlm_engine} with model: {args.model}")
-        logger.info(f"max_new_tokens: {args.max_new_tokens}, temperature: {args.temperature}, top_p: {args.top_p}")
+        logger.info(f"max_new_tokens: {args.max_new_tokens}, temperature: {args.temperature}, top_p: {args.top_p}, presence_penalty: {args.presence_penalty}")
+        extra_kwargs = {}
+        if args.top_p is not None:
+            extra_kwargs["top_p"] = args.top_p
+        if args.presence_penalty is not None:
+            extra_kwargs["presence_penalty"] = args.presence_penalty
+        if args.extra_body:
+            try:
+                extra_kwargs["extra_body"] = json.loads(args.extra_body)
+            except json.JSONDecodeError as e:
+                parser.error(f"--extra_body is not valid JSON: {e}")
         config = BasicVLMConfig(
             max_new_tokens=args.max_new_tokens,
             temperature=args.temperature,
-            top_p=args.top_p
+            **extra_kwargs
         )
         if args.vlm_engine == "openai":
             if not args.api_key: parser.error("--api_key (or OPENAI_API_KEY) is required for OpenAI.")
@@ -234,6 +283,14 @@ def main():
         elif args.vlm_engine == "openai_compatible":
             if not args.base_url: parser.error("--base_url is required for openai_compatible.")
             vlm_engine_instance = OpenAICompatibleVLMEngine(model=args.model, api_key=args.api_key, base_url=args.base_url, config=config)
+        elif args.vlm_engine == "vllm":
+            vlm_engine_instance = VLLMVLMEngine(model=args.model, api_key=args.api_key or "", base_url=args.base_url or "http://localhost:8000/v1", config=config)
+        elif args.vlm_engine == "sglang":
+            vlm_engine_instance = SGLangVLMEngine(model=args.model, api_key=args.api_key or "", base_url=args.base_url or "http://localhost:30000/v1", config=config)
+        elif args.vlm_engine == "openrouter":
+            openrouter_key = args.api_key or os.environ.get("OPENROUTER_API_KEY")
+            if not openrouter_key: parser.error("--api_key (or OPENROUTER_API_KEY) is required for openrouter.")
+            vlm_engine_instance = OpenRouterVLMEngine(model=args.model, api_key=openrouter_key, config=config)
         elif args.vlm_engine == "azure_openai":
             if not args.azure_api_key: parser.error("--azure_api_key (or AZURE_OPENAI_API_KEY) is required.")
             if not args.azure_endpoint: parser.error("--azure_endpoint (or AZURE_OPENAI_ENDPOINT) is required.")
@@ -253,7 +310,12 @@ def main():
     # --- Initialize OCR Engine ---
     try:
         logger.info(f"Initializing OCR engine with output mode: {args.output_mode}")
-        ocr_engine_instance = OCREngine(vlm_engine=vlm_engine_instance, output_mode=args.output_mode, user_prompt=args.user_prompt)
+        ocr_engine_instance = OCREngine(
+            vlm_engine=vlm_engine_instance,
+            output_mode=args.output_mode,
+            system_prompt=resolved_system_prompt,
+            user_prompt=resolved_user_prompt,
+        )
         logger.info("OCR engine initialized successfully.")
     except Exception as e:
         logger.error(f"Error initializing OCR engine: {e}")
@@ -361,15 +423,50 @@ def main():
                 if result_object.status == "error":
                     error_message = result_object.get_page(0).text if len(result_object) > 0 else 'Unknown error during OCR'
                     logger.error(f"OCR failed for {result_object.filename}: {error_message}")
+                elif args.output_mode == "bbox":
+                    try:
+                        # Per-doc JSON
+                        bbox_data = {
+                            "filename": result_object.filename,
+                            "pages": [
+                                {
+                                    "page_idx": page._page_idx,
+                                    "image_width": page.image_width,
+                                    "image_height": page.image_height,
+                                    "bboxes": [asdict(b) for b in page.bboxes] if page.bboxes else [],
+                                }
+                                for page in result_object
+                            ],
+                        }
+                        os.makedirs(os.path.dirname(current_ocr_output_file_path) or ".", exist_ok=True)
+                        with open(current_ocr_output_file_path, "w", encoding="utf-8") as f:
+                            json.dump(bbox_data, f, indent=2)
+                        logger.info(f"Bbox JSON for '{input_file_path_from_result}' saved to: {current_ocr_output_file_path}")
+
+                        # Per-page PNG
+                        json_base = current_ocr_output_file_path[:-5] if current_ocr_output_file_path.endswith(".json") else current_ocr_output_file_path
+                        targeted = bool(resolved_user_prompt)
+                        for page in result_object:
+                            if page.bboxes is None:
+                                continue
+                            try:
+                                annotated = page.plot_bboxes(
+                                    show_label=targeted,
+                                    show_text=True,
+                                    color="label" if targeted else "random",
+                                )
+                                png_path = f"{json_base}_page{page._page_idx + 1}.png"
+                                annotated.save(png_path)
+                                logger.info(f"Bbox PNG page {page._page_idx + 1} saved to: {png_path}")
+                            except Exception as e:
+                                logger.error(f"Error writing bbox PNG for page {page._page_idx + 1} of '{input_file_path_from_result}': {e}")
+                    except Exception as e:
+                        logger.error(f"Error writing bbox output for '{input_file_path_from_result}': {e}")
                 else:
                     try:
                         content_to_write = result_object.to_string()
                         with open(current_ocr_output_file_path, "w", encoding="utf-8") as f:
                             f.write(content_to_write)
-                        
-                        # MODIFIED: Always log success info.
-                        # This will go to the file log if active.
-                        # It will NOT go to console if console level is WARNING.
                         logger.info(f"OCR result for '{input_file_path_from_result}' saved to: {current_ocr_output_file_path}")
 
                     except Exception as e:
