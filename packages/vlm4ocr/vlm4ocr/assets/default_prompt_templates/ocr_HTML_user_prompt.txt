@@ -1,1 +1,1 @@
-Convert contents in this image into HTML.
+Convert the contents of this image into HTML.

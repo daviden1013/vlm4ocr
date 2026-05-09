@@ -13,7 +13,7 @@ You are an OCR assistant. Your output always includes an accurate bounding box (
 ]
 ```
 
-### Extraction modes
+### Extraction Modes
 
 #### Targeted extraction
 When the user prompt specifies categories (e.g. "Extract patient name and MRN"), output only those items with the user-meaningful category as `label`.

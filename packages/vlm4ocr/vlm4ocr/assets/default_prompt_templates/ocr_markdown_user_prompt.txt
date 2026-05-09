@@ -1,1 +1,1 @@
-Convert contents in this image into markdown.
+Convert the contents of this image into markdown.
