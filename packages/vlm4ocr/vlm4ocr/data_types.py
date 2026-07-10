@@ -30,7 +30,7 @@ class BBoxFormat:
     system_prompt_file: str = "ocr_bbox_system_prompt_default.txt"
 
 
-_OCR_PAGE_KEYS = ("text", "image_processing_status", "bboxes", "image_width", "image_height")
+_OCR_PAGE_KEYS = ("text", "image_processing_status", "bboxes", "image_width", "image_height", "metadata")
 
 
 @dataclass
@@ -46,6 +46,8 @@ class OCRPage:
     bboxes: Optional[List["BBoxItem"]] = None
     image_width: Optional[int] = None
     image_height: Optional[int] = None
+    # Free-form per-page metadata (e.g. a page type from a routing pipeline).
+    metadata: dict = field(default_factory=dict)
     # Internal fields set by OCRResult.add_page — not part of public API
     _source_path: str = field(default="", repr=False)
     _page_idx: int = field(default=0, repr=False)
@@ -197,7 +199,8 @@ class OCRResult:
     def add_page(self, text: str, image_processing_status: dict,
                  bboxes: Optional[List["BBoxItem"]] = None,
                  image_width: Optional[int] = None,
-                 image_height: Optional[int] = None):
+                 image_height: Optional[int] = None,
+                 metadata: Optional[dict] = None):
         """
         Adds a new page to the OCRResult. Internal method called by OCR engines.
 
@@ -225,6 +228,7 @@ class OCRResult:
             bboxes=bboxes,
             image_width=image_width,
             image_height=image_height,
+            metadata=metadata if metadata is not None else {},
             _source_path=self.input_dir,
             _page_idx=len(self.pages),
         )
