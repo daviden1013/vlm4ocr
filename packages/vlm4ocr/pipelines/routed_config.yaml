@@ -1,0 +1,38 @@
+---
+  run_name: "routed_run"
+
+  # Shared VLM engine (drives classifier + all extractors).
+  # For a cheaper classify pass, build a second engine in main() instead.
+  vlm_engine:
+    model: "<your-model-name>"
+    base_url: "<your-vlm-endpoint-url>"
+    config: BasicVLMConfig(max_new_tokens=8192)
+
+  # Step 1 - page classifier. Prompt must instruct the model to return JSON with a
+  # "page_type" field, e.g. {"page_type": "MMSE"}.
+  classifier:
+    user_prompt_path: <path-to-classifier-prompt.txt>
+
+  # Step 2 - per-page-type extractors. Keys must match the classifier's page_type
+  # values. Each prompt defines that form's JSON schema.
+  routes:
+    MMSE:
+      user_prompt_path: <path-to-mmse-schema-prompt.txt>
+    MoCA:
+      user_prompt_path: <path-to-moca-schema-prompt.txt>
+    GDS:
+      user_prompt_path: <path-to-gds-schema-prompt.txt>
+
+  # Fallback for pages classified as unknown or not present in `routes`.
+  default_route:
+    user_prompt_path: <path-to-generic-schema-prompt.txt>
+
+  pipeline:
+    concurrent_batch_size: 8      # global cap on in-flight VLM calls (classify + extract)
+    max_file_load: 16             # max documents rasterized/open at once
+    rotate_correction: false      # false | "tesseract" | "vlm"
+    max_dimension_pixels: null    # e.g. 2048 to downscale before OCR
+
+  input_directory: "<path-to-your-input-directory>"
+  output_directory: "<path-to-your-output-directory>"
+  messages_log_directory: "<path-to-your-messages-log-directory>"
