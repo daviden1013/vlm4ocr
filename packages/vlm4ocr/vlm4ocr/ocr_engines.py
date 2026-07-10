@@ -5,12 +5,12 @@ import asyncio
 from dataclasses import asdict
 from colorama import Fore, Style
 import json
-from vlm4ocr.utils import DataLoader, PDFDataLoader, TIFFDataLoader, ImageDataLoader, clean_markdown, extract_json, get_default_page_delimiter
+from PIL import Image
+from vlm4ocr.utils import (DataLoader, clean_markdown, extract_json, get_default_page_delimiter,
+                           get_data_loader, SUPPORTED_IMAGE_EXTS)
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
-from vlm4ocr.data_types import OCRResult, FewShotExample, BBoxFormat
+from vlm4ocr.data_types import OCRResult, OCRPage, FewShotExample, BBoxFormat
 from vlm4ocr.vlm_engines import VLMEngine, MessagesLogger
-
-SUPPORTED_IMAGE_EXTS = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
 
 
 class OCREngine:
@@ -135,7 +135,7 @@ class OCREngine:
 
         # PDF or TIFF
         if file_ext in ['.pdf', '.tif', '.tiff']:
-            data_loader = PDFDataLoader(file_path) if file_ext == '.pdf' else TIFFDataLoader(file_path)
+            data_loader = get_data_loader(file_path)
             images = data_loader.get_all_pages()
             # Check if images were extracted
             if not images:
@@ -189,7 +189,7 @@ class OCREngine:
 
         # Image
         else:
-            data_loader = ImageDataLoader(file_path)
+            data_loader = get_data_loader(file_path)
             image = data_loader.get_page(0)
 
             # Apply rotate correction if specified
@@ -281,13 +281,7 @@ class OCREngine:
             
             try:
                 # Load images from file
-                if file_ext == '.pdf':
-                    data_loader = PDFDataLoader(file_path) 
-                elif file_ext in ['.tif', '.tiff']:
-                    data_loader = TIFFDataLoader(file_path)
-                else:
-                    data_loader = ImageDataLoader(file_path)
-                
+                data_loader = get_data_loader(file_path)
                 images = data_loader.get_all_pages()
             except Exception as e:
                 if verbose:
@@ -406,6 +400,57 @@ class OCREngine:
         return ocr_results
 
 
+    async def ocr_image_async(self, image: Image.Image, few_shot_examples: List[FewShotExample] = None,
+                              messages_logger: MessagesLogger = None) -> OCRPage:
+        """
+        Runs OCR on a single in-memory image using this engine's configured prompt and
+        output_mode, and returns a standalone OCRPage. This is the atomic unit that the
+        pipelines build on.
+
+        No image preprocessing (rotate / resize) is applied here — the caller owns that,
+        so classify-then-extract flows can preprocess a page once and share the result.
+
+        Parameters:
+        -----------
+        image : PIL.Image.Image
+            The image to OCR (already preprocessed, if desired).
+        few_shot_examples : List[FewShotExample], Optional
+            list of few-shot examples.
+        messages_logger : MessagesLogger, Optional
+            If provided, the request/response messages of this call are logged into it.
+
+        Returns:
+        --------
+        OCRPage
+            A standalone page not yet placed in an OCRResult (image_processing_status={},
+            _page_idx=0, _source_path=""). Contains the OCR text, plus bboxes and
+            image_width/image_height in bbox output mode.
+        """
+        messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt,
+                                                    user_prompt=self.user_prompt,
+                                                    image=image,
+                                                    few_shot_examples=few_shot_examples)
+        response = await self.vlm_engine.chat_async(messages, messages_logger=messages_logger)
+        ocr_text = response["response"]
+        bboxes = None
+        img_w = img_h = None
+
+        # Mode-specific post-processing (mirrors the concurrent/sequential paths).
+        if self.output_mode == "markdown":
+            ocr_text = clean_markdown(ocr_text)
+        elif self.output_mode == "JSON":
+            json_list = extract_json(ocr_text)
+            ocr_text = json.dumps(json_list, indent=4)
+        elif self.output_mode == "bbox":
+            from vlm4ocr.bbox import parse_bbox_response
+            img_w, img_h = image.size
+            bboxes = parse_bbox_response(ocr_text, self.bbox_format, img_w, img_h)
+            ocr_text = "\n".join(item.text for item in bboxes)
+
+        return OCRPage(text=ocr_text, image_processing_status={}, bboxes=bboxes,
+                       image_width=img_w, image_height=img_h)
+
+
     def concurrent_ocr(self, file_paths: Union[str, Iterable[str]],
                        rotate_correction:Union[RotateCorrectionMethod, Literal[False]]=False,
                        max_dimension_pixels:int=None, few_shot_examples:List[FewShotExample]=None,
@@ -511,12 +556,7 @@ class OCREngine:
             
             try:
                 # Load images from file
-                if file_ext == '.pdf':
-                    data_loader = PDFDataLoader(file_path) 
-                elif file_ext in ['.tif', '.tiff']:
-                    data_loader = TIFFDataLoader(file_path)
-                else:
-                    data_loader = ImageDataLoader(file_path)
+                data_loader = get_data_loader(file_path)
 
             except Exception as e:
                 result.status = "error"
