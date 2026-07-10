@@ -214,6 +214,34 @@ class ImageDataLoader(DataLoader):
         return 1
 
 
+SUPPORTED_IMAGE_EXTS = ['.pdf', '.tif', '.tiff', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
+
+
+def get_data_loader(file_path: str) -> DataLoader:
+    """
+    Returns the appropriate DataLoader for a file based on its extension. Extension
+    matching is case-insensitive. Shared by OCREngine and the pipelines.
+
+    Parameters:
+    -----------
+    file_path : str
+        Path to the file to load.
+
+    Raises:
+    -------
+    ValueError
+        If the file extension is not in SUPPORTED_IMAGE_EXTS.
+    """
+    file_ext = os.path.splitext(file_path)[1].lower()
+    if file_ext not in SUPPORTED_IMAGE_EXTS:
+        raise ValueError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
+    if file_ext == '.pdf':
+        return PDFDataLoader(file_path)
+    if file_ext in ('.tif', '.tiff'):
+        return TIFFDataLoader(file_path)
+    return ImageDataLoader(file_path)
+
+
 def image_to_base64(image:Image.Image, format:str="png") -> str:
     """ Converts an image to a base64 string. """
     try:
