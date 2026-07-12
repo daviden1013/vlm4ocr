@@ -14,10 +14,12 @@ nav:
       - 'Quick Start': 'quick_start.md'
       - 'VLM Engines': 'vlm_engines.md'
       - 'OCR Engine': 'ocr_engines.md'
+      - 'OCR Pipelines': 'ocr_pipelines.md'
       - 'BBox Mode': 'bbox.md'
     - 'API Reference':
       - 'VLM Engines': 'api/vlm_engines.md'
       - 'OCR Engine': 'api/ocr_engines.md'
+      - 'OCR Pipelines': 'api/ocr_pipelines.md'
       - 'CLI': 'api/cli.md'
       
 plugins:
@@ -44,4 +46,8 @@ plugins:
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

@@ -10,6 +10,7 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
 | **VLM Engines** | :white_check_mark: Ollama, OpenAI Compatible (vLLM, SGLang, OpenRouter), OpenAI, Azure OpenAI |
 | **Output Modes** | :white_check_mark: Markdown, HTML, plain text, JSON, BBox |
 | **Batch OCR** | :white_check_mark: Processes many files concurrently with Python, CLI, and web app |
+| **Pipelines** | :white_check_mark: Per-page routing for heterogeneous documents (`IndependentPagePipeline`) |
 
 ## 🆕Recent Updates
 - [v0.2.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.2.0) (Jun 1, 2025): 
@@ -30,6 +31,8 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
   - **VLM-based rotation correction**: `rotate_correction` now accepts `"tesseract"`, `"vlm"`, or `False`. Use `"vlm"` when Tesseract isn't installed or struggles with noisy scans.
 - [v0.5.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.5.0) (May 4, 2026):
   - **BBox output mode**: New `output_mode="bbox"` returns OCR text with bounding-box coordinates and labels per region. Leave `user_prompt` empty for full-text bbox OCR or set it to a free-text instruction (e.g., `"patient name and DOB"`) for targeted extraction. Built-in format registry covers Qwen3-VL, Gemma 3/4, and GPT-4.1.
+- [v0.6.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.6.0) (Jul 10, 2026):
+  - **OCR pipelines**: New `IndependentPagePipeline` + `OCREngine.ocr_image_async` let you process each page differently — classify and route the pages of a **heterogeneous document** (e.g., mixed form types in one PDF) to different prompts/schemas, while the pipeline handles loading, concurrency, and assembly. See the [OCR Pipelines guide](https://daviden1013.github.io/vlm4ocr/ocr_pipelines/).
 
 ## Table of Contents
 - [Overview](#overview)
