@@ -268,6 +268,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#whats-new-in-v060" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's new in v0.6.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#whats-new-in-v050" class="md-nav__link">
     <span class="md-ellipsis">
       What's new in v0.5.0
@@ -442,6 +451,29 @@
   
   
     <li class="md-nav__item">
+      <a href="ocr_pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="bbox/" class="md-nav__link">
         
   
@@ -556,6 +588,29 @@
   
   
     <li class="md-nav__item">
+      <a href="api/ocr_pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="api/cli/" class="md-nav__link">
         
   
@@ -606,6 +661,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#whats-new-in-v060" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's new in v0.6.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#whats-new-in-v050" class="md-nav__link">
     <span class="md-ellipsis">
       What's new in v0.5.0
@@ -639,6 +703,11 @@
 <li><a href="web_application/">Web Application</a> for drag-and-drop access</li>
 <li><a href="cli/">CLI</a> for command line access</li>
 <li><a href="quick_start/">Python package</a> for Python access</li>
+</ul>
+<h2 id="whats-new-in-v060">What's new in v0.6.0</h2>
+<ul>
+<li><strong>OCR pipelines</strong> — process each page of a <strong>heterogeneous document</strong> differently. <code>IndependentPagePipeline</code> turns a per-page function into a concurrent, files-in / <code>OCRResult</code>-out pipeline; <code>OCREngine.ocr_image_async</code> is the atomic single-image call it builds on. Ideal for classifying and routing mixed form types in one PDF to different prompts/schemas. See <a href="ocr_pipelines/">OCR Pipelines</a>.</li>
+<li><strong><code>OCRPage.metadata</code></strong> — each page carries a free-form <code>metadata</code> dict (e.g. a page type assigned by a routing pipeline), preserved on the resulting <code>OCRResult</code>.</li>
 </ul>
 <h2 id="whats-new-in-v050">What's new in v0.5.0</h2>
 <ul>

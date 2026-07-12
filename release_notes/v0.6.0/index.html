@@ -16,7 +16,7 @@
     
     
       
-        <title>V0.4.0 - VLM4OCR Documentation</title>
+        <title>V0.6.0 - VLM4OCR Documentation</title>
       
     
     
@@ -60,7 +60,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#documentation-site" class="md-skip">
+        <a href="#highlights" class="md-skip">
           Skip to content
         </a>
       
@@ -96,7 +96,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              V0.4.0
+              V0.6.0
             
           </span>
         </div>
@@ -597,15 +597,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#documentation-site" class="md-nav__link">
-    <span class="md-ellipsis">
-      📐Documentation Site
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#highlights" class="md-nav__link">
     <span class="md-ellipsis">
       ⚡Highlights
@@ -616,18 +607,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added-few-shot-examples-support" class="md-nav__link">
+  <a href="#ocr-pipelines-for-heterogeneous-documents" class="md-nav__link">
     <span class="md-ellipsis">
-      Added few-shot examples support
+      OCR Pipelines for heterogeneous documents
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OCR Pipelines for heterogeneous documents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ocrengineocr_image_async-the-atomic-building-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      OCREngine.ocr_image_async — the atomic building block
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#added-concurrent-ocr-pipeline-template-and-config" class="md-nav__link">
+  <a href="#independentpagepipeline-per-page-processing-concurrently" class="md-nav__link">
     <span class="md-ellipsis">
-      Added concurrent OCR pipeline template and config
+      IndependentPagePipeline — per-page processing, concurrently
     </span>
   </a>
   
@@ -635,6 +636,29 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ocrpagemetadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      OCRPage.metadata
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changes
+    </span>
+  </a>
   
 </li>
       
@@ -657,70 +681,61 @@
   
 
 
-  <h1>V0.4.0</h1>
+  <h1>V0.6.0</h1>
 
-<div><h2 id="documentation-site">📐Documentation Site</h2>
-<p>User guide, API reference, and documentation are available at <a href="https://daviden1013.github.io/vlm4ocr/">Documentation Page</a>.</p>
-<h2 id="highlights">⚡Highlights</h2>
-<h3 id="added-few-shot-examples-support">Added few-shot examples support</h3>
-<p>Supply few-shot examples to improve OCR accuracy:
-</p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span> <span class="nn">asyncio</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">vlm4ocr</span> <span class="kn">import</span> <span class="n">FewShotExample</span><span class="p">,</span> <span class="n">AzureOpenAIVLMEngine</span><span class="p">,</span> <span class="n">OCREngine</span>
+<div><h2 id="highlights">⚡Highlights</h2>
+<h3 id="ocr-pipelines-for-heterogeneous-documents">OCR Pipelines for heterogeneous documents</h3>
+<p><code>OCREngine</code> applies one prompt to every page. That breaks down when a single PDF or TIFF <strong>interleaves different page types</strong> — for example a packet of cognitive-assessment forms where each form needs its own JSON schema. v0.6.0 adds <strong>OCR pipelines</strong>: you decide, per page, how that page is processed, while the pipeline owns file loading, concurrency, page ordering, error handling, and <code>OCRResult</code> assembly.</p>
+<h4 id="ocrengineocr_image_async-the-atomic-building-block"><code>OCREngine.ocr_image_async</code> — the atomic building block</h4>
+<p>Run a single, already-loaded image through an engine's prompt and get back a standalone <code>OCRPage</code>. No preprocessing is applied (the caller owns rotate/resize), so a page can be OCR'd once and reused across calls.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span> <span class="nn">asyncio</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">vlm4ocr</span> <span class="kn">import</span> <span class="n">VLLMVLMEngine</span><span class="p">,</span> <span class="n">OCREngine</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Load few-shot examples</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Note that the example text should be the expected OCR output for the example image. Do not include any extra instructions.</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">example_1_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"example_1.JPG"</span><span class="p">))</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">example_1_text</span> <span class="o">=</span> <span class="s2">"""&lt;Expected OCR output for example 1&gt;"""</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">example_2_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"example_2.JPG"</span><span class="p">)</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">example_2_text</span> <span class="o">=</span> <span class="s2">"""&lt;Expected OCR output for example 2&gt;"""</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">few_shot_examples</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">FewShotExample</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">example_1_image</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">example_1_text</span><span class="p">,</span> <span class="n">max_dimension_pixels</span><span class="o">=</span><span class="mi">512</span><span class="p">),</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">FewShotExample</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">example_2_image</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">example_2_text</span><span class="p">,</span> <span class="n">max_dimension_pixels</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="p">]</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">VLLMVLMEngine</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">"Qwen/Qwen3-VL-30B-A3B-Instruct"</span><span class="p">),</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"markdown"</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">page</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">engine</span><span class="o">.</span><span class="n">ocr_image_async</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"page.png"</span><span class="p">)))</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 </code></pre></div>
-<p>We load the target image for OCR.
-</p><div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">"examples"</span><span class="p">,</span> <span class="s2">"synthesized_data"</span><span class="p">,</span> <span class="s2">"few_shot_examples"</span><span class="p">,</span> <span class="s2">"images"</span><span class="p">,</span> <span class="s2">"template_6_sample_4_poor.JPG"</span><span class="p">)</span>
+<h4 id="independentpagepipeline-per-page-processing-concurrently"><code>IndependentPagePipeline</code> — per-page processing, concurrently</h4>
+<p>Supply a <code>process_page(image, *, messages_logger=None) -&gt; OCRPage</code> function and get a full pipeline whose <code>concurrent_ocr</code> mirrors <code>OCREngine.concurrent_ocr</code> (same arguments, same first-complete-first-out <code>AsyncGenerator[OCRResult]</code>). <code>process_page</code> receives <strong>only its own page image</strong>, so page independence is guaranteed by construction.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span> <span class="nn">json</span><span class="o">,</span> <span class="nn">asyncio</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">vlm4ocr</span> <span class="kn">import</span> <span class="n">OCREngine</span><span class="p">,</span> <span class="n">IndependentPagePipeline</span><span class="p">,</span> <span class="n">OCRPage</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># One classifier + per-type extractors + a fallback — each engine is an atom (one prompt).</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">classifier</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"JSON"</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>                       <span class="n">user_prompt</span><span class="o">=</span><span class="s1">'Classify this page. Respond as JSON: {"page_type": "&lt;one_token&gt;"}'</span><span class="p">)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">extractors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"form_a"</span><span class="p">:</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"JSON"</span><span class="p">,</span> <span class="n">user_prompt</span><span class="o">=</span><span class="s2">"&lt;form A schema&gt;"</span><span class="p">),</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>              <span class="s2">"form_b"</span><span class="p">:</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"JSON"</span><span class="p">,</span> <span class="n">user_prompt</span><span class="o">=</span><span class="s2">"&lt;form B schema&gt;"</span><span class="p">)}</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">default</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"JSON"</span><span class="p">,</span> <span class="n">user_prompt</span><span class="o">=</span><span class="s2">"&lt;generic schema&gt;"</span><span class="p">)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">classify_and_extract</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">messages_logger</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OCRPage</span><span class="p">:</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">label</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">((</span><span class="k">await</span> <span class="n">classifier</span><span class="o">.</span><span class="n">ocr_image_async</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">messages_logger</span><span class="o">=</span><span class="n">messages_logger</span><span class="p">))</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">page_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"page_type"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">extractors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">page_type</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span><span class="o">.</span><span class="n">ocr_image_async</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">messages_logger</span><span class="o">=</span><span class="n">messages_logger</span><span class="p">)</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">page</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"page_type"</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_type</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="k">return</span> <span class="n">page</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">IndependentPagePipeline</span><span class="p">(</span><span class="n">classify_and_extract</span><span class="p">,</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"JSON"</span><span class="p">)</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">():</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">concurrent_ocr</span><span class="p">(</span><span class="n">pdf_paths</span><span class="p">,</span> <span class="n">concurrent_batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">pages</span><span class="p">:</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>            <span class="nb">print</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"page_type"</span><span class="p">],</span> <span class="n">page</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run</span><span class="p">())</span>
 </code></pre></div>
-<p>Define the VLM engine and OCR engine.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">vlm4ocr</span> <span class="kn">import</span> <span class="n">VLLMVLMEngine</span><span class="p">,</span> <span class="n">OCREngine</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Define VLM engine</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">vlm_engine</span> <span class="o">=</span> <span class="n">VLLMVLMEngine</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-VL-7B-Instruct"</span><span class="p">)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Define OCR engine</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">ocr</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"text"</span><span class="p">)</span>      
-</code></pre></div>
-<p>Now, we pass the few-shot examples to the OCR methods.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># OCR for a single image</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">ocr_results</span> <span class="o">=</span> <span class="n">ocr</span><span class="o">.</span><span class="n">sequential_ocr</span><span class="p">(</span><span class="n">image_path</span><span class="p">,</span> <span class="n">max_dimension_pixels</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">few_shot_examples</span><span class="o">=</span><span class="n">few_shot_examples</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="added-concurrent-ocr-pipeline-template-and-config">Added concurrent OCR pipeline template and config</h3>
-<p>To run OCR on multiple images concurrently, define a YAML config file and run the <a href="./pipelines/ocr_concurrent_pipeline.md">pipeline</a>. This serves as a template for building custom OCR pipelines.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nn">---</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">run_name</span><span class="p">:</span><span class="w"> </span><span class="s">"default_run"</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="c1"># VLM Engine Configuration</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">vlm_engine</span><span class="p">:</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;your-model-name&gt;"</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">base_url</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;your-vlm-endpoint-url&gt;"</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BasicVLMConfig(max_new_tokens=8192)</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="c1"># OCR Engine Configuration</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">ocr_engine</span><span class="p">:</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="c1"># OCR output format</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="nt">output_mode</span><span class="p">:</span><span class="w"> </span><span class="s">"markdown"</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="c1"># number of pages to process in concurrent </span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="nt">concurrent_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="c1"># maximum number of files to load into memory at once</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="nt">max_file_load</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="c1"># user prompt file path</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">    </span><span class="nt">user_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;path-to-your-prompt-file&gt;</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">  </span><span class="nt">input_directory</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;path-to-your-input-directory&gt;"</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">  </span><span class="nt">output_directory</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;path-to-your-output-directory&gt;"</span>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">  </span><span class="nt">messages_log_directory</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;path-to-your-messages-log-directory&gt;"</span>
-</code></pre></div></div>
+<p>All routing logic — classifier prompt, schemas, type labels — lives in your code; the pipeline only orchestrates. See the <a href="https://daviden1013.github.io/vlm4ocr/ocr_pipelines/">OCR Pipelines guide</a> for the full walkthrough and the independence assumption.</p>
+<h3 id="ocrpagemetadata"><code>OCRPage.metadata</code></h3>
+<p><code>OCRPage</code> now carries a free-form <code>metadata</code> dict (e.g. a page type assigned by a routing pipeline), preserved on each page of the resulting <code>OCRResult</code>. Dict-style access continues to work.</p>
+<h2 id="changes">Changes</h2>
+<ul>
+<li><strong>New:</strong> <code>IndependentPagePipeline</code> for per-page custom processing (routing, classification, multi-pass refinement) with concurrent, files-in / <code>OCRResult</code>-out execution. Exported from the top-level <code>vlm4ocr</code> namespace.</li>
+<li><strong>New:</strong> <code>OCREngine.ocr_image_async(image, ...)</code> — the atomic, preprocessing-free single-image OCR call, returning a standalone <code>OCRPage</code>.</li>
+<li><strong>New:</strong> <code>OCRPage.metadata</code> free-form dict, and <code>OCRResult.add_page(..., metadata=...)</code>.</li>
+<li><strong>New:</strong> <code>OCRResult</code> and <code>OCRPage</code> exported from the top-level <code>vlm4ocr</code> namespace.</li>
+<li><strong>Internal:</strong> loader dispatch consolidated into <code>vlm4ocr.utils.get_data_loader</code>; <code>SUPPORTED_IMAGE_EXTS</code> now lives in <code>vlm4ocr.utils</code>.</li>
+<li><strong>Compat:</strong> fully backward compatible — <code>OCREngine</code> and its existing methods are unchanged.</li>
+</ul></div>
 
 
 

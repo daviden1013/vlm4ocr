@@ -389,6 +389,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../ocr_pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../bbox/" class="md-nav__link">
         
   
@@ -486,6 +509,29 @@
   
   <span class="md-ellipsis">
     OCR Engine
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ocr_pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Pipelines
     
   </span>
   
@@ -650,6 +696,8 @@
 <p>User guide, API reference, and documentation are available at <a href="https://daviden1013.github.io/vlm4ocr/">Documentation Page</a>.</p>
 <h2 id="highlights">⚡Highlights</h2>
 <h3 id="new-bbox-output-mode">New <code>bbox</code> output mode</h3>
+<div align="center"><img src="https://github.com/daviden1013/vlm4ocr/blob/main/docs/readme_img/bbox_fulltext.png" width="800"></div>
+
 <p><code>OCREngine</code> now supports <code>output_mode="bbox"</code>, which returns the OCR text together with bounding-box coordinates and labels for each detected region. This unlocks two complementary workflows:</p>
 <ul>
 <li><strong>Full-text bbox OCR</strong> — leave <code>user_prompt</code> empty (or pass <code>None</code>). The model transcribes the entire page and returns one box per region (line/word/segment, depending on the VLM family).</li>
@@ -691,7 +739,7 @@
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="p">{</span><span class="nt">"bbox_2d"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">484</span><span class="p">,</span><span class="w"> </span><span class="mi">778</span><span class="p">,</span><span class="w"> </span><span class="mi">690</span><span class="p">,</span><span class="w"> </span><span class="mi">794</span><span class="p">],</span><span class="w"> </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RBCs"</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0 - 1 per high power field"</span><span class="p">}</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">]</span>
 </code></pre></div>
-<div align="left"><img src="docs/readme_img/bbox.png" width="500"></div>
+<div align="center"><img src="https://github.com/daviden1013/vlm4ocr/blob/main/docs/readme_img/bbox.png" width="800"></div>
 
 <h4 id="per-vlm-bbox-formats">Per-VLM bbox formats</h4>
 <p>Different VLM families emit boxes with different conventions (key names, axis order, coordinate scale). <code>vlm4ocr</code> resolves the right format automatically from the model name through a registry, with built-in support for <strong>Qwen3-VL</strong>, <strong>Gemma 3/4</strong>, and <strong>GPT-4.1</strong>. You can override the resolution by passing a custom <code>BBoxFormat</code>:</p>
