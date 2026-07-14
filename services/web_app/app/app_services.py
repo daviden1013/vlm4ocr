@@ -42,34 +42,48 @@ def _initialize_ocr_engine(form_data):
         temperature_str = form_data.get('temperature', '0.0')
         temperature = float(temperature_str) if temperature_str else 0.0
 
-        top_p_str = form_data.get('top_p', None) 
-        top_p = float(top_p_str) if top_p_str else None 
-
     except (ValueError, TypeError):
-        raise ValueError("Invalid value for Max New Tokens, Temperature, or Top P.")
+        raise ValueError("Invalid value for Max New Tokens or Temperature.")
+
+    # Advanced parameters (top_p, top_k, reasoning_effort, mm_processor_kwargs, ...).
+    # These are collected from the UI as a JSON object and routed per-provider below.
+    advanced_params = {}
+    advanced_raw = form_data.get('advanced_params', None)
+    if advanced_raw:
+        try:
+            advanced_params = json.loads(advanced_raw)
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError("Invalid Advanced Parameters: expected a JSON object.")
+        if not isinstance(advanced_params, dict):
+            raise ValueError("Invalid Advanced Parameters: expected a JSON object.")
+
+    # Route advanced params to the right place for the target backend:
+    #   - Ollama expects flat options, so pass them as top-level config kwargs.
+    #   - OpenAI-SDK backends (openai, azure, openai_compatible) take them via extra_body.
+    config_kwargs = {"max_new_tokens": max_new_tokens, "temperature": temperature}
+    if advanced_params:
+        if vlm_api == "ollama":
+            config_kwargs.update(advanced_params)
+        else:
+            config_kwargs["extra_body"] = advanced_params
 
     print(f"Initializing VLM Engine for API: {vlm_api}")
-    
+
     if vlm_config_type == 'reasoning':
         print("Using ReasoningVLMConfig")
-        config = ReasoningVLMConfig(
-            max_new_tokens=max_new_tokens, 
-            temperature=temperature,
-            top_p=top_p # Pass top_p
-        )
+        config = ReasoningVLMConfig(**config_kwargs)
     else:
         print("Using BasicVLMConfig")
-        config = BasicVLMConfig(
-            max_new_tokens=max_new_tokens, 
-            temperature=temperature,
-            top_p=top_p # Pass top_p
-        )
+        config = BasicVLMConfig(**config_kwargs)
 
     vlm_engine = None
     if vlm_api == "openai_compatible":
+        # API key is optional for self-hosted servers (e.g. vLLM/SGLang without auth).
+        # Fall back to the conventional "EMPTY" placeholder so an unauthenticated
+        # server still receives a valid (ignored) bearer token instead of a blank one.
         vlm_engine = OpenAIVLMEngine(
             model=form_data.get('vlm_model'),
-            api_key=form_data.get('openai_compatible_api_key'),
+            api_key=form_data.get('openai_compatible_api_key') or "EMPTY",
             base_url=form_data.get('vlm_base_url'),
             config=config
         )

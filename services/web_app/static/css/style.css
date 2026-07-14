@@ -1176,3 +1176,80 @@ pre:has(code.language-json) {
     font-size: 0.875em;
     margin-bottom: 10px;
 }
+
+/* Advanced Parameters key/value editor */
+.advanced-params {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.param-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Override the .form-group full-width rule for inline key/value inputs */
+.form-group .param-row input[type="text"] {
+    width: auto;
+}
+
+.param-row .param-key {
+    flex: 0 0 40%;
+    min-width: 0;
+}
+
+.param-row .param-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: monospace;
+}
+
+.remove-param-btn {
+    flex: 0 0 auto;
+    background-color: transparent;
+    border: 1px solid #555;
+    color: #aaa;
+    border-radius: 3px;
+    padding: 8px 10px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.remove-param-btn:hover {
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+.add-param-btn {
+    background-color: transparent;
+    border: 1px dashed #4da6ff;
+    color: #4da6ff;
+    border-radius: 3px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+}
+
+.add-param-btn:hover {
+    background-color: rgba(77, 166, 255, 0.12);
+}
+
+.param-hint {
+    margin-top: 6px;
+    font-size: 0.8em;
+    color: #999;
+    line-height: 1.4;
+}
+
+.param-hint code {
+    background-color: #333;
+    color: #d0d0d0;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.95em;
+}

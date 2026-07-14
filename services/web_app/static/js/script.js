@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeVlmOptionHandlers();
     initializeTabSwitching();
     initializeFilePreviewHandlers();
+    initializeAdvancedParams();
     let pageContentsArray = [];
     let currentOutputFormat = 'markdown';
 

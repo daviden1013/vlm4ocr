@@ -122,9 +122,22 @@
                                 <label for="temperature">Temperature:</label>
                                 <input type="number" id="temperature" name="temperature" value="0.0" min="0" max="2" step="0.1" class="api-input">
                             </div>
+                            <datalist id="advanced-params-keys">
+                                <option value="top_p"></option>
+                                <option value="top_k"></option>
+                                <option value="min_p"></option>
+                                <option value="presence_penalty"></option>
+                                <option value="frequency_penalty"></option>
+                                <option value="reasoning_effort"></option>
+                                <option value="enable_thinking"></option>
+                                <option value="chat_template_kwargs"></option>
+                                <option value="mm_processor_kwargs"></option>
+                            </datalist>
                             <div class="form-group">
-                                <label for="top_p_single">Top P:</label>
-                                <input type="number" id="top_p_single" name="top_p" value="1.0" min="0" max="1" step="0.1">
+                                <label>Advanced Parameters:</label>
+                                <div class="advanced-params" id="advanced-params-single"></div>
+                                <button type="button" class="add-param-btn" data-target="advanced-params-single"><i class="fas fa-plus"></i> Add parameter</button>
+                                <p class="param-hint">Sent as <code>extra_body</code> (OpenAI, Azure, vLLM…) or <code>options</code> (Ollama). Values are read as JSON: <code>top_p</code> &rarr; <code>0.95</code> (number), <code>enable_thinking</code> &rarr; <code>false</code> (boolean), <code>reasoning_effort</code> &rarr; <code>high</code> (text), <code>mm_processor_kwargs</code> &rarr; <code>{"max_soft_tokens": 1120}</code> (nested object). Booleans are case-insensitive (<code>false</code>, <code>False</code>, <code>None</code> all work). Wrap a value in quotes to force text &mdash; <code>"0.95"</code> and <code>"true"</code> are strings, not a number/boolean.</p>
                             </div>
                             <div class="form-group">
                                 <label for="vlm-config-select">VLM Configuration:</label>
@@ -299,8 +312,10 @@
                                 <input type="number" id="batch-temperature" name="temperature" value="0.0" min="0" max="2" step="0.1" class="api-input">
                             </div>
                             <div class="form-group">
-                                <label for="top_p_batch">Top P:</label>
-                                <input type="number" id="top_p_batch" name="top_p" value="1.0" min="0" max="1" step="0.1">
+                                <label>Advanced Parameters:</label>
+                                <div class="advanced-params" id="advanced-params-batch"></div>
+                                <button type="button" class="add-param-btn" data-target="advanced-params-batch"><i class="fas fa-plus"></i> Add parameter</button>
+                                <p class="param-hint">Sent as <code>extra_body</code> (OpenAI, Azure, vLLM…) or <code>options</code> (Ollama). Values are read as JSON: <code>top_p</code> &rarr; <code>0.95</code> (number), <code>enable_thinking</code> &rarr; <code>false</code> (boolean), <code>reasoning_effort</code> &rarr; <code>high</code> (text), <code>mm_processor_kwargs</code> &rarr; <code>{"max_soft_tokens": 1120}</code> (nested object). Booleans are case-insensitive (<code>false</code>, <code>False</code>, <code>None</code> all work). Wrap a value in quotes to force text &mdash; <code>"0.95"</code> and <code>"true"</code> are strings, not a number/boolean.</p>
                             </div>
                             <div class="form-group">
                                 <label for="batch-vlm-config-select">VLM Configuration:</label>

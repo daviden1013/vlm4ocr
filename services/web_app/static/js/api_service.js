@@ -1,15 +1,15 @@
 /**
- * Gathers form data for single OCR, adds 'top_p', and submits.
+ * Gathers form data for single OCR, adds 'advanced_params', and submits.
  * @returns {Promise<Response>} A promise that resolves to the raw Response object for streaming.
  */
 async function getOCR() {
     const form = document.getElementById('ocr-form');
     const formData = new FormData(form);
 
-    // Add top_p from the single file form
-    const topP = document.getElementById('top_p_single').value;
-    if (topP) {
-        formData.append('top_p', topP);
+    // Collect advanced parameters (routed to extra_body / options on the backend)
+    const advancedParams = collectAdvancedParams('advanced-params-single');
+    if (Object.keys(advancedParams).length > 0) {
+        formData.append('advanced_params', JSON.stringify(advancedParams));
     }
 
     return submitSingleOcr(formData);
@@ -36,17 +36,17 @@ async function submitSingleOcr(formData, signal) {
 }
 
 /**
- * Gathers form data for batch OCR, adds 'top_p', and submits.
+ * Gathers form data for batch OCR, adds 'advanced_params', and submits.
  * @returns {Promise<object>} A promise that resolves to the JSON response from the batch endpoint.
  */
 async function getBatchOCR() {
     const form = document.getElementById('batch-ocr-form');
     const formData = new FormData(form);
 
-    // Add top_p from the batch file form
-    const topP = document.getElementById('top_p_batch').value;
-    if (topP) {
-        formData.append('top_p', topP);
+    // Collect advanced parameters (routed to extra_body / options on the backend)
+    const advancedParams = collectAdvancedParams('advanced-params-batch');
+    if (Object.keys(advancedParams).length > 0) {
+        formData.append('advanced_params', JSON.stringify(advancedParams));
     }
 
     return submitBatchOcr(formData);

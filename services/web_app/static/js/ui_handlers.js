@@ -306,3 +306,88 @@ function initializeFilePreviewHandlers() {
         }
     });
 }
+
+/**
+ * Appends a single empty key/value row to an advanced-params container.
+ */
+function appendAdvancedParamRow(container) {
+    const row = document.createElement('div');
+    row.className = 'param-row';
+    row.innerHTML = `
+        <input type="text" class="param-key" list="advanced-params-keys" placeholder="e.g. top_p" autocomplete="off">
+        <input type="text" class="param-value" placeholder='e.g. 0.95 or {"max_soft_tokens": 1120}' autocomplete="off">
+        <button type="button" class="remove-param-btn" title="Remove parameter"><i class="fas fa-times"></i></button>
+    `;
+    container.appendChild(row);
+}
+
+/**
+ * Wires up the "Advanced Parameters" key/value editors (single + batch panels).
+ * Each editor starts with one empty row; the "Add parameter" button appends rows,
+ * and each row's remove button deletes it (keeping at least one row present).
+ */
+function initializeAdvancedParams() {
+    document.querySelectorAll('.advanced-params').forEach(container => {
+        appendAdvancedParamRow(container);
+    });
+
+    document.querySelectorAll('.add-param-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const container = document.getElementById(btn.dataset.target);
+            if (container) appendAdvancedParamRow(container);
+        });
+    });
+
+    document.querySelectorAll('.advanced-params').forEach(container => {
+        container.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-param-btn');
+            if (!removeBtn) return;
+            const rows = container.querySelectorAll('.param-row');
+            if (rows.length > 1) {
+                removeBtn.closest('.param-row').remove();
+            } else {
+                // Keep one row; just clear it
+                const row = removeBtn.closest('.param-row');
+                row.querySelector('.param-key').value = '';
+                row.querySelector('.param-value').value = '';
+            }
+        });
+    });
+}
+
+/**
+ * Collects an advanced-params editor into a plain object.
+ * Each value is parsed as JSON when possible (numbers, booleans, objects, arrays);
+ * anything that isn't valid JSON is kept as a raw string.
+ * @param {string} containerId - id of the `.advanced-params` container.
+ * @returns {Object} the collected key/value parameters (empty if none).
+ */
+function collectAdvancedParams(containerId) {
+    const container = document.getElementById(containerId);
+    const params = {};
+    if (!container) return params;
+
+    container.querySelectorAll('.param-row').forEach(row => {
+        const key = row.querySelector('.param-key').value.trim();
+        const rawValue = row.querySelector('.param-value').value.trim();
+        if (!key || rawValue === '') return;
+
+        let value;
+        try {
+            // Strict JSON: 0.95 -> number, true/false -> boolean,
+            // {"...": ...} -> object, "text" -> string.
+            value = JSON.parse(rawValue);
+        } catch (err) {
+            // Not valid JSON. Accept Python-style booleans/null case-insensitively
+            // (True/False/None), otherwise keep the raw text as a string (e.g. high).
+            const lower = rawValue.toLowerCase();
+            if (lower === 'true') value = true;
+            else if (lower === 'false') value = false;
+            else if (lower === 'none' || lower === 'null') value = null;
+            else value = rawValue;
+        }
+        params[key] = value;
+    });
+
+    return params;
+}
