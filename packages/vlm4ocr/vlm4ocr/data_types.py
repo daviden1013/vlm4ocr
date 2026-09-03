@@ -3,6 +3,7 @@ from typing import List, Dict, Literal, Optional, Union, TYPE_CHECKING
 from PIL import Image
 from dataclasses import dataclass, field
 from vlm4ocr.utils import get_default_page_delimiter
+from vlm4ocr.exceptions import VLM4OCRError
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ class BBoxFormat:
     system_prompt_file: str = "ocr_bbox_system_prompt_default.txt"
 
 
-_OCR_PAGE_KEYS = ("text", "image_processing_status", "bboxes", "image_width", "image_height", "metadata")
+_OCR_PAGE_KEYS = ("text", "image_processing_status", "bboxes", "image_width", "image_height", "metadata", "error")
 
 
 @dataclass
@@ -48,6 +49,9 @@ class OCRPage:
     image_height: Optional[int] = None
     # Free-form per-page metadata (e.g. a page type from a routing pipeline).
     metadata: dict = field(default_factory=dict)
+    # Set when this page failed to load or OCR. The page's `text` then holds the error
+    # message rather than document content.
+    error: Optional[VLM4OCRError] = None
     # Internal fields set by OCRResult.add_page — not part of public API
     _source_path: str = field(default="", repr=False)
     _page_idx: int = field(default=0, repr=False)
@@ -188,6 +192,11 @@ class OCRResult:
     pages: List[OCRPage] = field(default_factory=list)
     filename: str = field(init=False)
     status: str = field(init=False, default="processing")
+    # Set when the document failed. Document-level failures (could not open, unsupported
+    # type) leave `pages` holding only an error placeholder; page-level failures leave the
+    # successfully OCR'd pages in place, with the first failure recorded here and each
+    # failed page carrying its own OCRPage.error.
+    error: Optional[VLM4OCRError] = field(init=False, default=None)
     messages_log: List[List[Dict[str,str]]] = field(default_factory=list)
 
     def __post_init__(self):
@@ -200,7 +209,8 @@ class OCRResult:
                  bboxes: Optional[List["BBoxItem"]] = None,
                  image_width: Optional[int] = None,
                  image_height: Optional[int] = None,
-                 metadata: Optional[dict] = None):
+                 metadata: Optional[dict] = None,
+                 error: Optional[VLM4OCRError] = None):
         """
         Adds a new page to the OCRResult. Internal method called by OCR engines.
 
@@ -216,6 +226,8 @@ class OCRResult:
             Width of the post-resize image (pixels), populated in bbox mode.
         image_height : int | None, Optional
             Height of the post-resize image (pixels), populated in bbox mode.
+        error : VLM4OCRError | None, Optional
+            Set when this page failed; `text` then holds the error message.
         """
         if not isinstance(text, str):
             raise ValueError("text must be a string")
@@ -229,10 +241,51 @@ class OCRResult:
             image_width=image_width,
             image_height=image_height,
             metadata=metadata if metadata is not None else {},
+            error=error,
             _source_path=self.input_dir,
             _page_idx=len(self.pages),
         )
         self.pages.append(page)
+
+    def set_error(self, error: VLM4OCRError, text: Optional[str] = None):
+        """
+        Records a document-level failure: sets status to "error", stores the structured
+        error, and appends a placeholder page whose text is the error message.
+
+        The placeholder page exists for backward compatibility with callers that read the
+        failure out of pages[0].text. Prefer reading `OCRResult.error`, which carries the
+        exception itself (and `.to_dict()` for logging).
+
+        Parameters:
+        ----------
+        error : VLM4OCRError
+            The failure to record.
+        text : str | None, Optional
+            Text for the placeholder page. Defaults to str(error).
+        """
+        self.status = "error"
+        self.error = error
+        self.add_page(text=text if text is not None else str(error),
+                      image_processing_status={}, error=error)
+
+    def add_page_error(self, error: VLM4OCRError, text: Optional[str] = None):
+        """
+        Records a single failed page while keeping the document's other pages. Sets status
+        to "error" but leaves already-OCR'd pages in `pages`, so successful VLM work is not
+        discarded because one page of a document could not be processed.
+
+        Parameters:
+        ----------
+        error : VLM4OCRError
+            The page failure to record.
+        text : str | None, Optional
+            Text for the failed page. Defaults to str(error).
+        """
+        self.status = "error"
+        if self.error is None:
+            self.error = error
+        self.add_page(text=text if text is not None else str(error),
+                      image_processing_status={}, error=error)
 
     def get_page(self, idx: int) -> OCRPage:
         if not isinstance(idx, int):
