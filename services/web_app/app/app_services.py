@@ -20,6 +20,7 @@ try:
     from vlm4ocr.ocr_engines import OCREngine
     from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine, BasicVLMConfig, ReasoningVLMConfig
     from vlm4ocr.pdf_backends import DEFAULT_PDF_DPI
+    from vlm4ocr.exceptions import VLM4OCRError
 except ImportError as e:
     print(f"Error importing from vlm4ocr in app_services.py: {e}")
     raise
@@ -182,12 +183,20 @@ def process_ocr_request(request):
         ocr_engine = _initialize_ocr_engine(request.form)
 
         def generate_ocr_stream(ocr_eng, file_to_process_path):
+            emitted_error = False
             try:
                 for item_dict in ocr_eng.stream_ocr(file_path=file_to_process_path):
+                    if item_dict.get("type") == "error":
+                        emitted_error = True
                     yield json.dumps(item_dict) + '\n'
             except Exception as e:
-                error_obj = {"type": "error", "data": f"Streaming Failed: {str(e)}"}
-                yield json.dumps(error_obj) + '\n'
+                # stream_ocr emits its own error event for a document it cannot load, then
+                # raises; only report here if nothing was emitted, to avoid a duplicate.
+                if not emitted_error:
+                    error_obj = {"type": "error", "data": f"Streaming Failed: {str(e)}"}
+                    if isinstance(e, VLM4OCRError):
+                        error_obj["error"] = e.to_dict()
+                    yield json.dumps(error_obj) + '\n'
                 traceback.print_exc()
             finally:
                 cleanup_file(file_to_process_path, "post-stream cleanup")
@@ -320,8 +329,16 @@ def process_batch_ocr_stream(batch_id, base_url):
                                         f.write(output_content)
                                     q.put(json.dumps({'type': 'result', 'filename': output_filename}))
                             else:
-                                error_data = result.pages and result.pages[0].get('text') or 'Unknown error.'
-                                q.put(json.dumps({'type': 'error', 'filename': Path(result.filename).name, 'data': error_data}))
+                                error_obj = {'type': 'error', 'filename': Path(result.filename).name}
+                                if result.error is not None:
+                                    # Structured error from vlm4ocr. 'data' stays a string
+                                    # for the UI; 'error' carries the machine-readable detail
+                                    # (which step failed, which backend, the raw library message).
+                                    error_obj['data'] = str(result.error)
+                                    error_obj['error'] = result.error.to_dict()
+                                else:
+                                    error_obj['data'] = (result.pages and result.pages[0].get('text')) or 'Unknown error.'
+                                q.put(json.dumps(error_obj))
                     finally:
                         await response_generator.aclose()
 
