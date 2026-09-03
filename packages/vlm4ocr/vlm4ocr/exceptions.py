@@ -3,11 +3,11 @@ Exception taxonomy for vlm4ocr.
 
 The design goal is to report WHERE a failure happened and WHAT the underlying library
 said, and nothing more. vlm4ocr deliberately does not classify errors as retryable,
-transient, or fixable-by-X: how to react to a corrupted PDF, a rate-limited endpoint, or
-an unparseable response is business logic that belongs to the calling pipeline.
+transient, or fixable-by-X: how to react to a corrupted PDF or a rate-limited endpoint is
+business logic that belongs to the calling pipeline.
 
 - WHERE is the exception class. Each class corresponds to one step of the OCR flow:
-  loading the document, calling the VLM, parsing the response.
+  obtaining a PDF backend, loading the document, calling the VLM.
 - WHAT is `original_error` / `original_error_type`, copied verbatim from the underlying
   library, plus the chained `__cause__`.
 
@@ -133,31 +133,4 @@ class VLMError(VLM4OCRError):
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         d["page_index"] = self.page_index
-        return d
-
-
-class OutputParseError(VLM4OCRError):
-    """
-    Raised when the VLM responded but its output could not be parsed into the requested
-    output_mode, e.g. unparseable bounding boxes in 'bbox' mode. The VLM call succeeded and
-    was paid for; the raw response is kept in `raw_response` so it is not lost.
-
-    Attributes:
-    ----------
-    page_index : int | None
-        The page whose response could not be parsed.
-    raw_response : str | None
-        The model's unparsed output.
-    """
-    def __init__(self, message: str, *, file_path: Optional[str] = None,
-                 page_index: Optional[int] = None, raw_response: Optional[str] = None,
-                 cause: Optional[BaseException] = None):
-        super().__init__(message, file_path=file_path, cause=cause)
-        self.page_index = page_index
-        self.raw_response = raw_response
-
-    def to_dict(self) -> Dict[str, Any]:
-        d = super().to_dict()
-        d["page_index"] = self.page_index
-        d["raw_response"] = self.raw_response
         return d
