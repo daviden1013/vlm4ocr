@@ -10,6 +10,7 @@ from pdf2image import convert_from_path, pdfinfo_from_path
 from PIL import Image
 import asyncio
 import warnings
+from vlm4ocr.exceptions import DocumentLoadError
 
 
 class DataLoader(abc.ABC):
@@ -70,7 +71,12 @@ class DataLoader(abc.ABC):
 class PDFDataLoader(DataLoader):
     def __init__(self, file_path: str, executor: Optional[Executor] = None):
         super().__init__(file_path, executor=executor)
-        self.info = pdfinfo_from_path(self.file_path, userpw=None, poppler_path=None)
+        try:
+            self.info = pdfinfo_from_path(self.file_path, userpw=None, poppler_path=None)
+        except Exception as e:
+            raise DocumentLoadError(
+                f"Failed to open PDF file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pdf2image", cause=e) from e
 
     def get_all_pages(self) -> List[Image.Image]:
         """ 
@@ -78,10 +84,10 @@ class PDFDataLoader(DataLoader):
         """
         try:
             return convert_from_path(self.file_path)
-
         except Exception as e:
-            print(f"Error converting PDF to images: {e}")
-            raise ValueError(f"Failed to process PDF file '{os.path.basename(self.file_path)}'. Ensure poppler is installed and the file is valid.") from e
+            raise DocumentLoadError(
+                f"Failed to render PDF file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pdf2image", cause=e) from e
 
     def get_page(self, page_index:int) -> Image.Image:
         """
@@ -95,8 +101,9 @@ class PDFDataLoader(DataLoader):
         try:
             return convert_from_path(self.file_path, first_page=page_index + 1, last_page=page_index + 1)[0]
         except Exception as e:
-            print(f"Error converting PDF to images: {e}")
-            raise ValueError(f"Failed to process PDF file '{os.path.basename(self.file_path)}'. Ensure poppler is installed and the file is valid.") from e
+            raise DocumentLoadError(
+                f"Failed to render page {page_index} of PDF file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pdf2image", page_index=page_index, cause=e) from e
 
     def get_page_count(self) -> int:
         """ Returns the number of pages in the PDF file. """
@@ -119,8 +126,9 @@ class TIFFDataLoader(DataLoader):
                 images.append(img.copy())
             return images
         except Exception as e:
-            print(f"Error extracting images from TIFF: {e}")
-            raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+            raise DocumentLoadError(
+                f"Failed to read TIFF file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pillow", cause=e) from e
         
 
     def get_page(self, page_index:int) -> Image.Image:
@@ -136,11 +144,14 @@ class TIFFDataLoader(DataLoader):
             img = Image.open(self.file_path)
             img.seek(page_index)
             return img.copy()
-        except IndexError:
-            raise ValueError(f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.") from None
+        except (IndexError, EOFError) as e:
+            raise DocumentLoadError(
+                f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pillow", page_index=page_index, cause=e) from e
         except Exception as e:
-            print(f"Error extracting page {page_index} from TIFF: {e}")
-            raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+            raise DocumentLoadError(
+                f"Failed to read page {page_index} of TIFF file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pillow", page_index=page_index, cause=e) from e
 
     def get_page_count(self) -> int:
         """ Returns the number of images (pages) in the TIFF file. """
@@ -148,8 +159,9 @@ class TIFFDataLoader(DataLoader):
             img = Image.open(self.file_path)
             return img.n_frames 
         except Exception as e:
-            print(f"Error getting page count from TIFF: {e}")
-            raise ValueError(f"Failed to process TIFF file '{os.path.basename(self.file_path)}'. Ensure the file is valid.") from e
+            raise DocumentLoadError(
+                f"Failed to read page count of TIFF file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pillow", cause=e) from e
 
 
 class ImageDataLoader(DataLoader):
@@ -162,9 +174,11 @@ class ImageDataLoader(DataLoader):
             image.load()
             return [image]
         except FileNotFoundError:
-            raise FileNotFoundError(f"Image file not found: {self.file_path}")
+            raise
         except Exception as e:
-            raise ValueError(f"Failed to load image file '{os.path.basename(self.file_path)}': {e}") from e
+            raise DocumentLoadError(
+                f"Failed to load image file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pillow", cause=e) from e
         
     def get_page(self, page_index:int) -> Image.Image:
         """ 
@@ -180,9 +194,11 @@ class ImageDataLoader(DataLoader):
             image.load()
             return image
         except FileNotFoundError:
-            raise FileNotFoundError(f"Image file not found: {self.file_path}")
+            raise
         except Exception as e:
-            raise ValueError(f"Failed to load image file '{os.path.basename(self.file_path)}': {e}") from e
+            raise DocumentLoadError(
+                f"Failed to load image file '{os.path.basename(self.file_path)}'.",
+                file_path=self.file_path, backend="pillow", cause=e) from e
         
     def get_page_count(self) -> int:
         """ Returns 1 as there is only one image in a single image file. """
