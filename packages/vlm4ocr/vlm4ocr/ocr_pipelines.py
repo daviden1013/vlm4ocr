@@ -5,6 +5,7 @@ import asyncio
 from PIL import Image
 
 from vlm4ocr.data_types import OCRPage, OCRResult
+from vlm4ocr.exceptions import VLM4OCRError, DocumentLoadError, VLMError
 from vlm4ocr.vlm_engines import MessagesLogger
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
 from concurrent.futures import ThreadPoolExecutor
@@ -146,37 +147,51 @@ class IndependentPagePipeline:
             result = OCRResult(input_dir=file_path, output_mode=self.output_mode)
 
             if file_ext not in SUPPORTED_IMAGE_EXTS:
-                result.status = "error"
-                result.add_page(text=f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}",
-                                image_processing_status={})
+                result.set_error(
+                    DocumentLoadError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}",
+                                      file_path=file_path),
+                    text=f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
                 return result
 
             try:
                 data_loader = get_data_loader(file_path, executor=self._page_load_executor)
                 page_count = data_loader.get_page_count()
             except Exception as e:
-                result.status = "error"
-                result.add_page(text=f"Error processing file {filename}: {str(e)}", image_processing_status={})
+                # Document-level failure: no page tasks are created for this file.
+                error = e if isinstance(e, VLM4OCRError) else DocumentLoadError(
+                    f"Failed to load file '{filename}'.", file_path=file_path, cause=e)
+                result.set_error(error, text=f"Error processing file {filename}: {str(e)}")
                 return result
 
             page_tasks = [asyncio.ensure_future(
                             self._process_page_with_semaphore(page_semaphore, data_loader, i))
                           for i in range(page_count)]
             try:
-                processed_pages = await asyncio.gather(*page_tasks)
+                # return_exceptions keeps one bad page from discarding the pages that
+                # already completed (and were already paid for).
+                processed_pages = await asyncio.gather(*page_tasks, return_exceptions=True)
+                # A cancelled child is captured rather than raised by gather, so re-raise
+                # to preserve cancellation semantics for the caller.
+                for processed in processed_pages:
+                    if isinstance(processed, asyncio.CancelledError):
+                        raise processed
             except asyncio.CancelledError:
                 for pt in page_tasks:
                     if not pt.done():
                         pt.cancel()
                 await asyncio.gather(*page_tasks, return_exceptions=True)
                 raise
-            except Exception as e:
-                result.status = "error"
-                result.add_page(text=f"Error during OCR for {filename}: {str(e)}", image_processing_status={})
-                return result
 
             # gather preserves submission order, so pages land in page order.
-            for page, image_processing_status, messages_log in processed_pages:
+            for page_index, processed in enumerate(processed_pages):
+                if isinstance(processed, BaseException):
+                    page_error = processed if isinstance(processed, VLM4OCRError) else VLMError(
+                        f"Page {page_index} of '{filename}' failed.",
+                        file_path=file_path, page_index=page_index, cause=processed)
+                    result.add_page_error(
+                        page_error, text=f"Error during OCR for a page in {filename}: {str(processed)}")
+                    continue
+                page, image_processing_status, messages_log = processed
                 result.add_page(text=page.text, image_processing_status=image_processing_status,
                                 bboxes=page.bboxes, image_width=page.image_width,
                                 image_height=page.image_height, metadata=page.metadata)

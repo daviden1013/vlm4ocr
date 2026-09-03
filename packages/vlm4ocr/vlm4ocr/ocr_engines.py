@@ -11,6 +11,7 @@ from vlm4ocr.utils import (DataLoader, clean_markdown, extract_json, get_default
                            get_data_loader, default_page_load_workers, SUPPORTED_IMAGE_EXTS)
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
 from vlm4ocr.data_types import OCRResult, OCRPage, FewShotExample, BBoxFormat
+from vlm4ocr.exceptions import VLM4OCRError, DocumentLoadError, VLMError
 from vlm4ocr.vlm_engines import VLMEngine, MessagesLogger
 
 
@@ -300,9 +301,10 @@ class OCREngine:
             if file_ext not in SUPPORTED_IMAGE_EXTS:
                 if verbose:
                     print(f"{Fore.RED}Unsupported file type:{Style.RESET_ALL} {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
-                ocr_result.status = "error"
-                ocr_result.add_page(text=f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}",
-                                    image_processing_status={})
+                ocr_result.set_error(
+                    DocumentLoadError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}",
+                                      file_path=file_path),
+                    text=f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
                 ocr_results.append(ocr_result)
                 continue
 
@@ -315,8 +317,9 @@ class OCREngine:
             except Exception as e:
                 if verbose:
                     print(f"{Fore.RED}Error processing file {filename}:{Style.RESET_ALL} {str(e)}")
-                ocr_result.status = "error"
-                ocr_result.add_page(text=f"Error processing file {filename}: {str(e)}", image_processing_status={})
+                error = e if isinstance(e, VLM4OCRError) else DocumentLoadError(
+                    f"Failed to load file '{filename}'.", file_path=file_path, cause=e)
+                ocr_result.set_error(error, text=f"Error processing file {filename}: {str(e)}")
                 ocr_results.append(ocr_result)
                 continue
 
@@ -324,9 +327,10 @@ class OCREngine:
             if not images:
                 if verbose:
                     print(f"{Fore.RED}No images extracted from file:{Style.RESET_ALL} {filename}. It might be empty or corrupted.")
-                ocr_result.status = "error"
-                ocr_result.add_page(text=f"No images extracted from file: {filename}. It might be empty or corrupted.",
-                                    image_processing_status={})
+                ocr_result.set_error(
+                    DocumentLoadError(f"No images extracted from file '{filename}'. It might be empty or corrupted.",
+                                      file_path=file_path),
+                    text=f"No images extracted from file: {filename}. It might be empty or corrupted.")
                 ocr_results.append(ocr_result)
                 continue
             
@@ -409,9 +413,11 @@ class OCREngine:
                     ocr_result.add_messages_to_log(messages_logger.get_messages_log())
 
                 except Exception as page_e:
-                    ocr_result.status = "error"
-                    ocr_result.add_page(text=f"Error during OCR for a page in {filename}: {str(page_e)}",
-                                        image_processing_status={})
+                    page_error = page_e if isinstance(page_e, VLM4OCRError) else VLMError(
+                        f"OCR failed for page {i} of '{filename}'.",
+                        file_path=file_path, page_index=i, cause=page_e)
+                    ocr_result.add_page_error(
+                        page_error, text=f"Error during OCR for a page in {filename}: {str(page_e)}")
                     if verbose:
                         print(f"{Fore.RED}Error during OCR for a page in {filename}:{Style.RESET_ALL} {page_e}")
 
@@ -578,9 +584,10 @@ class OCREngine:
             messages_logger = MessagesLogger()
             # check file extension
             if file_ext not in SUPPORTED_IMAGE_EXTS:
-                result.status = "error"
-                result.add_page(text=f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}", 
-                                image_processing_status={})
+                result.set_error(
+                    DocumentLoadError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}",
+                                      file_path=file_path),
+                    text=f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
                 return result
             
             try:
@@ -588,8 +595,11 @@ class OCREngine:
                 data_loader = get_data_loader(file_path, executor=self._page_load_executor)
 
             except Exception as e:
-                result.status = "error"
-                result.add_page(text=f"Error processing file {filename}: {str(e)}", image_processing_status={})
+                # Document-level failure: no page is usable, so no page tasks are created
+                # and no VLM calls are made for this file.
+                error = e if isinstance(e, VLM4OCRError) else DocumentLoadError(
+                    f"Failed to load file '{filename}'.", file_path=file_path, cause=e)
+                result.set_error(error, text=f"Error processing file {filename}: {str(e)}")
                 return result
 
             try:
@@ -609,8 +619,24 @@ class OCREngine:
                 if page_processing_tasks:
                     page_tasks = [asyncio.ensure_future(t) for t in page_processing_tasks]
                     try:
-                        processed_page_results = await asyncio.gather(*page_tasks)
-                        for text, image_processing_status, bboxes, img_w, img_h in processed_page_results:
+                        # return_exceptions keeps one bad page from discarding the pages
+                        # that already completed (and were already paid for).
+                        processed_page_results = await asyncio.gather(*page_tasks, return_exceptions=True)
+                        # A cancelled child is captured rather than raised by gather, so
+                        # re-raise to preserve cancellation semantics for the caller.
+                        for page_result in processed_page_results:
+                            if isinstance(page_result, asyncio.CancelledError):
+                                raise page_result
+                        for page_index, page_result in enumerate(processed_page_results):
+                            if isinstance(page_result, BaseException):
+                                page_error = page_result if isinstance(page_result, VLM4OCRError) else VLMError(
+                                    f"OCR failed for page {page_index} of '{filename}'.",
+                                    file_path=file_path, page_index=page_index, cause=page_result)
+                                result.add_page_error(
+                                    page_error,
+                                    text=f"Error during OCR for a page in {filename}: {str(page_result)}")
+                                continue
+                            text, image_processing_status, bboxes, img_w, img_h = page_result
                             result.add_page(text=text, image_processing_status=image_processing_status,
                                             bboxes=bboxes, image_width=img_w, image_height=img_h)
                     except asyncio.CancelledError:
@@ -623,8 +649,9 @@ class OCREngine:
             except asyncio.CancelledError:
                 raise
             except Exception as e:
-                result.status = "error"
-                result.add_page(text=f"Error during OCR for {filename}: {str(e)}", image_processing_status={})
+                error = e if isinstance(e, VLM4OCRError) else VLMError(
+                    f"OCR failed for '{filename}'.", file_path=file_path, cause=e)
+                result.set_error(error, text=f"Error during OCR for {filename}: {str(e)}")
                 result.add_messages_to_log(messages_logger.get_messages_log())
                 return result
 
@@ -686,10 +713,15 @@ class OCREngine:
                                                     few_shot_examples=few_shot_examples)
         # Only the VLM call itself is capped by the concurrency semaphore.
         async with vlm_call_semaphore:
-            response = await self.vlm_engine.chat_async(
-                messages,
-                messages_logger=messages_logger
-            )
+            try:
+                response = await self.vlm_engine.chat_async(
+                    messages,
+                    messages_logger=messages_logger
+                )
+            except Exception as e:
+                raise VLMError(f"VLM call failed for page {page_index} of "
+                               f"'{os.path.basename(data_loader.file_path)}'.",
+                               file_path=data_loader.file_path, page_index=page_index, cause=e) from e
         ocr_text = response["response"]
         bboxes = None
         img_w = img_h = None

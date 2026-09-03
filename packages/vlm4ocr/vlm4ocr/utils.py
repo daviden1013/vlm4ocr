@@ -233,12 +233,13 @@ def get_data_loader(file_path: str, executor: Optional[Executor] = None) -> Data
 
     Raises:
     -------
-    ValueError
+    DocumentLoadError
         If the file extension is not in SUPPORTED_IMAGE_EXTS.
     """
     file_ext = os.path.splitext(file_path)[1].lower()
     if file_ext not in SUPPORTED_IMAGE_EXTS:
-        raise ValueError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}")
+        raise DocumentLoadError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}",
+                                file_path=file_path)
     if file_ext == '.pdf':
         return PDFDataLoader(file_path, executor=executor)
     if file_ext in ('.tif', '.tiff'):
