@@ -4,8 +4,10 @@ FROM python:3.11-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Install Poppler for PDF processing
-RUN apt-get update && apt-get install -y poppler-utils && rm -rf /var/lib/apt/lists/*
+# No system PDF dependency: the web app renders PDFs with pypdfium2, a pure wheel pinned in
+# requirements.txt and selected by `pdf.backend` in config.yaml. If you switch that setting
+# to "pdf2image", re-add the poppler binary here:
+#   RUN apt-get update && apt-get install -y poppler-utils && rm -rf /var/lib/apt/lists/*
 
 # Copy and install the local vlm4ocr package (picks up latest source including bbox support)
 COPY ./packages/vlm4ocr /app/packages/vlm4ocr
