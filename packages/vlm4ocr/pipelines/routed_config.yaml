@@ -1,6 +1,12 @@
 ---
   run_name: "routed_run"
 
+  # PDF rendering backend. Required for PDF input; vlm4ocr installs no PDF library.
+  # One of "pypdfium2" (permissive), "pdf2image" (GPL poppler binary), "pymupdf" (AGPL).
+  pdf_backend: "pypdfium2"
+  # Resolution PDF pages are rendered at, applied identically across backends.
+  pdf_dpi: 200
+
   # Shared VLM engine (drives classifier + all extractors).
   # For a cheaper classify pass, build a second engine in main() instead.
   vlm_engine:

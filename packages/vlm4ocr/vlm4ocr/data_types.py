@@ -133,17 +133,21 @@ class OCRPage:
                 "OCRResult produced with output_mode='bbox'."
             )
 
-        from vlm4ocr.utils import PDFDataLoader, TIFFDataLoader, ImageDataLoader
+        from vlm4ocr.utils import get_data_loader
+        from vlm4ocr.pdf_backends import DEFAULT_PDF_DPI
         from vlm4ocr.bbox import plot_bbox as _plot_bbox
 
-        file_ext = os.path.splitext(self._source_path)[1].lower()
-        if file_ext == ".pdf":
-            loader = PDFDataLoader(self._source_path)
-        elif file_ext in (".tif", ".tiff"):
-            loader = TIFFDataLoader(self._source_path)
-        else:
-            loader = ImageDataLoader(self._source_path)
-        image = loader.get_page(self._page_idx)
+        # Reload through the same backend and dpi that produced the page during OCR.
+        # Bboxes are absolute pixel coordinates, so re-rendering a PDF with a different
+        # backend or resolution would place every box wrong.
+        load_info = self.image_processing_status.get("page_load") or {}
+        loader = get_data_loader(self._source_path,
+                                 pdf_backend=load_info.get("backend"),
+                                 pdf_dpi=load_info.get("dpi", DEFAULT_PDF_DPI))
+        try:
+            image = loader.get_page(self._page_idx)
+        finally:
+            loader.close()
 
         rot_status = self.image_processing_status.get("rotate_correction")
         if rot_status and rot_status.get("status") == "success":

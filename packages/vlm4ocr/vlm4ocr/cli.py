@@ -10,6 +10,7 @@ from .ocr_engines import OCREngine
 from .vlm_engines import (OpenAICompatibleVLMEngine, OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine,
                           VLLMVLMEngine, SGLangVLMEngine, OpenRouterVLMEngine, BasicVLMConfig)
 from .data_types import OCRResult
+from .pdf_backends import DEFAULT_PDF_DPI
 import tqdm.asyncio
 
 # --- Global logger setup (console) ---
@@ -125,6 +126,21 @@ def main():
         default=4000,
         help="Maximum dimension (width or height) in pixels for input images. Images larger than this will be resized to fit within this limit while maintaining aspect ratio."
     )
+
+    pdf_group = parser.add_argument_group("PDF Options")
+    pdf_group.add_argument(
+        "--pdf_backend",
+        choices=["pypdfium2", "pdf2image", "pymupdf"],
+        default=None,
+        help="PDF rendering backend, required to process PDF input. vlm4ocr installs no PDF library by "
+             "default, so install the one you choose: 'pypdfium2' (PDFium, permissive Apache/BSD, no system "
+             "binary), 'pdf2image' (poppler, requires the GPL poppler binary), or 'pymupdf' (MuPDF, AGPL-3.0). "
+             "Not needed for image or TIFF input.")
+    pdf_group.add_argument(
+        "--pdf_dpi",
+        type=int,
+        default=DEFAULT_PDF_DPI,
+        help=f"Resolution at which PDF pages are rendered, applied identically across backends. Default {DEFAULT_PDF_DPI}.")
 
     vlm_engine_group = parser.add_argument_group("VLM Engine Options")
     vlm_engine_group.add_argument("--vlm_engine", choices=["openai", "azure_openai", "ollama", "openai_compatible", "vllm", "sglang", "openrouter"], required=True, help="VLM engine.")
@@ -315,6 +331,8 @@ def main():
             output_mode=args.output_mode,
             system_prompt=resolved_system_prompt,
             user_prompt=resolved_user_prompt,
+            pdf_backend=args.pdf_backend,
+            pdf_dpi=args.pdf_dpi,
         )
         logger.info("OCR engine initialized successfully.")
     except Exception as e:

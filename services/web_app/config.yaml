@@ -14,6 +14,20 @@ vlm_api_options:
   - value: 'ollama'
     name: 'Ollama'
 ###############################################################################
+# PDF rendering backend. Required to process PDF uploads.
+#
+# vlm4ocr depends on no PDF library, so the backend is chosen here and installed
+# explicitly (see services/web_app/requirements.txt). Options:
+#   'pypdfium2' - PDFium. Permissive (Apache-2.0/BSD-3), no system binary. Default.
+#   'pdf2image' - poppler. Requires the GPL-licensed poppler-utils system package.
+#   'pymupdf'   - MuPDF. AGPL-3.0; review the license before deploying.
+# "pdf_dpi" is the resolution PDF pages are rendered at, applied identically
+# across backends.
+###############################################################################
+pdf:
+  backend: 'pypdfium2'
+  dpi: 200
+###############################################################################
 # Directory for temporary file storage. Required!
 ###############################################################################
 temp_directory: "services/web_app/temp"

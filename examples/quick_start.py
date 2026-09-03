@@ -20,7 +20,9 @@ vlm = OpenAIVLMEngine(model="o3-mini", config=OpenAIReasoningVLMConfig(reasoning
 vlm = AzureOpenAIVLMEngine(model="gpt-4-turbo", api_version="<api_version>")
 
 """ Full text OCR """
-ocr = OCREngine(vlm_engine=vlm, output_mode="markdown")
+# pdf_backend is required for PDF input (image_path_2 below is a PDF). vlm4ocr installs no
+# PDF library: pick one and install it, e.g. pip install vlm4ocr[pypdfium2].
+ocr = OCREngine(vlm_engine=vlm, output_mode="markdown", pdf_backend="pypdfium2")
 ocr_results = ocr.sequential_ocr([image_path_1, image_path_2], max_dimension_pixels=512, verbose=True)
 
 """ JSON output """
@@ -34,7 +36,7 @@ For example:
 }
 """
 
-ocr = OCREngine(vlm_engine=vlm, output_mode="JSON", user_prompt=user_prompt)
+ocr = OCREngine(vlm_engine=vlm, output_mode="JSON", user_prompt=user_prompt, pdf_backend="pypdfium2")
 ocr_results = ocr.sequential_ocr([image_path_1, image_path_2], max_dimension_pixels=512, verbose=True)
 
 import json

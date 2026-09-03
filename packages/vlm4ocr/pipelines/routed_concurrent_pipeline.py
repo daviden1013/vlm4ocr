@@ -107,15 +107,21 @@ def main():
 
     vlm_engine = build_vlm_engine(config['vlm_engine'])
 
+    # Required for PDF input; vlm4ocr ships no PDF library. See routed_config.yaml.
+    pdf_opts = {"pdf_backend": config.get('pdf_backend'),
+                "pdf_dpi": config.get('pdf_dpi', 200)}
+
     # Each OCREngine is an atom: one prompt, one task. The pipeline composes them.
     pipeline = RoutedOCRPipeline(
         classifier=OCREngine(vlm_engine, output_mode="JSON",
-                             user_prompt=load_prompt(config['classifier']['user_prompt_path'])),
+                             user_prompt=load_prompt(config['classifier']['user_prompt_path']),
+                             **pdf_opts),
         routes={pt: OCREngine(vlm_engine, output_mode="JSON",
-                             user_prompt=load_prompt(cfg['user_prompt_path']))
+                             user_prompt=load_prompt(cfg['user_prompt_path']), **pdf_opts)
                 for pt, cfg in config['routes'].items()},
         default=OCREngine(vlm_engine, output_mode="JSON",
-                         user_prompt=load_prompt(config['default_route']['user_prompt_path'])),
+                         user_prompt=load_prompt(config['default_route']['user_prompt_path']),
+                         **pdf_opts),
     )
 
     os.makedirs(os.path.join(config['output_directory'], config['run_name']), exist_ok=True)

@@ -6,11 +6,11 @@ from concurrent.futures import Executor
 from typing import Dict, List, Optional
 import json
 import json_repair
-from pdf2image import convert_from_path, pdfinfo_from_path
 from PIL import Image
 import asyncio
 import warnings
 from vlm4ocr.exceptions import DocumentLoadError
+from vlm4ocr.pdf_backends import DEFAULT_PDF_DPI, get_pdf_backend
 
 
 class DataLoader(abc.ABC):
@@ -67,48 +67,71 @@ class DataLoader(abc.ABC):
         """ Returns the number of pages in the PDF file. """
         pass
 
+    def get_load_info(self) -> dict:
+        """
+        Describes how this loader produces page images, e.g. {"backend": "pypdfium2",
+        "dpi": 200}. Recorded per page in OCRPage.image_processing_status["page_load"] so a
+        result can be audited, and so plot_bboxes can reload the source page at exactly the
+        resolution the bboxes were computed against.
+        """
+        return {"backend": "unknown"}
+
+    def close(self) -> None:
+        """ Releases any underlying file handle. Safe to call more than once. """
+
 
 class PDFDataLoader(DataLoader):
-    def __init__(self, file_path: str, executor: Optional[Executor] = None):
+    """
+    Loads pages from a PDF using an explicitly named rendering backend.
+
+    vlm4ocr has no PDF dependency of its own, so `backend` is required: see
+    vlm4ocr.pdf_backends for the three supported options and their licenses.
+    """
+    def __init__(self, file_path: str, executor: Optional[Executor] = None,
+                 backend: Optional[str] = None, dpi: int = DEFAULT_PDF_DPI):
+        """
+        Parameters:
+        ----------
+        file_path : str
+            Path to the PDF.
+        executor : concurrent.futures.Executor, Optional
+            Thread pool used by get_page_async. See DataLoader.
+        backend : str, Optional
+            'pypdfium2', 'pdf2image', or 'pymupdf'. Required; there is no default.
+        dpi : int, Optional
+            Rendering resolution, applied identically across backends. Defaults to 200.
+        """
         super().__init__(file_path, executor=executor)
-        try:
-            self.info = pdfinfo_from_path(self.file_path, userpw=None, poppler_path=None)
-        except Exception as e:
-            raise DocumentLoadError(
-                f"Failed to open PDF file '{os.path.basename(self.file_path)}'.",
-                file_path=self.file_path, backend="pdf2image", cause=e) from e
+        # Opening happens here, so a document that cannot be read fails before any page
+        # work or VLM call is attempted.
+        self.backend = get_pdf_backend(self.file_path, backend, dpi=dpi)
+        self.dpi = dpi
 
     def get_all_pages(self) -> List[Image.Image]:
-        """ 
-        Extracts pages from a PDF file. 
-        """
-        try:
-            return convert_from_path(self.file_path)
-        except Exception as e:
-            raise DocumentLoadError(
-                f"Failed to render PDF file '{os.path.basename(self.file_path)}'.",
-                file_path=self.file_path, backend="pdf2image", cause=e) from e
+        """ Renders every page of the PDF. """
+        return self.backend.render_all_pages()
 
     def get_page(self, page_index:int) -> Image.Image:
         """
-        Extracts a page from a PDF file.
+        Renders a single page of the PDF.
 
         Parameters:
         ----------
         page_index : int
             Index of the page to retrieve.
         """
-        try:
-            return convert_from_path(self.file_path, first_page=page_index + 1, last_page=page_index + 1)[0]
-        except Exception as e:
-            raise DocumentLoadError(
-                f"Failed to render page {page_index} of PDF file '{os.path.basename(self.file_path)}'.",
-                file_path=self.file_path, backend="pdf2image", page_index=page_index, cause=e) from e
+        return self.backend.render_page(page_index)
 
     def get_page_count(self) -> int:
         """ Returns the number of pages in the PDF file. """
-        return self.info['Pages'] if 'Pages' in self.info else 0
-    
+        return self.backend.get_page_count()
+
+    def get_load_info(self) -> dict:
+        return {"backend": self.backend.name, "dpi": self.dpi}
+
+    def close(self) -> None:
+        self.backend.close()
+
 
 class TIFFDataLoader(DataLoader):
     def __init__(self, file_path: str, executor: Optional[Executor] = None):
@@ -152,6 +175,9 @@ class TIFFDataLoader(DataLoader):
             raise DocumentLoadError(
                 f"Failed to read page {page_index} of TIFF file '{os.path.basename(self.file_path)}'.",
                 file_path=self.file_path, backend="pillow", page_index=page_index, cause=e) from e
+
+    def get_load_info(self) -> dict:
+        return {"backend": "pillow"}
 
     def get_page_count(self) -> int:
         """ Returns the number of images (pages) in the TIFF file. """
@@ -200,6 +226,9 @@ class ImageDataLoader(DataLoader):
                 f"Failed to load image file '{os.path.basename(self.file_path)}'.",
                 file_path=self.file_path, backend="pillow", cause=e) from e
         
+    def get_load_info(self) -> dict:
+        return {"backend": "pillow"}
+
     def get_page_count(self) -> int:
         """ Returns 1 as there is only one image in a single image file. """
         return 1
@@ -219,7 +248,9 @@ def default_page_load_workers() -> int:
     return min(32, os.cpu_count() or 1)
 
 
-def get_data_loader(file_path: str, executor: Optional[Executor] = None) -> DataLoader:
+def get_data_loader(file_path: str, executor: Optional[Executor] = None,
+                    pdf_backend: Optional[str] = None,
+                    pdf_dpi: int = DEFAULT_PDF_DPI) -> DataLoader:
     """
     Returns the appropriate DataLoader for a file based on its extension. Extension
     matching is case-insensitive. Shared by OCREngine and the pipelines.
@@ -230,18 +261,25 @@ def get_data_loader(file_path: str, executor: Optional[Executor] = None) -> Data
         Path to the file to load.
     executor : concurrent.futures.Executor, Optional
         Thread pool the loader uses for async page loads. See DataLoader.
+    pdf_backend : str, Optional
+        PDF rendering backend: 'pypdfium2', 'pdf2image', or 'pymupdf'. Required for PDF
+        input; ignored for images and TIFFs.
+    pdf_dpi : int, Optional
+        PDF rendering resolution. Defaults to 200.
 
     Raises:
     -------
     DocumentLoadError
         If the file extension is not in SUPPORTED_IMAGE_EXTS.
+    PDFBackendNotAvailableError
+        If the file is a PDF and no usable pdf_backend was given.
     """
     file_ext = os.path.splitext(file_path)[1].lower()
     if file_ext not in SUPPORTED_IMAGE_EXTS:
         raise DocumentLoadError(f"Unsupported file type: {file_ext}. Supported types are: {SUPPORTED_IMAGE_EXTS}",
                                 file_path=file_path)
     if file_ext == '.pdf':
-        return PDFDataLoader(file_path, executor=executor)
+        return PDFDataLoader(file_path, executor=executor, backend=pdf_backend, dpi=pdf_dpi)
     if file_ext in ('.tif', '.tiff'):
         return TIFFDataLoader(file_path, executor=executor)
     return ImageDataLoader(file_path, executor=executor)

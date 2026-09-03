@@ -9,3 +9,5 @@ ollama==0.4.5
 colorama==0.4.6
 markdown==3.8
 json-repair==0.30.3
+# PDF backend for the web app; must match `pdf.backend` in config.yaml.
+pypdfium2==4.30.0

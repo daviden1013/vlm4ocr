@@ -82,7 +82,10 @@ def main():
     ocr_engine = OCREngine(
         vlm_engine,
         output_mode=config['ocr_engine']['output_mode'],
-        user_prompt=user_prompt
+        user_prompt=user_prompt,
+        # Required for PDF input; vlm4ocr ships no PDF library. See config.yaml.
+        pdf_backend=config['ocr_engine'].get('pdf_backend'),
+        pdf_dpi=config['ocr_engine'].get('pdf_dpi', 200)
     )
 
     # Ensure the output directory exists

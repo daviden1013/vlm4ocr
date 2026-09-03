@@ -68,13 +68,37 @@ Proprietary models such as gpt-4o are supported via our [OpenAI](/packages/vlm4o
 
 ## 🚦Prerequisites
 - Python 3.x
-- For PDF processing: [poppler](https://pypi.org/project/pdf2image/) library.
 - At least one VLM inference engine setup (Ollama, OpenAI/Azure API keys, or an OpenAI-compatible API endpoint).
 
 ```bash
 pip install ollama # For Ollama
 pip install openai # For OpenAI (compatible) and Azure OpenAI
 ```
+
+### PDF support
+vlm4ocr does not install a PDF library. If you process PDFs, pick a rendering backend,
+install it, and name it with `pdf_backend` (`--pdf_backend` on the CLI). If you only
+process images and TIFFs, install nothing extra. There is no default and no automatic
+fallback: the backend you name is the backend that is used.
+
+| Backend | Renderer | License | Notes |
+| --- | --- | --- | --- |
+| `pypdfium2` | PDFium | Apache-2.0 / BSD-3 | Recommended. Permissive, wheel-only, no system binary. |
+| `pdf2image` | poppler | MIT wrapper, **GPL** poppler binary | Requires installing `poppler-utils` separately. |
+| `pymupdf` | MuPDF | **AGPL-3.0** | Most tolerant of damaged PDFs. Review the license before commercial use. |
+
+```bash
+pip install vlm4ocr[pypdfium2]   # recommended
+pip install vlm4ocr[pdf2image]   # also needs the poppler system package
+pip install vlm4ocr[pymupdf]     # AGPL-3.0
+```
+
+```python
+ocr_engine = OCREngine(vlm_engine=vlm_engine, pdf_backend="pypdfium2")
+```
+
+If a PDF is passed without a backend, vlm4ocr raises `PDFBackendNotAvailableError` naming
+the options rather than guessing.
 
 ## 🌎Web Application
 A ready-to-use Flask web application is included. We support input preview, real-time streaming, and output export. 

@@ -19,6 +19,7 @@ from . import cleanup_file
 try:
     from vlm4ocr.ocr_engines import OCREngine
     from vlm4ocr.vlm_engines import OpenAIVLMEngine, AzureOpenAIVLMEngine, OllamaVLMEngine, BasicVLMConfig, ReasoningVLMConfig
+    from vlm4ocr.pdf_backends import DEFAULT_PDF_DPI
 except ImportError as e:
     print(f"Error importing from vlm4ocr in app_services.py: {e}")
     raise
@@ -111,11 +112,14 @@ def _initialize_ocr_engine(form_data):
         raise ValueError(f'Unsupported VLM API type selected: {vlm_api}')
 
     print("VLM Engine configured. Initializing OCREngine.")
+    pdf_config = current_app.config.get('pdf') or {}
     return OCREngine(
         vlm_engine=vlm_engine,
         output_mode=output_format,
         system_prompt=None,
-        user_prompt=user_prompt
+        user_prompt=user_prompt,
+        pdf_backend=pdf_config.get('backend'),
+        pdf_dpi=pdf_config.get('dpi', DEFAULT_PDF_DPI)
     )
 
 

@@ -10,6 +10,7 @@ from vlm4ocr.vlm_engines import MessagesLogger
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
 from concurrent.futures import ThreadPoolExecutor
 from vlm4ocr.utils import SUPPORTED_IMAGE_EXTS, get_data_loader, default_page_load_workers
+from vlm4ocr.pdf_backends import DEFAULT_PDF_DPI
 
 # A process_page callable receives ONE page image plus an optional MessagesLogger and
 # returns an OCRPage. It never sees sibling pages, so page independence is guaranteed by
@@ -54,11 +55,19 @@ class IndependentPagePipeline:
         Size of the thread pool used to load/rasterize pages. Defaults to one worker per
         CPU, capped at 32. Separate from asyncio's default executor so page loading cannot
         starve preprocessing, and independent of concurrent_batch_size.
+    pdf_backend : str | None, Optional
+        Which PDF rendering backend to use: 'pypdfium2', 'pdf2image', or 'pymupdf'.
+        Required to process PDF input; vlm4ocr has no default PDF library. Ignored for
+        image and TIFF input.
+    pdf_dpi : int, Optional
+        Resolution at which PDF pages are rendered. Defaults to 200.
     """
     def __init__(self, process_page: ProcessPage, *, output_mode: str = "JSON",
                  rotate_correction: Union[RotateCorrectionMethod, bool] = False,
                  max_dimension_pixels: Optional[int] = None,
-                 page_load_workers: Optional[int] = None):
+                 page_load_workers: Optional[int] = None,
+                 pdf_backend: Optional[str] = None,
+                 pdf_dpi: int = DEFAULT_PDF_DPI):
         if not callable(process_page):
             raise TypeError("process_page must be a callable returning an awaitable OCRPage")
         if output_mode not in ["markdown", "HTML", "text", "JSON", "bbox"]:
@@ -70,6 +79,10 @@ class IndependentPagePipeline:
         # Engine-free processor: supports resize + tesseract rotate. vlm rotation needs an
         # engine and belongs inside process_page, so it is intentionally not offered here.
         self.image_processor = ImageProcessor()
+
+        # PDF loading options; validated lazily, when a PDF is actually loaded.
+        self.pdf_backend = pdf_backend
+        self.pdf_dpi = pdf_dpi
 
         # Dedicated pool for page loading; threads are spawned on demand.
         if page_load_workers is None:
@@ -154,7 +167,8 @@ class IndependentPagePipeline:
                 return result
 
             try:
-                data_loader = get_data_loader(file_path, executor=self._page_load_executor)
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor,
+                                              pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
                 page_count = data_loader.get_page_count()
             except Exception as e:
                 # Document-level failure: no page tasks are created for this file.
@@ -204,7 +218,9 @@ class IndependentPagePipeline:
     async def _process_page_with_semaphore(self, page_semaphore: asyncio.Semaphore,
                                            data_loader, page_index: int) -> Tuple[OCRPage, dict, list]:
         image = await data_loader.get_page_async(page_index)
-        image_processing_status = {}
+        # Record how this page image was produced; see OCREngine for why.
+        image_processing_status = {"page_load": {**data_loader.get_load_info(),
+                                                 "size": list(image.size)}}
 
         # Preprocessing (engine-free, local CPU work) runs OUTSIDE the VLM semaphore.
         if self.rotate_correction:
@@ -217,9 +233,12 @@ class IndependentPagePipeline:
 
         if self.max_dimension_pixels is not None:
             try:
+                original_size = list(image.size)
                 image, resized = await self.image_processor.resize_async(
                     image, max_dimension_pixels=self.max_dimension_pixels)
-                image_processing_status["resize"] = {"status": "success", "resized": resized}
+                image_processing_status["resize"] = {"status": "success", "resized": resized,
+                                                     "original_size": original_size,
+                                                     "final_size": list(image.size)}
             except Exception as e:
                 image_processing_status["resize"] = {"status": "error", "error": str(e)}
 

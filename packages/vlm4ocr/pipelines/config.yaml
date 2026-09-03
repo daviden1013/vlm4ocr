@@ -9,6 +9,11 @@
   ocr_engine:
     # OCR output format
     output_mode: "markdown"
+    # PDF rendering backend. Required for PDF input; vlm4ocr installs no PDF library.
+    # One of "pypdfium2" (permissive), "pdf2image" (GPL poppler binary), "pymupdf" (AGPL).
+    pdf_backend: "pypdfium2"
+    # Resolution PDF pages are rendered at, applied identically across backends.
+    pdf_dpi: 200
     # number of pages to process in concurrent 
     concurrent_batch_size: 8
     # maximum number of files to load into memory at once

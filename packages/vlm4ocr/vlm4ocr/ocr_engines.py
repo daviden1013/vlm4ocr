@@ -9,6 +9,7 @@ from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
 from vlm4ocr.utils import (DataLoader, clean_markdown, extract_json, get_default_page_delimiter,
                            get_data_loader, default_page_load_workers, SUPPORTED_IMAGE_EXTS)
+from vlm4ocr.pdf_backends import DEFAULT_PDF_DPI
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
 from vlm4ocr.data_types import OCRResult, OCRPage, FewShotExample, BBoxFormat
 from vlm4ocr.exceptions import VLM4OCRError, DocumentLoadError, VLMError
@@ -20,7 +21,9 @@ class OCREngine:
                  system_prompt: Union[str, None, Literal[False]] = None,
                  user_prompt: Union[str, None, Literal[False]] = None,
                  bbox_format: Union[BBoxFormat, None] = None,
-                 page_load_workers: Union[int, None] = None):
+                 page_load_workers: Union[int, None] = None,
+                 pdf_backend: Union[str, None] = None,
+                 pdf_dpi: int = DEFAULT_PDF_DPI):
         """
         This class inputs a image or PDF file path and processes them using a VLM inference engine. Outputs plain text or markdown.
 
@@ -50,6 +53,13 @@ class OCREngine:
             asyncio's default executor, so page loading cannot starve the preprocessing
             work (resize, tesseract OSD) that also runs in threads. It is independent of
             concurrent_batch_size, which caps VLM calls rather than page loads.
+        pdf_backend : str | None, Optional
+            Which PDF rendering backend to use: 'pypdfium2', 'pdf2image', or 'pymupdf'.
+            Required to process PDF input — vlm4ocr depends on no PDF library, so there is
+            no default and no automatic fallback. Ignored for image and TIFF input.
+        pdf_dpi : int, Optional
+            Resolution at which PDF pages are rendered, applied identically across
+            backends so page images are comparable. Defaults to 200.
         """
         # Check inference engine
         if not isinstance(vlm_engine, VLMEngine):
@@ -105,6 +115,10 @@ class OCREngine:
 
         # Image processor
         self.image_processor = ImageProcessor(vlm_engine=self.vlm_engine)
+
+        # PDF loading options; validated lazily, when a PDF is actually loaded.
+        self.pdf_backend = pdf_backend
+        self.pdf_dpi = pdf_dpi
 
         # Dedicated pool for page loading. Threads are spawned on demand, so an unused
         # engine costs nothing.
@@ -165,7 +179,8 @@ class OCREngine:
 
         # PDF or TIFF
         if file_ext in ['.pdf', '.tif', '.tiff']:
-            data_loader = get_data_loader(file_path, executor=self._page_load_executor)
+            data_loader = get_data_loader(file_path, executor=self._page_load_executor,
+                                              pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
             images = data_loader.get_all_pages()
             # Check if images were extracted
             if not images:
@@ -219,7 +234,8 @@ class OCREngine:
 
         # Image
         else:
-            data_loader = get_data_loader(file_path, executor=self._page_load_executor)
+            data_loader = get_data_loader(file_path, executor=self._page_load_executor,
+                                              pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
             image = data_loader.get_page(0)
 
             # Apply rotate correction if specified
@@ -312,7 +328,8 @@ class OCREngine:
             
             try:
                 # Load images from file
-                data_loader = get_data_loader(file_path, executor=self._page_load_executor)
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor,
+                                              pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
                 images = data_loader.get_all_pages()
             except Exception as e:
                 if verbose:
@@ -335,8 +352,9 @@ class OCREngine:
                 continue
             
             # OCR images
+            load_info = data_loader.get_load_info()
             for i, image in enumerate(images):
-                image_processing_status = {}
+                image_processing_status = {"page_load": {**load_info, "size": list(image.size)}}
                 # Apply rotate correction if specified
                 if rotate_correction:
                     try:
@@ -358,10 +376,13 @@ class OCREngine:
                 # Resize the image if max_dimension_pixels is specified
                 if max_dimension_pixels is not None:
                     try:
+                        original_size = list(image.size)
                         image, resized = self.image_processor.resize(image, max_dimension_pixels=max_dimension_pixels)
                         image_processing_status["resize"] = {
                             "status": "success",
-                            "resized": resized
+                            "resized": resized,
+                            "original_size": original_size,
+                            "final_size": list(image.size)
                         }
                         if verbose and resized:
                             print(f"{Fore.GREEN}Image resized for {filename} page {i} to fit within {max_dimension_pixels} pixels.{Style.RESET_ALL}")
@@ -592,7 +613,8 @@ class OCREngine:
             
             try:
                 # Load images from file
-                data_loader = get_data_loader(file_path, executor=self._page_load_executor)
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor,
+                                              pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
 
             except Exception as e:
                 # Document-level failure: no page is usable, so no page tasks are created
@@ -678,7 +700,10 @@ class OCREngine:
         # OUTSIDE vlm_call_semaphore so a page being rasterized or resized does not hold
         # one of the limited VLM concurrency slots.
         image = await data_loader.get_page_async(page_index)
-        image_processing_status = {}
+        # Record how this page image was produced. plot_bboxes reads this back to reload
+        # the source page at the same resolution the bboxes were computed against.
+        image_processing_status = {"page_load": {**data_loader.get_load_info(),
+                                                 "size": list(image.size)}}
         # Apply rotate correction if specified
         if rotate_correction:
             try:
@@ -696,10 +721,13 @@ class OCREngine:
         # Resize the image if max_dimension_pixels is specified
         if max_dimension_pixels is not None:
             try:
+                original_size = list(image.size)
                 image, resized = await self.image_processor.resize_async(image, max_dimension_pixels=max_dimension_pixels)
                 image_processing_status["resize"] = {
                     "status": "success",
-                    "resized": resized
+                    "resized": resized,
+                    "original_size": original_size,
+                    "final_size": list(image.size)
                 }
             except Exception as e:
                 image_processing_status["resize"] = {

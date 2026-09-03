@@ -14,18 +14,28 @@ exclude = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pdf2image = ">=1.16.0"
 colorama = ">=0.4.4"
 pillow = ">=10.0.0"
 json-repair = ">=0.30.0"
 llm-inference-engine = ">=0.1.5"
 pytesseract = { version = ">=0.3.13", optional = true }
+# PDF rendering backends are all optional: vlm4ocr depends on no PDF library, so users
+# who never process PDFs carry no PDF dependency and no third-party license obligation.
+# Pick one and pass it as pdf_backend. See vlm4ocr/pdf_backends.py for the licenses --
+# notably poppler (pdf2image) is GPL and MuPDF (pymupdf) is AGPL, while PDFium
+# (pypdfium2) is permissively licensed.
+pypdfium2 = { version = ">=4.0.0", optional = true }
+pdf2image = { version = ">=1.16.0", optional = true }
+pymupdf = { version = ">=1.24.0", optional = true }
 
 [tool.poetry.scripts]
 vlm4ocr = "vlm4ocr.cli:main"
 
 [tool.poetry.extras]
 tesseract = ["pytesseract"]
+pypdfium2 = ["pypdfium2"]
+pdf2image = ["pdf2image"]
+pymupdf = ["pymupdf"]
 
 [build-system]
 requires = ["poetry-core"]
