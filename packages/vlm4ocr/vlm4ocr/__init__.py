@@ -1,5 +1,4 @@
-from .exceptions import (VLM4OCRError, PDFBackendNotAvailableError, DocumentLoadError,
-                         VLMError, OutputParseError)
+from .exceptions import VLM4OCRError, PDFBackendNotAvailableError, DocumentLoadError, VLMError
 from .data_types import FewShotExample, BBoxItem, BBoxFormat, OCRResult, OCRPage
 from .ocr_engines import OCREngine
 from .ocr_pipelines import IndependentPagePipeline
@@ -11,7 +10,6 @@ __all__ = [
     "PDFBackendNotAvailableError",
     "DocumentLoadError",
     "VLMError",
-    "OutputParseError",
     "FewShotExample",
     "BBoxItem",
     "BBoxFormat",
