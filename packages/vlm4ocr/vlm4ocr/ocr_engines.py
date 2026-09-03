@@ -167,6 +167,11 @@ class OCREngine:
             {"type": "info", "data": msg}
             {"type": "ocr_chunk", "data": chunk}
             {"type": "page_delimiter", "data": page_delimiter}
+            {"type": "error", "data": message, "error": error_dict}
+
+        A document that cannot be loaded yields one "error" event and then raises, so
+        stream consumers can render the failure and direct callers still get the exception.
+        "data" is always a human-readable string; "error" carries VLM4OCRError.to_dict().
         """
         # Check file path
         if not isinstance(file_path, str):
@@ -179,9 +184,15 @@ class OCREngine:
 
         # PDF or TIFF
         if file_ext in ['.pdf', '.tif', '.tiff']:
-            data_loader = get_data_loader(file_path, executor=self._page_load_executor,
-                                              pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
-            images = data_loader.get_all_pages()
+            # Emit the failure as a stream event before propagating, so a consumer rendering
+            # the stream can display it; the exception still reaches direct API callers.
+            try:
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor,
+                                                  pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
+                images = data_loader.get_all_pages()
+            except VLM4OCRError as e:
+                yield {"type": "error", "data": str(e), "error": e.to_dict()}
+                raise
             # Check if images were extracted
             if not images:
                 raise ValueError(f"No images extracted from file: {file_path}")
@@ -234,9 +245,13 @@ class OCREngine:
 
         # Image
         else:
-            data_loader = get_data_loader(file_path, executor=self._page_load_executor,
-                                              pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
-            image = data_loader.get_page(0)
+            try:
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor,
+                                                  pdf_backend=self.pdf_backend, pdf_dpi=self.pdf_dpi)
+                image = data_loader.get_page(0)
+            except VLM4OCRError as e:
+                yield {"type": "error", "data": str(e), "error": e.to_dict()}
+                raise
 
             # Apply rotate correction if specified
             if rotate_correction:
