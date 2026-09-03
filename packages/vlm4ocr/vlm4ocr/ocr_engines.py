@@ -6,8 +6,9 @@ from dataclasses import asdict
 from colorama import Fore, Style
 import json
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
 from vlm4ocr.utils import (DataLoader, clean_markdown, extract_json, get_default_page_delimiter,
-                           get_data_loader, SUPPORTED_IMAGE_EXTS)
+                           get_data_loader, default_page_load_workers, SUPPORTED_IMAGE_EXTS)
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
 from vlm4ocr.data_types import OCRResult, OCRPage, FewShotExample, BBoxFormat
 from vlm4ocr.vlm_engines import VLMEngine, MessagesLogger
@@ -17,7 +18,8 @@ class OCREngine:
     def __init__(self, vlm_engine: VLMEngine, output_mode: str = "markdown",
                  system_prompt: Union[str, None, Literal[False]] = None,
                  user_prompt: Union[str, None, Literal[False]] = None,
-                 bbox_format: Union[BBoxFormat, None] = None):
+                 bbox_format: Union[BBoxFormat, None] = None,
+                 page_load_workers: Union[int, None] = None):
         """
         This class inputs a image or PDF file path and processes them using a VLM inference engine. Outputs plain text or markdown.
 
@@ -41,6 +43,12 @@ class OCREngine:
         bbox_format : BBoxFormat | None, Optional
             Override the auto-resolved BBoxFormat for bbox output mode. When None (default) the
             format is resolved from the registry based on vlm_engine.model.
+        page_load_workers : int | None, Optional
+            Size of the thread pool used to load/rasterize pages in the async methods.
+            Defaults to one worker per CPU, capped at 32. This pool is separate from
+            asyncio's default executor, so page loading cannot starve the preprocessing
+            work (resize, tesseract OSD) that also runs in threads. It is independent of
+            concurrent_batch_size, which caps VLM calls rather than page loads.
         """
         # Check inference engine
         if not isinstance(vlm_engine, VLMEngine):
@@ -97,6 +105,27 @@ class OCREngine:
         # Image processor
         self.image_processor = ImageProcessor(vlm_engine=self.vlm_engine)
 
+        # Dedicated pool for page loading. Threads are spawned on demand, so an unused
+        # engine costs nothing.
+        if page_load_workers is None:
+            page_load_workers = default_page_load_workers()
+        if not isinstance(page_load_workers, int) or page_load_workers <= 0:
+            raise ValueError("page_load_workers must be a positive integer")
+        self.page_load_workers = page_load_workers
+        self._page_load_executor = ThreadPoolExecutor(max_workers=page_load_workers,
+                                                      thread_name_prefix="vlm4ocr-pageload")
+
+    def close(self):
+        """ Shuts down the page-loading thread pool. Optional; the pool is also joined at interpreter exit. """
+        self._page_load_executor.shutdown(wait=True)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+        return False
+
 
     def stream_ocr(self, file_path: str, rotate_correction:Union[RotateCorrectionMethod, Literal[False]]=False,
                    max_dimension_pixels:int=None,
@@ -135,7 +164,7 @@ class OCREngine:
 
         # PDF or TIFF
         if file_ext in ['.pdf', '.tif', '.tiff']:
-            data_loader = get_data_loader(file_path)
+            data_loader = get_data_loader(file_path, executor=self._page_load_executor)
             images = data_loader.get_all_pages()
             # Check if images were extracted
             if not images:
@@ -189,7 +218,7 @@ class OCREngine:
 
         # Image
         else:
-            data_loader = get_data_loader(file_path)
+            data_loader = get_data_loader(file_path, executor=self._page_load_executor)
             image = data_loader.get_page(0)
 
             # Apply rotate correction if specified
@@ -281,7 +310,7 @@ class OCREngine:
             
             try:
                 # Load images from file
-                data_loader = get_data_loader(file_path)
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor)
                 images = data_loader.get_all_pages()
             except Exception as e:
                 if verbose:
@@ -556,7 +585,7 @@ class OCREngine:
             
             try:
                 # Load images from file
-                data_loader = get_data_loader(file_path)
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor)
 
             except Exception as e:
                 result.status = "error"
@@ -618,58 +647,62 @@ class OCREngine:
         Tuple[str, Dict[str, str]]
             A tuple containing the OCR text and a dictionary with image processing status.
         """
+        # Page loading and preprocessing are local CPU work, not VLM calls. They run
+        # OUTSIDE vlm_call_semaphore so a page being rasterized or resized does not hold
+        # one of the limited VLM concurrency slots.
+        image = await data_loader.get_page_async(page_index)
+        image_processing_status = {}
+        # Apply rotate correction if specified
+        if rotate_correction:
+            try:
+                image, rotation_angle = await self.image_processor.rotate_correction_async(image, method=rotate_correction)
+                image_processing_status["rotate_correction"] = {
+                    "status": "success",
+                    "rotation_angle": rotation_angle
+                }
+            except Exception as e:
+                image_processing_status["rotate_correction"] = {
+                    "status": "error",
+                    "error": str(e)
+                }
+
+        # Resize the image if max_dimension_pixels is specified
+        if max_dimension_pixels is not None:
+            try:
+                image, resized = await self.image_processor.resize_async(image, max_dimension_pixels=max_dimension_pixels)
+                image_processing_status["resize"] = {
+                    "status": "success",
+                    "resized": resized
+                }
+            except Exception as e:
+                image_processing_status["resize"] = {
+                    "status": "error",
+                    "error": str(e)
+                }
+
+        messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt,
+                                                    user_prompt=self.user_prompt,
+                                                    image=image,
+                                                    few_shot_examples=few_shot_examples)
+        # Only the VLM call itself is capped by the concurrency semaphore.
         async with vlm_call_semaphore:
-            image = await data_loader.get_page_async(page_index)
-            image_processing_status = {}
-            # Apply rotate correction if specified
-            if rotate_correction:
-                try:
-                    image, rotation_angle = await self.image_processor.rotate_correction_async(image, method=rotate_correction)
-                    image_processing_status["rotate_correction"] = {
-                        "status": "success",
-                        "rotation_angle": rotation_angle
-                    }
-                except Exception as e:
-                    image_processing_status["rotate_correction"] = {
-                        "status": "error",
-                        "error": str(e)
-                    }
-
-            # Resize the image if max_dimension_pixels is specified
-            if max_dimension_pixels is not None:
-                try:
-                    image, resized = await self.image_processor.resize_async(image, max_dimension_pixels=max_dimension_pixels)
-                    image_processing_status["resize"] = {
-                        "status": "success",
-                        "resized": resized
-                    }
-                except Exception as e:
-                    image_processing_status["resize"] = {
-                        "status": "error",
-                        "error": str(e)
-                    }
-
-            messages = self.vlm_engine.get_ocr_messages(system_prompt=self.system_prompt,
-                                                        user_prompt=self.user_prompt,
-                                                        image=image,
-                                                        few_shot_examples=few_shot_examples)
             response = await self.vlm_engine.chat_async(
                 messages,
                 messages_logger=messages_logger
             )
-            ocr_text = response["response"]
-            bboxes = None
-            img_w = img_h = None
+        ocr_text = response["response"]
+        bboxes = None
+        img_w = img_h = None
 
-            if self.output_mode == "markdown":
-                ocr_text = clean_markdown(ocr_text)
-            elif self.output_mode == "JSON":
-                json_list = extract_json(ocr_text)
-                ocr_text = json.dumps(json_list, indent=4)
-            elif self.output_mode == "bbox":
-                from vlm4ocr.bbox import parse_bbox_response
-                img_w, img_h = image.size
-                bboxes = parse_bbox_response(ocr_text, self.bbox_format, img_w, img_h)
-                ocr_text = "\n".join(item.text for item in bboxes)
+        if self.output_mode == "markdown":
+            ocr_text = clean_markdown(ocr_text)
+        elif self.output_mode == "JSON":
+            json_list = extract_json(ocr_text)
+            ocr_text = json.dumps(json_list, indent=4)
+        elif self.output_mode == "bbox":
+            from vlm4ocr.bbox import parse_bbox_response
+            img_w, img_h = image.size
+            bboxes = parse_bbox_response(ocr_text, self.bbox_format, img_w, img_h)
+            ocr_text = "\n".join(item.text for item in bboxes)
 
-            return ocr_text, image_processing_status, bboxes, img_w, img_h
+        return ocr_text, image_processing_status, bboxes, img_w, img_h

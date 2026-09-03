@@ -7,7 +7,8 @@ from PIL import Image
 from vlm4ocr.data_types import OCRPage, OCRResult
 from vlm4ocr.vlm_engines import MessagesLogger
 from vlm4ocr.preprocessing import ImageProcessor, RotateCorrectionMethod
-from vlm4ocr.utils import SUPPORTED_IMAGE_EXTS, get_data_loader
+from concurrent.futures import ThreadPoolExecutor
+from vlm4ocr.utils import SUPPORTED_IMAGE_EXTS, get_data_loader, default_page_load_workers
 
 # A process_page callable receives ONE page image plus an optional MessagesLogger and
 # returns an OCRPage. It never sees sibling pages, so page independence is guaranteed by
@@ -48,10 +49,15 @@ class IndependentPagePipeline:
         do vlm-based rotation inside process_page if required.
     max_dimension_pixels : int, Optional
         If set, resize each page to fit within this dimension before process_page.
+    page_load_workers : int | None, Optional
+        Size of the thread pool used to load/rasterize pages. Defaults to one worker per
+        CPU, capped at 32. Separate from asyncio's default executor so page loading cannot
+        starve preprocessing, and independent of concurrent_batch_size.
     """
     def __init__(self, process_page: ProcessPage, *, output_mode: str = "JSON",
                  rotate_correction: Union[RotateCorrectionMethod, bool] = False,
-                 max_dimension_pixels: Optional[int] = None):
+                 max_dimension_pixels: Optional[int] = None,
+                 page_load_workers: Optional[int] = None):
         if not callable(process_page):
             raise TypeError("process_page must be a callable returning an awaitable OCRPage")
         if output_mode not in ["markdown", "HTML", "text", "JSON", "bbox"]:
@@ -63,6 +69,26 @@ class IndependentPagePipeline:
         # Engine-free processor: supports resize + tesseract rotate. vlm rotation needs an
         # engine and belongs inside process_page, so it is intentionally not offered here.
         self.image_processor = ImageProcessor()
+
+        # Dedicated pool for page loading; threads are spawned on demand.
+        if page_load_workers is None:
+            page_load_workers = default_page_load_workers()
+        if not isinstance(page_load_workers, int) or page_load_workers <= 0:
+            raise ValueError("page_load_workers must be a positive integer")
+        self.page_load_workers = page_load_workers
+        self._page_load_executor = ThreadPoolExecutor(max_workers=page_load_workers,
+                                                      thread_name_prefix="vlm4ocr-pageload")
+
+    def close(self):
+        """ Shuts down the page-loading thread pool. Optional; the pool is also joined at interpreter exit. """
+        self._page_load_executor.shutdown(wait=True)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+        return False
 
     def concurrent_ocr(self, file_paths: Union[str, Iterable[str]],
                        concurrent_batch_size: int = 32,
@@ -126,7 +152,7 @@ class IndependentPagePipeline:
                 return result
 
             try:
-                data_loader = get_data_loader(file_path)
+                data_loader = get_data_loader(file_path, executor=self._page_load_executor)
                 page_count = data_loader.get_page_count()
             except Exception as e:
                 result.status = "error"
