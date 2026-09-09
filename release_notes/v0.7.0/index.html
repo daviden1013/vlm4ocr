@@ -1,0 +1,943 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>V0.7.0 - VLM4OCR Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#breaking-change-pdf-support-is-now-opt-in" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="VLM4OCR Documentation" class="md-header__button md-logo" aria-label="VLM4OCR Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            VLM4OCR Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              V0.7.0
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/daviden1013/vlm4ocr" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daviden1013/vlm4ocr
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="VLM4OCR Documentation" class="md-nav__button md-logo" aria-label="VLM4OCR Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    VLM4OCR Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/daviden1013/vlm4ocr" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daviden1013/vlm4ocr
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web_application/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Web Application
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Python package
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Python package
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick_start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../vlm_engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    VLM Engines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ocr_engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Engine
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ocr_pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../bbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    BBox Mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/vlm_engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    VLM Engines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ocr_engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Engine
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ocr_pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCR Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#breaking-change-pdf-support-is-now-opt-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      ⚠️Breaking change: PDF support is now opt-in
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#highlights" class="md-nav__link">
+    <span class="md-ellipsis">
+      ⚡Highlights
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="⚡Highlights">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#choose-your-pdf-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Choose your PDF backend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors-tell-you-where-and-what" class="md-nav__link">
+    <span class="md-ellipsis">
+      Errors tell you where and what
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-bad-page-no-longer-discards-the-whole-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      One bad page no longer discards the whole document
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#know-how-each-page-was-produced" class="md-nav__link">
+    <span class="md-ellipsis">
+      Know how each page was produced
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#faster-concurrent-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Faster concurrent processing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      Web application
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>V0.7.0</h1>
+
+<div><h2 id="breaking-change-pdf-support-is-now-opt-in">⚠️Breaking change: PDF support is now opt-in</h2>
+<p><strong>If you process PDFs, you must install a PDF backend and name it.</strong> Previously <code>pdf2image</code> (and the poppler system binary) was installed automatically. Now a PDF package must be manually installed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>vlm4ocr<span class="o">[</span>pypdfium2<span class="o">]</span><span class="w">      </span><span class="c1"># recommended</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">ocr</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="o">=</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">output_mode</span><span class="o">=</span><span class="s2">"markdown"</span><span class="p">,</span> <span class="n">pdf_backend</span><span class="o">=</span><span class="s2">"pypdfium2"</span><span class="p">)</span>
+</code></pre></div>
+<p>If you only OCR images and TIFFs, install nothing extra — and you no longer carry a PDF dependency or its license obligations.</p>
+<p>Passing a PDF without a backend raises <code>PDFBackendNotAvailableError</code> listing the options, so the failure is loud rather than silent.</p>
+<h2 id="highlights">⚡Highlights</h2>
+<h3 id="choose-your-pdf-backend">Choose your PDF backend</h3>
+<p>vlm4ocr now supports all three PDF renderers available to Python. You pick one; there is no default and no automatic fallback, so the backend you name is the backend that runs — the same PDF renders the same way on every machine.</p>
+<table>
+<thead>
+<tr>
+<th><code>pdf_backend</code></th>
+<th>Renderer</th>
+<th>License</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"pypdfium2"</code></td>
+<td>PDFium</td>
+<td>Apache-2.0 / BSD-3</td>
+<td>Recommended. Permissive, wheel-only, no system binary.</td>
+</tr>
+<tr>
+<td><code>"pdf2image"</code></td>
+<td>poppler</td>
+<td>MIT wrapper, <strong>GPL</strong> poppler binary</td>
+<td>Requires installing <code>poppler-utils</code> separately.</td>
+</tr>
+<tr>
+<td><code>"pymupdf"</code></td>
+<td>MuPDF</td>
+<td><strong>AGPL-3.0</strong></td>
+<td>Most tolerant of damaged PDFs. Review the license before commercial use.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>vlm4ocr<span class="o">[</span>pypdfium2<span class="o">]</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span>vlm4ocr<span class="o">[</span>pdf2image<span class="o">]</span><span class="w">   </span><span class="c1"># also needs the poppler system package</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span>vlm4ocr<span class="o">[</span>pymupdf<span class="o">]</span><span class="w">     </span><span class="c1"># AGPL-3.0</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">ocr</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">vlm_engine</span><span class="o">=</span><span class="n">vlm_engine</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">output_mode</span><span class="o">=</span><span class="s2">"markdown"</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">pdf_backend</span><span class="o">=</span><span class="s2">"pypdfium2"</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">pdf_dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>          <span class="c1"># default; applied identically across backends</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">)</span>
+</code></pre></div>
+<p><code>pdf_dpi</code> is normalized, so all three backends produce the same page dimensions at the same setting. Switching backends does not silently change image size, OCR quality, or cost.</p>
+<p>Backends differ in what they can open. A file one backend rejects may load under another, and PyMuPDF in particular reports <em>why</em> a file failed more precisely (password protected vs. no readable pages) where the others can only say "failed to open". Switching backends is worth trying on a problem file — it is not a guarantee, and a genuinely unsalvageable PDF will fail everywhere.</p>
+<h3 id="errors-tell-you-where-and-what">Errors tell you where and what</h3>
+<p>Failures now carry structured information instead of a message buried in the OCR text. Every error says <strong>which step failed</strong> (the exception class) and <strong>what the underlying library said</strong> (verbatim, unmodified).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">vlm4ocr</span> <span class="kn">import</span> <span class="n">VLM4OCRError</span><span class="p">,</span> <span class="n">PDFBackendNotAvailableError</span><span class="p">,</span> <span class="n">DocumentLoadError</span><span class="p">,</span> <span class="n">VLMError</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Raised when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PDFBackendNotAvailableError</code></td>
+<td>No PDF backend was named, or the named one isn't installed</td>
+</tr>
+<tr>
+<td><code>DocumentLoadError</code></td>
+<td>The document or page could not be opened, decoded, or rendered</td>
+</tr>
+<tr>
+<td><code>VLMError</code></td>
+<td>The VLM call failed (connection, timeout, rate limit, auth, …)</td>
+</tr>
+</tbody>
+</table>
+<p>Batch methods (<code>sequential_ocr</code>, <code>concurrent_ocr</code>) don't raise — they record the error on the result:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">async</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">ocr</span><span class="o">.</span><span class="n">concurrent_ocr</span><span class="p">(</span><span class="n">file_paths</span><span class="p">,</span> <span class="n">concurrent_batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">"success"</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="n">save</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="k">continue</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">err</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">error</span>                    <span class="c1"># the exception object, or None</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>             <span class="c1"># e.g. "DocumentLoadError"</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>                  <span class="c1"># which file</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">page_index</span><span class="p">)</span>                 <span class="c1"># which page, or None for a whole-document failure</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">backend</span><span class="p">)</span>                    <span class="c1"># which PDF backend produced it</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">original_error</span><span class="p">)</span>             <span class="c1"># the raw poppler / PDFium / MuPDF message</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="n">log_to_db</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>              <span class="c1"># JSON-serializable for pipeline logging</span>
+</code></pre></div>
+<p>vlm4ocr deliberately does <strong>not</strong> tell you whether an error is retryable or how to fix it — that's your pipeline's decision. It gives you what you need to decide:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Your policy, your code: try another backend on a document that won't load.</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="n">DocumentLoadError</span><span class="p">):</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">retry</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="o">=</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">pdf_backend</span><span class="o">=</span><span class="s2">"pymupdf"</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="o">...</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Or route encrypted files to a different queue.</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">error</span> <span class="ow">and</span> <span class="s2">"password"</span> <span class="ow">in</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">original_error</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">quarantine</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">input_dir</span><span class="p">)</span>
+</code></pre></div>
+<p><code>status</code> remains <code>"success"</code> or <code>"error"</code> — existing code that checks it keeps working unchanged.</p>
+<h3 id="one-bad-page-no-longer-discards-the-whole-document">One bad page no longer discards the whole document</h3>
+<p>Previously, if a single page of a 50-page PDF failed, the entire document's results were thrown away — including pages already OCR'd and paid for. Now the successful pages are kept, and each failed page carries its own error:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">pages</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">if</span> <span class="n">page</span><span class="o">.</span><span class="n">error</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>                  <span class="c1"># usable OCR output</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">"failed:"</span><span class="p">,</span> <span class="n">page</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>      <span class="c1"># this page only</span>
+</code></pre></div>
+<p>The document's <code>status</code> is still <code>"error"</code> if any page failed, so batch code that skips failed documents behaves as before — but the good pages are there if you want them.</p>
+<h3 id="know-how-each-page-was-produced">Know how each page was produced</h3>
+<p>Each page records the backend and resolution behind its image, and resize now reports actual dimensions instead of a bare flag:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">page</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">pages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">page</span><span class="o">.</span><span class="n">image_processing_status</span><span class="p">[</span><span class="s2">"page_load"</span><span class="p">]</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># {'backend': 'pypdfium2', 'dpi': 200, 'size': [1653, 2339]}</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">page</span><span class="o">.</span><span class="n">image_processing_status</span><span class="p">[</span><span class="s2">"resize"</span><span class="p">]</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># {'status': 'success', 'resized': True,</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1">#  'original_size': [1653, 2339], 'final_size': [565, 800]}</span>
+</code></pre></div>
+<p>This makes runs auditable, and <code>plot_bboxes()</code> uses it to reload the source page through the <strong>same</strong> backend and dpi that produced the boxes, so annotated images line up exactly with what the model saw.</p>
+<h3 id="faster-concurrent-processing">Faster concurrent processing</h3>
+<p>Page loading and image preprocessing no longer occupy VLM concurrency slots, and page loading now runs in its own thread pool instead of competing with preprocessing for asyncio's shared default pool. Large batches spend more of their time actually calling the model. Tune with <code>page_load_workers</code> if needed (default: one worker per CPU, capped at 32):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">ocr</span> <span class="o">=</span> <span class="n">OCREngine</span><span class="p">(</span><span class="n">vlm_engine</span><span class="o">=</span><span class="n">vlm_engine</span><span class="p">,</span> <span class="n">pdf_backend</span><span class="o">=</span><span class="s2">"pypdfium2"</span><span class="p">,</span> <span class="n">page_load_workers</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="cli">CLI</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>vlm4ocr<span class="w"> </span>--input_path<span class="w"> </span>docs/<span class="w"> </span>--vlm_engine<span class="w"> </span>ollama<span class="w"> </span>--model<span class="w"> </span>llama3.2-vision<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">        </span>--pdf_backend<span class="w"> </span>pypdfium2<span class="w"> </span>--pdf_dpi<span class="w"> </span><span class="m">200</span>
+</code></pre></div>
+<h3 id="web-application">Web application</h3>
+<p>The backend is set in <code>services/web_app/config.yaml</code> and defaults to <code>pypdfium2</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">pdf</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="s">'pypdfium2'</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">dpi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200</span>
+</code></pre></div>
+<p>The bundled <code>requirements.txt</code> pins <code>pypdfium2</code>, and the Docker image no longer installs poppler. If you switch <code>backend</code> to <code>pdf2image</code>, install <code>poppler-utils</code> in your image and add <code>pdf2image</code> to requirements. Batch and single-file errors in the UI now come from the structured error, so failure messages name the actual cause.</p>
+<h2 id="migration">Migration</h2>
+<ol>
+<li><strong>Install a PDF backend</strong> if you process PDFs: <code>pip install vlm4ocr[pypdfium2]</code>.</li>
+<li><strong>Pass <code>pdf_backend=...</code></strong> to <code>OCREngine</code> / <code>IndependentPagePipeline</code>, or <code>--pdf_backend</code> on the CLI. Web app and pipeline users set it in the YAML config.</li>
+<li><strong>Reading errors from <code>pages[0].text</code> still works</strong>, but prefer <code>result.error</code>.</li>
+<li><strong>Catching <code>ValueError</code></strong> around direct <code>DataLoader</code> / <code>get_data_loader</code> calls should become <code>DocumentLoadError</code> (or the <code>VLM4OCRError</code> base).</li>
+<li><strong><code>plot_bboxes()</code> on results produced before v0.7.0</strong> raises <code>PDFBackendNotAvailableError</code>, because those results don't record which backend produced them. Re-run OCR to plot them.</li>
+</ol>
+<h2 id="changes">Changes</h2>
+<ul>
+<li><strong>Breaking:</strong> <code>pdf2image</code> is no longer a dependency. PDF rendering requires installing one of the <code>pypdfium2</code>, <code>pdf2image</code>, or <code>pymupdf</code> extras and naming it via <code>pdf_backend</code>.</li>
+<li><strong>New:</strong> <code>pdf_backend</code> and <code>pdf_dpi</code> parameters on <code>OCREngine</code>, <code>IndependentPagePipeline</code>, and <code>get_data_loader</code>; <code>--pdf_backend</code> / <code>--pdf_dpi</code> on the CLI; <code>pdf:</code> block in the web app and pipeline configs.</li>
+<li><strong>New:</strong> exception classes <code>VLM4OCRError</code>, <code>PDFBackendNotAvailableError</code>, <code>DocumentLoadError</code>, <code>VLMError</code>, exported from the top-level <code>vlm4ocr</code> namespace. Each preserves the underlying library's message in <code>original_error</code> and chains the original exception.</li>
+<li><strong>New:</strong> <code>OCRResult.error</code> and <code>OCRPage.error</code>, both carrying the exception object, with <code>.to_dict()</code> for logging.</li>
+<li><strong>New:</strong> <code>image_processing_status["page_load"]</code> records backend, dpi, and page size; <code>["resize"]</code> now includes <code>original_size</code> and <code>final_size</code>.</li>
+<li><strong>New:</strong> <code>page_load_workers</code> parameter on <code>OCREngine</code> and <code>IndependentPagePipeline</code>; both are now usable as context managers and expose <code>close()</code>.</li>
+<li><strong>New:</strong> <code>stream_ocr</code> emits an <code>{"type": "error", "data": ..., "error": ...}</code> event for a document it cannot load, before raising.</li>
+<li><strong>Improved:</strong> a failed page no longer discards the rest of the document's OCR results.</li>
+<li><strong>Improved:</strong> page loading and preprocessing moved out of the VLM concurrency limit, and onto a dedicated thread pool.</li>
+<li><strong>Improved:</strong> loaders no longer print to stdout; failures are reported through exceptions only.</li>
+<li><strong>Compat:</strong> <code>OCRResult.status</code> values are unchanged (<code>"success"</code> / <code>"error"</code>). Error text is still written to the failed page's <code>text</code> for existing readers.</li>
+</ul></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.highlight"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
