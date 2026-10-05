@@ -6,11 +6,25 @@ from concurrent.futures import Executor
 from typing import Dict, List, Optional
 import json
 import json_repair
-from PIL import Image
+from PIL import Image, ImageOps
 import asyncio
 import warnings
 from vlm4ocr.exceptions import DocumentLoadError
 from vlm4ocr.pdf_backends import DEFAULT_PDF_DPI, get_pdf_backend
+from vlm4ocr.preprocessing import _normalize_mode
+
+
+def _apply_exif_orientation(image:Image.Image) -> Image.Image:
+    """
+    Returns a loaded copy of the image with its EXIF/TIFF Orientation tag applied, so the
+    pixels match what image viewers display (e.g., phone photos taken sideways).
+    Falls back to an untransposed copy if the orientation data is malformed.
+    """
+    try:
+        return ImageOps.exif_transpose(image)
+    except Exception as e:
+        warnings.warn(f"Failed to apply EXIF orientation; using the image as stored. Error: {e}")
+        return image.copy()
 
 
 class DataLoader(abc.ABC):
@@ -142,12 +156,12 @@ class TIFFDataLoader(DataLoader):
         Extracts images from a TIFF file. 
         """
         try:
-            img = Image.open(self.file_path)
-            images = []
-            for i in range(img.n_frames):
-                img.seek(i)
-                images.append(img.copy())
-            return images
+            with Image.open(self.file_path) as img:
+                images = []
+                for i in range(img.n_frames):
+                    img.seek(i)
+                    images.append(_apply_exif_orientation(img))
+                return images
         except Exception as e:
             raise DocumentLoadError(
                 f"Failed to read TIFF file '{os.path.basename(self.file_path)}'.",
@@ -164,9 +178,9 @@ class TIFFDataLoader(DataLoader):
             Index of the page to retrieve. 
         """
         try:
-            img = Image.open(self.file_path)
-            img.seek(page_index)
-            return img.copy()
+            with Image.open(self.file_path) as img:
+                img.seek(page_index)
+                return _apply_exif_orientation(img)
         except (IndexError, EOFError) as e:
             raise DocumentLoadError(
                 f"Page index {page_index} out of range for TIFF file '{os.path.basename(self.file_path)}'.",
@@ -182,8 +196,8 @@ class TIFFDataLoader(DataLoader):
     def get_page_count(self) -> int:
         """ Returns the number of images (pages) in the TIFF file. """
         try:
-            img = Image.open(self.file_path)
-            return img.n_frames 
+            with Image.open(self.file_path) as img:
+                return img.n_frames
         except Exception as e:
             raise DocumentLoadError(
                 f"Failed to read page count of TIFF file '{os.path.basename(self.file_path)}'.",
@@ -196,9 +210,8 @@ class ImageDataLoader(DataLoader):
         Loads a single image file. 
         """
         try:
-            image = Image.open(self.file_path)
-            image.load()
-            return [image]
+            with Image.open(self.file_path) as image:
+                return [_apply_exif_orientation(image)]
         except FileNotFoundError:
             raise
         except Exception as e:
@@ -216,9 +229,8 @@ class ImageDataLoader(DataLoader):
             Index of the page to retrieve. Not applicable for single image files.
         """
         try:
-            image = Image.open(self.file_path)
-            image.load()
-            return image
+            with Image.open(self.file_path) as image:
+                return _apply_exif_orientation(image)
         except FileNotFoundError:
             raise
         except Exception as e:
@@ -286,8 +298,12 @@ def get_data_loader(file_path: str, executor: Optional[Executor] = None,
 
 
 def image_to_base64(image:Image.Image, format:str="png") -> str:
-    """ Converts an image to a base64 string. """
+    """ 
+    Converts an image to a base64 string. Image modes that cannot be encoded as PNG
+    (e.g., CMYK, 16-bit grayscale) are converted first (see _normalize_mode).
+    """
     try:
+        image = _normalize_mode(image)
         buffered = io.BytesIO()
         image.save(buffered, format=format)
         img_bytes = buffered.getvalue()
