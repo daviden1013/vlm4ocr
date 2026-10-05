@@ -7,6 +7,7 @@ import json_repair
 from PIL import Image, ImageDraw, ImageFont
 
 from vlm4ocr.data_types import BBoxItem, BBoxFormat
+from vlm4ocr.preprocessing import _normalize_mode
 
 logger = logging.getLogger(__name__)
 
@@ -286,7 +287,12 @@ def plot_bbox(
     PIL.Image.Image
         A copy of `image` with the boxes (and optional tag) drawn on it.
     """
-    out = image.copy()
+    # Colored boxes need a color mode; "1", "L", "P", 16-bit etc. reject RGB colors or quantize them.
+    out = _normalize_mode(image, for_resample=True)
+    if out.mode in ("L", "LA"):
+        out = out.convert("RGBA" if out.mode == "LA" else "RGB")
+    elif out is image:
+        out = image.copy()
     draw = ImageDraw.Draw(out)
     needs_font = show_label or show_text
     font_bold = _load_font(font_path, font_size) if needs_font else None
