@@ -25,14 +25,19 @@ Vision Language Models (VLMs) for Optical Character Recognition (OCR).
   - **Added OpenAICompatible VLM engines**: Separated the OpenAI compatible VLM engines into a parent class `OpenAICompatibleVLMEngine`.
 - [v0.4.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.4.0) (Dec 15, 2025):
   - **Few-shot examples**: Added support for few-shot examples to improve OCR accuracy.
-- [v0.4.3](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.4.3):
+- [v0.4.3](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.4.3) (Apr 6, 2026):
   - **SGLang support**: Added `SGLangVLMEngine` for serving VLMs with SGLang.
-- [v0.4.4](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.4.4):
+- [v0.4.4](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.4.4) (Apr 18, 2026):
   - **VLM-based rotation correction**: `rotate_correction` now accepts `"tesseract"`, `"vlm"`, or `False`. Use `"vlm"` when Tesseract isn't installed or struggles with noisy scans.
 - [v0.5.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.5.0) (May 4, 2026):
   - **BBox output mode**: New `output_mode="bbox"` returns OCR text with bounding-box coordinates and labels per region. Leave `user_prompt` empty for full-text bbox OCR or set it to a free-text instruction (e.g., `"patient name and DOB"`) for targeted extraction. Built-in format registry covers Qwen3-VL, Gemma 3/4, and GPT-4.1.
 - [v0.6.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.6.0) (Jul 10, 2026):
   - **OCR pipelines**: New `IndependentPagePipeline` + `OCREngine.ocr_image_async` let you process each page differently — classify and route the pages of a **heterogeneous document** (e.g., mixed form types in one PDF) to different prompts/schemas, while the pipeline handles loading, concurrency, and assembly. See the [OCR Pipelines guide](https://daviden1013.github.io/vlm4ocr/ocr_pipelines/).
+- [v0.7.0](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.7.0) (Sep 8, 2026):
+  - ⚠️**PDF support is now opt-in**: install a PDF backend and name it, e.g., `pip install vlm4ocr[pypdfium2]` and `OCREngine(..., pdf_backend="pypdfium2")`. Choose from `pypdfium2` (recommended), `pdf2image`, or `pymupdf`. `pdf2image` and poppler are no longer installed by default.
+  - **Structured errors**: failures raise or record `PDFBackendNotAvailableError`, `DocumentLoadError`, or `VLMError`, with the file, page, backend, and the underlying library's message. Batch results expose them as `result.error`.
+- [v0.7.1](https://github.com/daviden1013/vlm4ocr/releases/tag/v0.7.1) (Ocr 5, 2026):
+  - **Better resizing for 1-bit and palette scans**: fax and scanner TIFFs (CCITT Group 3/4), 1-bit PNGs, and GIFs are now properly anti-aliased when shrunk with `max_dimension_pixels`, instead of being sampled pixel by pixel. This greatly improves OCR on small text and tables.
 
 ## Table of Contents
 - [Overview](#overview)

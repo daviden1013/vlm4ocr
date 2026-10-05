@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vlm4ocr"
-version = "0.7.0"
+version = "0.7.1"
 description = "Python package and Web App for OCR with vision language models."
 authors = ["Enshuo (David) Hsu"]
 license = "MIT"
@@ -17,7 +17,7 @@ python = "^3.11"
 colorama = ">=0.4.4"
 pillow = ">=10.0.0"
 json-repair = ">=0.30.0"
-llm-inference-engine = ">=0.1.5"
+llm-inference-engine = ">=0.1.8"
 pytesseract = { version = ">=0.3.13", optional = true }
 # PDF rendering backends are all optional: vlm4ocr depends on no PDF library, so users
 # who never process PDFs carry no PDF dependency and no third-party license obligation.
